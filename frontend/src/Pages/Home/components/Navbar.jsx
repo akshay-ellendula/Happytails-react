@@ -25,7 +25,7 @@ const Navbar = ({ user }) => {
         <div className="menu">
           <a href="/pet_accessory">Pet Essentials</a>
           <a href="/Events">Events</a>
-          {user ? <a href="/profile">Profile</a> : <a href="/my_login">Login/SignUp</a>}
+          {user ? <a href="/profile">Profile</a> : <a href="/login">Login/SignUp</a>}
         </div>
 
         <div className="menu-icon" id="menuIcon">
@@ -42,7 +42,7 @@ const Navbar = ({ user }) => {
           </a>
           <a href="/pet_accessory">Essentials</a>
           <a href="/Events">Events</a>
-          {user ? <a href="/profile">Profile</a> : <a href="/my_login">Login/SignUp</a>}
+          {user ? <a href="/profile">Profile</a> : <a href="/login">Login/SignUp</a>}
         </div>
       </header>
     </div>
