@@ -4,14 +4,19 @@ import styles from "../home.module.css";
 
 const AboutUs = () => {
   return (
+    // Changed section tag to use styles.about-us
     <section className={`${styles['about-us']} ${styles.autoshow}`}>
-      <div className={styles['about-us-imag']}>
+      {/* Assuming about-us-imag is correct or adjust if needed */}
+      <div className={styles['about-us-imag']}> 
         <img src={images.img1} alt="About Us" />
       </div>
 
+       {/* Content div seems fine */}
       <div className={styles.content}>
-        <h2>About Us</h2>
-        <p>
+        {/* Changed h2 tag to use styles.h2 */}
+        <h2 className={styles.h2}>About Us</h2>
+        {/* Changed p tag to use styles.p */}
+        <p className={styles.p}>
           Welcome to Happy Tails — Where Every Wag Matters!
           <br />
           At Happy Tails, we believe that pets aren't just animals — they're family. 

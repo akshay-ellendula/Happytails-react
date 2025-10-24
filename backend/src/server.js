@@ -7,6 +7,7 @@ import customerRoutes from './router/customerRoutes.js';
 import eventManagerRoutes from './router/eventManagerRoutes.js';
 import eventRoutes from './router/eventRoutes.js';
 import ticketRoutes from './router/ticketRouter.js';
+import productRoutes from './router/productRoutes.js'; // <-- IMPORT PRODUCT ROUTES
 import cors from 'cors';
 const app = express();
 
@@ -19,14 +20,15 @@ app.use(cors({
     origin: "http://localhost:5173",
     credentials: true
 }))
-app.use('/api',(req,res)=>{
-    res.json({message : " Hello form Backend"});
-})
+
+// --- API Route Mappings ---
 app.use("/api/auth", authRoutes);
-app.use("/api/customers", customerRoutes);
+app.use("/api/public", customerRoutes);
 app.use("/api/eventManagers", eventManagerRoutes);
 app.use("/api/events", eventRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/products', productRoutes); // <-- ADD PRODUCT ROUTES HERE
+
 const port = process.env.PORT;
 app.listen(port, () => {
     console.log(`http://localhost:${port}`)

@@ -3,19 +3,18 @@ import HeroSection from "./components/HeroSection";
 import ShopSection from "./components/ShopSection";
 import AboutUs from "./components/AboutUs";
 import Footer from "./components/Footer";
-// No need to import styles here, as styles are applied via child components,
-// but if you had a global style like 'body' (which you have), you'd import it.
-import "./home.module.css"; 
+import styles from "./home.module.css"; // Import styles
 
 const HomePage = ({ user }) => {
   return (
-    <>
+    // Apply the .body class for background and font
+    <div className={styles.body}> 
       <Navbar user={user} />
       <HeroSection />
       <ShopSection />
       <AboutUs />
       <Footer />
-    </>
+    </div>
   );
 };
 
