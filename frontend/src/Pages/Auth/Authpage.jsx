@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './login_signup.css'; // Make sure the CSS file is accessible
+import styles from './login_signup.module.css'; // Changed import to module.css
 
 /**
  * Custom hook to handle alert state and display
@@ -208,16 +208,20 @@ function AuthPage() {
 
     // Helper to apply classes for input errors
     const getInputClasses = (name) => {
-        return `
-            ${errorFields[name] ? 'input-error shake' : ''}
-        `.trim();
+        // Use an array to build the class string for clarity
+        const classes = [styles.input]; // Apply the base input class first
+        if (errorFields[name]) {
+            classes.push(styles['input-error'], styles.shake);
+        }
+        return classes.join(' ');
     };
 
     // Helper to render field-specific error messages
     const renderFieldError = (name) => {
         if (errorFields[name]) {
             return (
-                <div key={name} className="alert alert-error show">
+                // Use alert classes from styles
+                <div key={name} className={`${styles.alert} ${styles['alert-error']} ${styles.show}`}>
                     {errorFields[name]}
                 </div>
             );
@@ -228,25 +232,25 @@ function AuthPage() {
 
     return (
         <>
-            <div className="navbar">
-                <header>
-                    <a href="/home" className="badge">Happy Tails</a>
+            <div className={styles.navbar}>
+                <header className={styles.header}>
+                    <a href="/home" className={styles.badge}>Happy Tails</a>
                 </header>
             </div>
-            <div className="container" id="container">
+            <div className={styles.container} id="container">
 
                 {/* Toggle Container */}
-                <div className="toggle-container">
+                <div className={styles['toggle-container']}>
                     <button
                         id="signInToggle"
-                        className={`toggle-button ${isSignIn ? 'active' : ''}`}
+                        className={`${styles['toggle-button']} ${isSignIn ? styles.active : ''}`}
                         onClick={() => setIsSignIn(true)}
                     >
                         Sign In
                     </button>
                     <button
                         id="signUpToggle"
-                        className={`toggle-button ${!isSignIn ? 'active' : ''}`}
+                        className={`${styles['toggle-button']} ${!isSignIn ? styles.active : ''}`}
                         onClick={() => setIsSignIn(false)}
                     >
                         Sign Up
@@ -254,18 +258,18 @@ function AuthPage() {
                 </div>
 
                 {/* Form Container */}
-                <div className="form-container" id="formContainer">
+                <div className={styles['form-container']} id="formContainer">
 
                     {/* Sign In Form */}
                     <form
                         id="signInForm"
-                        className={isSignIn ? 'active-form' : 'hidden-form'}
+                        className={`${styles.form} ${isSignIn ? styles['active-form'] : styles['hidden-form']}`}
                         onSubmit={handleLoginSubmit}
                         style={{ display: isSignIn ? 'flex' : 'none' }} // Ensure form is truly hidden for accessibility/performance
                     >
                         <h1>Welcome Back!</h1>
                         {alert.show && !Object.keys(errorFields).length && (
-                            <div className={`alert alert-${alert.type} show`}>{alert.message}</div>
+                            <div className={`${styles.alert} ${styles['alert-' + alert.type]} ${styles.show}`}>{alert.message}</div>
                         )}
                         <input
                             type="email"
@@ -287,20 +291,20 @@ function AuthPage() {
                             className={getInputClasses('user_password')}
                         />
                         {renderFieldError('user_password')}
-                        <a href="#forgot" className="forgot-password" onClick={handleForgotPassword}>Forgot your password?</a>
-                        <button type="submit" className="signin_button" style={{ marginTop: '30px' }}>Sign In</button>
+                        <a href="#forgot" className={styles['forgot-password']} onClick={handleForgotPassword}>Forgot your password?</a>
+                        <button type="submit" className={`${styles.button} ${styles.signin_button}`} style={{ marginTop: '30px' }}>Sign In</button>
                     </form>
 
                     {/* Sign Up Form */}
                     <form
                         id="signUpForm"
-                        className={!isSignIn ? 'active-form' : 'hidden-form'}
+                        className={`${styles.form} ${!isSignIn ? styles['active-form'] : styles['hidden-form']}`}
                         onSubmit={handleSignupSubmit}
                         style={{ display: !isSignIn ? 'flex' : 'none' }} // Ensure form is truly hidden for accessibility/performance
                     >
                         <h1>Create Account</h1>
                         {alert.show && !Object.keys(errorFields).length && (
-                            <div className={`alert alert-${alert.type} show`}>{alert.message}</div>
+                            <div className={`${styles.alert} ${styles['alert-' + alert.type]} ${styles.show}`}>{alert.message}</div>
                         )}
                         <input
                             type="text"
@@ -332,7 +336,7 @@ function AuthPage() {
                             className={getInputClasses('user_password')}
                         />
                         {renderFieldError('user_password')}
-                        <button type="submit" style={{ marginTop: '20px' }}>Sign Up</button>
+                        <button type="submit" className={styles.button} style={{ marginTop: '20px' }}>Sign Up</button>
                     </form>
                 </div>
             </div>

@@ -1,18 +1,18 @@
 import React from "react";
-import "../home.css";
+import styles from "../home.module.css";
 
 const Footer = () => {
   return (
-    <footer className="footer">
-      <div className="footer-container">
-        <div className="footer-column">
+    <footer className={styles.footer}>
+      <div className={styles['footer-container']}>
+        <div className={styles['footer-column']}>
           <h3>Happy Tails</h3>
           <ul>
             <li><a href="/pet_accessory">Online Pet Accessories</a></li>
           </ul>
         </div>
 
-        <div className="footer-column">
+        <div className={styles['footer-column']}>
           <h3>Partner</h3>
           <ul>
             <li><a href="/store_signup">Pet Store Franchise</a></li>
@@ -20,7 +20,7 @@ const Footer = () => {
           </ul>
         </div>
 
-        <div className="footer-column">
+        <div className={styles['footer-column']}>
           <h3>Policy</h3>
           <ul>
             <li><a href="/privacy-policy">Privacy Policy</a></li>

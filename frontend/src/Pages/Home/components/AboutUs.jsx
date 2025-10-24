@@ -1,15 +1,15 @@
 import React from "react";
 import { images } from "../../../assets/assets.js";
-import "../home.css";
+import styles from "../home.module.css";
 
 const AboutUs = () => {
   return (
-    <section className="about-us autoshow">
-      <div className="about-us-imag">
+    <section className={`${styles['about-us']} ${styles.autoshow}`}>
+      <div className={styles['about-us-imag']}>
         <img src={images.img1} alt="About Us" />
       </div>
 
-      <div className="content">
+      <div className={styles.content}>
         <h2>About Us</h2>
         <p>
           Welcome to Happy Tails — Where Every Wag Matters!

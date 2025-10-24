@@ -1,5 +1,5 @@
 import React from "react";
-import "../home.css";
+import styles from "../home.module.css";
 
 const ShopSection = () => {
   const products = [
@@ -21,12 +21,12 @@ const ShopSection = () => {
   ];
 
   return (
-    <section className="shop autoshow">
+    <section className={`${styles.shop} ${styles.autoshow}`}>
       <h1>Shop</h1>
-      <div className="card-container">
+      <div className={styles['card-container']}>
         {products.map((product, index) => (
-          <div className="card" key={index}>
-            <div className="shop-image">
+          <div className={styles.card} key={index}>
+            <div className={styles['shop-image']}>
               <img src={product.src} alt={product.name} />
             </div>
             <h2>{product.name}</h2>
