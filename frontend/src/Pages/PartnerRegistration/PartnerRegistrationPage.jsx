@@ -1,11 +1,11 @@
 // pages/PartnerRegistration/PartnerRegistration.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { Toaster } from 'react-hot-toast';
-import PartnerSelection from './components/PartnerSelection';
-import StorePartnerForm from './components/StorePartnerForm';
-import EventManagerForm from './components/EventManagerForm';
-import BackButton from './components/BackButton';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import PartnerSelection from "./components/PartnerSelection";
+import StorePartnerForm from "./components/StorePartnerForm";
+import EventManagerForm from "./components/EventManagerForm";
+import BackButton from "./components/BackButton";
 
 const PartnerRegistration = () => {
   const [selectedPartner, setSelectedPartner] = useState(null);
@@ -18,14 +18,22 @@ const PartnerRegistration = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #effe8b 0%, #f8ffb3 100%)' }}>
+    <div
+      className="min-h-screen"
+      style={{
+        background: "linear-gradient(135deg, #effe8b 0%, #f8ffb3 100%)",
+      }}
+    >
       <Toaster position="top-center" />
-      
+
       {/* Navbar */}
       <nav className="bg-[#effe8b] border-b-2 border-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            <a href="/" className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] hover:scale-105 transition-transform">
+            <a
+              href="/"
+              className="text-2xl sm:text-3xl font-bold text-[#1a1a1a] hover:scale-105 transition-transform"
+            >
               🐾 Happy Tails
             </a>
           </div>
@@ -40,15 +48,15 @@ const PartnerRegistration = () => {
           <>
             <BackButton onBack={goBackToSelection} />
             <div className="bg-white rounded-3xl border-4 border-black overflow-hidden">
-              {selectedPartner === 'store' ? (
-                <StorePartnerForm 
-                  loading={loading} 
+              {selectedPartner === "store" ? (
+                <StorePartnerForm
+                  loading={loading}
                   setLoading={setLoading}
                   navigate={navigate}
                 />
               ) : (
-                <EventManagerForm 
-                  loading={loading} 
+                <EventManagerForm
+                  loading={loading}
                   setLoading={setLoading}
                   navigate={navigate}
                 />

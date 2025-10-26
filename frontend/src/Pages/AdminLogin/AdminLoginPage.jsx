@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router"; // Use useNavigate for client-side routing
-import { useAuth } from "../../context/AuthContext"; // Import Auth Context
+import { useNavigate } from "react-router-dom"; // Use useNavigate for client-side routing
+import { useAuth } from "../../hooks/useAuth"; // Import Auth Context
 import { toast } from "react-hot-toast"; // Use toast for consistent UI
 
 const AdminLoginPage = () => {
@@ -15,7 +15,7 @@ const AdminLoginPage = () => {
       toast.error("Please fill all fields");
       return;
     }
-    const result = await signin({ email, password }, 'admin');
+    const result = await signin({ email, password }, "admin");
 
     if (result.success) {
       toast.success("Login Successful");
@@ -46,14 +46,24 @@ const AdminLoginPage = () => {
 
           <div className="flex my-4">
             <a className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center mx-2 cursor-pointer">
-              <img src="/icons/google-logo-search-new-svgrepo-com.svg" alt="google" className="h-7" />
+              <img
+                src="/icons/google-logo-search-new-svgrepo-com.svg"
+                alt="google"
+                className="h-7"
+              />
             </a>
             <a className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center mx-2 cursor-pointer">
-              <img src="/icons/facebook-3-logo-svgrepo-com.svg" alt="facebook" className="h-7" />
+              <img
+                src="/icons/facebook-3-logo-svgrepo-com.svg"
+                alt="facebook"
+                className="h-7"
+              />
             </a>
           </div>
 
-          <span className="text-gray-500 text-xs mb-4">or use your account</span>
+          <span className="text-gray-500 text-xs mb-4">
+            or use your account
+          </span>
 
           <input
             type="email"

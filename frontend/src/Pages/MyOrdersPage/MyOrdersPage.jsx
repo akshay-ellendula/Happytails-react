@@ -148,7 +148,7 @@ export default function MyOrdersPage() {
                         day: "numeric",
                         year: "numeric",
                       })
-                    : "Pending"}
+                    : "Confirmed"}
                 </p>
                 <p className="text-gray-700">
                   <span className="font-bold text-dark">Status:</span>{" "}

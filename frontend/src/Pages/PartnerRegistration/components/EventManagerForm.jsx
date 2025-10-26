@@ -1,20 +1,20 @@
 // pages/PartnerRegistration/components/EventManagerForm.jsx
-import React, { useState } from 'react';
-import { Link } from 'react-router';
-import { toast } from 'react-hot-toast';
-import { axiosInstance } from '../../../utils/axios';
-import FormInput from './FormInput';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import { axiosInstance } from "../../../utils/axios";
+import FormInput from "./FormInput";
 
 const EventManagerForm = ({ loading, setLoading, navigate }) => {
   const [formData, setFormData] = useState({
-    userName: '',
-    contactnumber: '',
-    email: '',
-    password: '',
-    confirmpassword: '',
-    companyname: '',
-    location: '',
-    termsandconditions: false
+    userName: "",
+    contactnumber: "",
+    email: "",
+    password: "",
+    confirmpassword: "",
+    companyname: "",
+    location: "",
+    termsandconditions: false,
   });
 
   const [errors, setErrors] = useState({});
@@ -23,26 +23,26 @@ const EventManagerForm = ({ loading, setLoading, navigate }) => {
     const { name, value, type, checked } = e.target;
 
     // Special handling for contact number to restrict input
-    if (name === 'contactnumber') {
+    if (name === "contactnumber") {
       // Remove any non-numeric characters
-      const numericValue = value.replace(/\D/g, '');
-      
+      const numericValue = value.replace(/\D/g, "");
+
       // Limit to 10 digits
       if (numericValue.length <= 10) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          [name]: numericValue
+          [name]: numericValue,
         }));
       }
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : value
+        [name]: type === "checkbox" ? checked : value,
       }));
     }
-    
+
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -53,35 +53,36 @@ const EventManagerForm = ({ loading, setLoading, navigate }) => {
     const contactRegex = /^[6-9]\d{9}$/;
 
     if (!formData.userName.trim() || formData.userName.trim().length < 2) {
-      newErrors.userName = 'Name must be at least 2 characters';
+      newErrors.userName = "Name must be at least 2 characters";
     }
 
     if (!contactRegex.test(formData.contactnumber)) {
-      newErrors.contactnumber = 'Contact number must be 10 digits and start with 6, 7, 8, or 9';
+      newErrors.contactnumber =
+        "Contact number must be 10 digits and start with 6, 7, 8, or 9";
     }
 
     if (!emailRegex.test(formData.email)) {
-      newErrors.email = 'Please enter a valid Gmail address';
+      newErrors.email = "Please enter a valid Gmail address";
     }
 
     if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     if (formData.password !== formData.confirmpassword) {
-      newErrors.confirmpassword = 'Passwords do not match';
+      newErrors.confirmpassword = "Passwords do not match";
     }
 
     if (!formData.companyname.trim()) {
-      newErrors.companyname = 'Company name is required';
+      newErrors.companyname = "Company name is required";
     }
 
     if (!formData.location.trim()) {
-      newErrors.location = 'Location is required';
+      newErrors.location = "Location is required";
     }
 
     if (!formData.termsandconditions) {
-      newErrors.termsandconditions = 'You must accept the terms and conditions';
+      newErrors.termsandconditions = "You must accept the terms and conditions";
     }
 
     setErrors(newErrors);
@@ -91,21 +92,25 @@ const EventManagerForm = ({ loading, setLoading, navigate }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      toast.error('Please fix the errors in the form');
+      toast.error("Please fix the errors in the form");
       return;
     }
 
     setLoading(true);
     try {
       const { confirmpassword, ...submitData } = formData;
-      const response = await axiosInstance.post('/auth/eventManagerSignup', submitData);
-      
+      const response = await axiosInstance.post(
+        "/auth/eventManagerSignup",
+        submitData
+      );
+
       if (response.data.success) {
-        toast.success('Event manager registration successful!');
-        setTimeout(() => navigate('/'), 2000);
+        toast.success("Event manager registration successful!");
+        setTimeout(() => navigate("/"), 2000);
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed';
+      const errorMessage =
+        error.response?.data?.message || "Registration failed";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -113,12 +118,12 @@ const EventManagerForm = ({ loading, setLoading, navigate }) => {
   };
 
   const formFields = [
-    { name: 'userName', label: 'Full Name *', type: 'text' },
-    { name: 'contactnumber', label: 'Contact Number *', type: 'tel' },
-    { name: 'email', label: 'Email Address *', type: 'email' },
-    { name: 'companyname', label: 'Company Name *', type: 'text' },
-    { name: 'password', label: 'Password *', type: 'password' },
-    { name: 'confirmpassword', label: 'Confirm Password *', type: 'password' },
+    { name: "userName", label: "Full Name *", type: "text" },
+    { name: "contactnumber", label: "Contact Number *", type: "tel" },
+    { name: "email", label: "Email Address *", type: "email" },
+    { name: "companyname", label: "Company Name *", type: "text" },
+    { name: "password", label: "Password *", type: "password" },
+    { name: "confirmpassword", label: "Confirm Password *", type: "password" },
   ];
 
   return (
@@ -127,8 +132,12 @@ const EventManagerForm = ({ loading, setLoading, navigate }) => {
         <div className="w-16 h-16 bg-blue-400 rounded-2xl border-2 border-black flex items-center justify-center mx-auto mb-4">
           <span className="text-xl">🎪</span>
         </div>
-        <h2 className="text-3xl font-bold text-[#1a1a1a] mb-2">Event Manager Registration</h2>
-        <p className="text-gray-600">Fill in your details to start organizing events</p>
+        <h2 className="text-3xl font-bold text-[#1a1a1a] mb-2">
+          Event Manager Registration
+        </h2>
+        <p className="text-gray-600">
+          Fill in your details to start organizing events
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -143,7 +152,7 @@ const EventManagerForm = ({ loading, setLoading, navigate }) => {
             onChange={handleInputChange}
           />
         ))}
-        
+
         {/* Location */}
         <div className="md:col-span-2">
           <FormInput
@@ -167,11 +176,20 @@ const EventManagerForm = ({ loading, setLoading, navigate }) => {
               className="mt-1 w-5 h-5 text-[#1a1a1a] border-gray-300 rounded focus:ring-[#1a1a1a]"
             />
             <label className="text-sm text-gray-700">
-              I have read and agree to the <Link to="/terms-and-conditions" className="text-[#1a1a1a] hover:underline font-semibold">Terms & Conditions</Link>. I wish to Register as an Event Manager.
+              I have read and agree to the{" "}
+              <Link
+                to="/terms-and-conditions"
+                className="text-[#1a1a1a] hover:underline font-semibold"
+              >
+                Terms & Conditions
+              </Link>
+              . I wish to Register as an Event Manager.
             </label>
           </div>
           {errors.termsandconditions && (
-            <div className="text-red-500 text-sm mt-1">{errors.termsandconditions}</div>
+            <div className="text-red-500 text-sm mt-1">
+              {errors.termsandconditions}
+            </div>
           )}
         </div>
       </div>
@@ -181,7 +199,7 @@ const EventManagerForm = ({ loading, setLoading, navigate }) => {
         disabled={loading}
         className="w-full mt-6 py-4 bg-[#1a1a1a] text-white rounded-xl font-semibold text-lg hover:bg-[#1a1a1a]/90 transition-colors disabled:opacity-50"
       >
-        {loading ? 'Registering...' : 'Complete Event Manager Registration'}
+        {loading ? "Registering..." : "Complete Event Manager Registration"}
       </button>
     </form>
   );

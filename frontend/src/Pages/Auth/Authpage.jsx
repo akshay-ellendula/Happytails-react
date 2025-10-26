@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import { PawPrint } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router";
+import { useAuth } from "../../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import AuthForm from "./components/AuthForm";
 
 function AuthPage() {
@@ -20,11 +20,11 @@ function AuthPage() {
   // Redirect based on role if user is already authenticated
   useEffect(() => {
     if (user) {
-      if (user.role === 'customer') navigate('/');
-      else if (user.role === 'eventManager') navigate('/eventManager');
-      else if (user.role === 'storePartner') navigate('/store');
-      else if (user.role === 'admin') navigate('/admin/dashboard');
-      else navigate('/'); // Fallback
+      if (user.role === "customer") navigate("/");
+      else if (user.role === "eventManager") navigate("/eventManager");
+      else if (user.role === "storePartner") navigate("/shop");
+      else if (user.role === "admin") navigate("/admin/dashboard");
+      else navigate("/"); // Fallback
     }
   }, [user, navigate]);
 
@@ -69,16 +69,16 @@ function AuthPage() {
     if (!validateForm(true)) {
       return;
     }
-    
+
     // Explicitly pass 'customer' role
-    const result = await signin(loginInput, 'customer');
-    
+    const result = await signin(loginInput, "customer");
+
     if (result && result.success) {
-      toast.success('Login successful!');
+      toast.success("Login successful!");
       // Navigation handled by useEffect
     } else {
-      console.log('Signin failed:', result);
-      toast.error(result?.error || 'Login failed');
+      console.log("Signin failed:", result);
+      toast.error(result?.error || "Login failed");
     }
   };
 
@@ -89,14 +89,14 @@ function AuthPage() {
     }
 
     // Explicitly pass 'customer' role
-    const result = await signup(signupInput, 'customer');
+    const result = await signup(signupInput, "customer");
 
     if (result && result.success) {
-      toast.success('Registration successful!');
+      toast.success("Registration successful!");
       // Navigation handled by useEffect
     } else {
-      console.log('Signup failed:', result);
-      toast.error(result?.error || 'Signup failed');
+      console.log("Signup failed:", result);
+      toast.error(result?.error || "Signup failed");
     }
   };
 

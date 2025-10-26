@@ -1,65 +1,75 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { toast } from 'react-hot-toast';
-import { axiosInstance } from '../../utils/axios';
-import { CreditCard, Calendar, Lock, ArrowLeft } from 'lucide-react';
-import Header from '../../components/Header';
-import MobileMenu from '../../components/MobileMenu';
-import Footer from '../../components/Footer';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import { axiosInstance } from "../../utils/axios";
+import { CreditCard, Calendar, Lock, ArrowLeft, User } from "lucide-react";
+import Header from "../../components/Header";
+import MobileMenu from "../../components/MobileMenu";
+import Footer from "../../components/Footer";
 
 const PaymentPage = () => {
   const [cardData, setCardData] = useState({
-    number: '',
-    expiry: '',
-    cvv: '',
-    name: ''
+    number: "",
+    expiry: "",
+    cvv: "",
+    name: "",
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  // Add mobile menu state to match other pages
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log("PaymentPage mounted");
+  }, []);
 
   const handleInputChange = (e) => {
     let { name, value } = e.target;
 
     // Formatting for card number (adds spaces)
-    if (name === 'number') {
-      value = value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
+    if (name === "number") {
+      value = value
+        .replace(/\s/g, "")
+        .replace(/(\d{4})/g, "$1 ")
+        .trim();
       if (value.length > 19) return; // 16 digits + 3 spaces
     }
-    
+
     // Formatting for expiry date (adds /)
-    if (name === 'expiry') {
-      value = value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2');
+    if (name === "expiry") {
+      value = value.replace(/\D/g, "").replace(/(\d{2})(\d)/, "$1/$2");
       if (value.length > 5) return;
     }
-    
+
     // Formatting for CVV (max 4 digits)
-    if (name === 'cvv') {
-      value = value.replace(/\D/g, '');
+    if (name === "cvv") {
+      value = value.replace(/\D/g, "");
       if (value.length > 4) return;
     }
 
-    setCardData(prev => ({
+    setCardData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const validateForm = () => {
-    const cleanCardNumber = cardData.number.replace(/\s/g, '');
+    const cleanCardNumber = cardData.number.replace(/\s/g, "");
     if (!/^\d{16}$/.test(cleanCardNumber)) {
-      toast.error('Please enter a valid 16-digit card number');
+      toast.error("Please enter a valid 16-digit card number");
       return false;
     }
     if (!/^\d{2}\/\d{2}$/.test(cardData.expiry)) {
-      toast.error('Please enter a valid expiry date (MM/YY)');
+      toast.error("Please enter a valid expiry date (MM/YY)");
       return false;
     }
     if (!/^\d{3,4}$/.test(cardData.cvv)) {
-      toast.error('Please enter a valid 3 or 4-digit CVV');
+      toast.error("Please enter a valid 3 or 4-digit CVV");
       return false;
     }
     if (!cardData.name.trim()) {
-      toast.error('Please enter the name on the card');
+      toast.error("Please enter the name on the card");
       return false;
     }
     return true;
@@ -70,24 +80,30 @@ const PaymentPage = () => {
     if (!validateForm()) return;
 
     setIsProcessing(true);
+    console.log("PaymentPage: submitting payment", { cardData });
     try {
       const paymentData = {
         cardNumber: cardData.number,
         expiryDate: cardData.expiry,
-        cvv: cardData.cvv
+        cvv: cardData.cvv,
       };
 
       // This endpoint reads the checkout_session cookie you set in the backend
-      const response = await axiosInstance.post('/products/process-payment', paymentData);
+      const response = await axiosInstance.post(
+        "/products/process-payment",
+        paymentData
+      );
 
       if (response.data.success) {
-        toast.success('Payment successful! Redirecting to your orders...');
-        navigate(response.data.redirectUrl || '/my_orders');
+        toast.success("Payment successful! Redirecting to your orders...");
+        navigate(response.data.redirectUrl || "/my_orders");
       } else {
-        toast.error(response.data.message || 'Payment failed.');
+        toast.error(response.data.message || "Payment failed.");
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'An error occurred. Please try again.');
+      toast.error(
+        error.response?.data?.message || "An error occurred. Please try again."
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -99,13 +115,12 @@ const PaymentPage = () => {
       {isMobileMenuOpen && (
         <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
       )}
-      
+
       <div className="grow flex items-center justify-center py-12 px-4">
         <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-md border-4 border-black">
-          
           {/* Back Button */}
           <button
-            onClick={() => navigate('/pet_accessory')} // Go back to shop
+            onClick={() => navigate("/pet_accessory")} // Go back to shop
             className="absolute top-6 left-6 flex items-center gap-2 text-gray-600 hover:text-black transition-colors"
             disabled={isProcessing}
           >
@@ -117,7 +132,7 @@ const PaymentPage = () => {
             <h1 className="text-3xl sm:text-4xl font-bold text-[#1a1a1a] mb-6">
               Secure Payment
             </h1>
-            
+
             <form onSubmit={handleSubmit} className="space-y-5">
               <FormInput
                 name="name"
@@ -159,24 +174,32 @@ const PaymentPage = () => {
                 disabled={isProcessing}
                 className={`w-full cursor-pointer rounded-xl text-sm font-bold px-8 py-4 mt-4 uppercase tracking-wider transition-all hover:shadow-xl hover:-translate-y-1 active:scale-95 focus:outline-none focus:ring-4 focus:ring-opacity-50 border-2 border-black ${
                   isProcessing
-                    ? 'bg-gray-400 text-gray-800 cursor-not-allowed'
-                    : 'bg-[#1a1a1a] text-white hover:bg-gray-800 focus:ring-[#1a1a1a]'
+                    ? "bg-gray-400 text-gray-800 cursor-not-allowed"
+                    : "bg-[#1a1a1a] text-white hover:bg-gray-800 focus:ring-[#1a1a1a]"
                 }`}
               >
-                {isProcessing ? 'Processing...' : 'Pay Securely'}
+                {isProcessing ? "Processing..." : "Pay Securely"}
               </button>
             </form>
           </div>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );
 };
 
 // Re-using your FormInput component style from Authpage for consistency
-const FormInput = ({ type = 'text', name, placeholder, value, onChange, icon: Icon, ...props }) => (
+const FormInput = ({
+  type = "text",
+  name,
+  placeholder,
+  value,
+  onChange,
+  icon: Icon,
+  ...props
+}) => (
   <div className="w-full">
     <div className="relative">
       {Icon && (
@@ -191,7 +214,7 @@ const FormInput = ({ type = 'text', name, placeholder, value, onChange, icon: Ic
         value={value}
         onChange={onChange}
         className={`w-full px-5 py-4 my-2 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#effe8b] focus:ring-2 focus:ring-[#effe8b] focus:ring-opacity-50 transition-all placeholder-gray-400 ${
-          Icon ? 'pl-12' : ''
+          Icon ? "pl-12" : ""
         }`}
         {...props}
       />
@@ -199,7 +222,6 @@ const FormInput = ({ type = 'text', name, placeholder, value, onChange, icon: Ic
   </div>
 );
 
-// We need to import User from lucide-react for the FormInput
-import { User } from 'lucide-react';
+// Icons imported at top for FormInput
 
 export default PaymentPage;
