@@ -3,75 +3,28 @@ import EventManager from '../models/eventManagerModel.js';
 import Ticket from '../models/ticketModel.js';
 import uploadToCloudinary from '../utils/cloudinaryUploader.js';
 
-const determineEventStatus = (eventDateTime) => {
-    // Get today's date (without time)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Get event date (without time)
-    const eventDate = new Date(eventDateTime);
-    const eventDateOnly = new Date(eventDate);
-    eventDateOnly.setHours(0, 0, 0, 0);
-    
-    if (today < eventDateOnly) {
-        return 'Upcoming';
-    } else if (today.getTime() === eventDateOnly.getTime()) {
-        return 'Ongoing';
-    } else {
-        return 'Completed';
-    }
-};
-
-const updateEventStatusIfNeeded = async (event) => {
-    const currentStatus = event.status;
-    const calculatedStatus = determineEventStatus(event.date_time);
-    
-    if (currentStatus !== calculatedStatus && calculatedStatus !== 'Upcoming') {
-        // Only auto-update to Ongoing or Completed, not back to Upcoming
-        await Event.findByIdAndUpdate(event._id, { status: calculatedStatus });
-        event.status = calculatedStatus;
-    }
-    
-    return event;
-};
-
 //@dec get events
 //@route /api/events/
 //@access admin
 export const getEvents = async (req, res) => {
     try {
         const events = await Event.find({}).populate('eventManagerId');
-        
-        // Update status for each event based on current date
-        const updatedEvents = await Promise.all(
-            events.map(async (event) => {
-                return await updateEventStatusIfNeeded(event);
-            })
-        );
-        
-        res.status(200).json(updatedEvents);
+        res.status(200).json(events);
     } catch (error) {
         console.log("something went wrong in get events controllers", error);
         res.status(500).json({ message: 'Server Error' });
     }
 }
+
 //@dec getPublicEvents
 //@route /api/getPublicEvents/
 //@access public
 export const getPublicEvents = async(req,res) =>{
     try {
-        // First get all events and update their status
-        const allEvents = await Event.find({}).populate('eventManagerId');
-        
-        // Update status for each event based on current date
-        const updatedEvents = await Promise.all(
-            allEvents.map(async (event) => {
-                return await updateEventStatusIfNeeded(event);
-            })
-        );
-        
-        // Filter for upcoming events after status update
-        const upcomingEvents = updatedEvents.filter(event => event.status === 'Upcoming');
+        const now = new Date();
+        const upcomingEvents = await Event.find({ 
+            date_time: { $gte: now } 
+        }).populate('eventManagerId');
         
         if(upcomingEvents.length === 0){
             res.status(404).json({message : "No Upcoming Events Found"});
@@ -83,6 +36,7 @@ export const getPublicEvents = async(req,res) =>{
         res.status(500).json({ message: 'Server Error' });
     }
 }
+
 //@dec get event Details by id
 //@route get /api/events/:id
 //@access public
@@ -93,12 +47,13 @@ export const getEvent = async (req, res) => {
         if (!event) {
             return res.status(404).json({ message: "Event not Found" });
         }        
-        res.status(200).json(updatedEvent);
+        res.status(200).json(event);
     } catch (error) {
         console.log("Something went Wrong in getEvent :", error);
         res.status(500).json({ message: 'Server Error' });
     }
 }
+
 //@dec post an event
 //@route post /api/events/
 //@access eventManager
@@ -106,25 +61,24 @@ export const postEvent = async (req, res) => {
     const eventManagerId = req.user.eventManagerId;
 
     const {
-        title, description, language, duration, ageLimtit,
+        title, description, language, duration, ageLimit,
         ticketPrice, category, date_time, total_tickets,
-        requirements, instructions, location, venue, terms
+        venue, location
     } = req.body;
 
-    
-    const posterFile_1 = req.files.posterUrl_1 ? req.files.posterUrl_1[0] : null;
-    const posterFile_2 = req.files.posterUrl_2 ? req.files.posterUrl_2[0] : null;
+    const thumbnailFile = req.files?.thumbnail ? req.files.thumbnail[0] : null;
+    const bannerFile = req.files?.banner ? req.files.banner[0] : null;
 
     try {
-        
         if (
             !title || !description || !language || !date_time || !category ||
-            !requirements || !instructions || !location || !venue || !terms
+            !venue || !location
         ) {
-            return res.status(400).json({ message: "All text fields are required" });
+            return res.status(400).json({ message: "All required fields are missing" });
         }
-        if (!posterFile_1) {
-            return res.status(400).json({ message: "Event poster 1 (posterUrl_1) is required" });
+        
+        if (!thumbnailFile || !bannerFile) {
+            return res.status(400).json({ message: "Both thumbnail and banner images are required" });
         }
 
         if (total_tickets <= 0) {
@@ -141,25 +95,30 @@ export const postEvent = async (req, res) => {
             return res.status(409).json({ message: "Event title already in use" });
         }
 
-        let posterUrl_1 = "";
-        let posterUrl_2 = ""; 
-
-        const posterTransformations = [
-            { width: 800, height: 600, crop: "limit" },
+        // Cloudinary upload configurations
+        const thumbnailTransformations = [
+            { width: 400, height: 300, crop: "fill" },
             { quality: "auto" },
             { format: "auto" },
         ];
 
+        const bannerTransformations = [
+            { width: 1200, height: 400, crop: "fill" },
+            { quality: "auto" },
+            { format: "auto" },
+        ];
+
+        let thumbnailUrl = "";
+        let bannerUrl = "";
+
         try {
-            const uploadPromises = [
-                uploadToCloudinary(posterFile_1, "event_posters", posterTransformations),
-                uploadToCloudinary(posterFile_2, "event_posters", posterTransformations)
-            ];
+            const [uploadedThumbnail, uploadedBanner] = await Promise.all([
+                uploadToCloudinary(thumbnailFile, "event_thumbnails", thumbnailTransformations),
+                uploadToCloudinary(bannerFile, "event_banners", bannerTransformations)
+            ]);
 
-            const [uploadedUrl_1, uploadedUrl_2] = await Promise.all(uploadPromises);
-
-            posterUrl_1 = uploadedUrl_1; 
-            posterUrl_2 = uploadedUrl_2; 
+            thumbnailUrl = uploadedThumbnail;
+            bannerUrl = uploadedBanner;
 
         } catch (uploadError) {
             return res.status(500).json({ error: uploadError.message });
@@ -171,26 +130,26 @@ export const postEvent = async (req, res) => {
             description,
             language,
             duration,
-            ageLimtit,
+            ageLimit,
             ticketPrice,
             category,
             date_time,
             total_tickets,
-            posterUrl_1,    
-            posterUrl_2,    
-            requirements,
-            instructions,
-            location,
             venue,
-            terms,
+            location,
+            images: {
+                thumbnail: thumbnailUrl,
+                banner: bannerUrl
+            }
         });
 
-        res.status(201).json({message : "Event created Sucessfully"});
+        res.status(201).json({message : "Event created Successfully", event: newEvent});
     } catch (error) {
         console.log('Error in postEvent controller: ', error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
 //@dec modify event
 //@route put /api/events/:id
 //@access eventManager
@@ -199,8 +158,8 @@ export const putEvent = async (req, res) => {
     const { id: eventId } = req.params;
 
     const files = req.files;
-    const posterFile_1 = files?.posterUrl_1 ? files.posterUrl_1[0] : null;
-    const posterFile_2 = files?.posterUrl_2 ? files.posterUrl_2[0] : null;
+    const thumbnailFile = files?.thumbnail ? files.thumbnail[0] : null;
+    const bannerFile = files?.banner ? files.banner[0] : null;
 
     try {
         const event = await Event.findById(eventId);
@@ -217,48 +176,57 @@ export const putEvent = async (req, res) => {
         const updateData = {};
 
         const {
-            title, description, language, duration, ageLimtit,
+            title, description, language, duration, ageLimit,
             ticketPrice, category, date_time, total_tickets,
-            requirements, instructions, location, venue, terms
+            venue, location
         } = req.body;
 
         if (title) updateData.title = title;
         if (description) updateData.description = description;
         if (language) updateData.language = language;
         if (duration) updateData.duration = duration;
-        if (ageLimtit) updateData.ageLimtit = ageLimtit;
+        if (ageLimit) updateData.ageLimit = ageLimit;
         if (ticketPrice) updateData.ticketPrice = ticketPrice;
         if (category) updateData.category = category;
         if (date_time) updateData.date_time = date_time;
         if (total_tickets) updateData.total_tickets = total_tickets;
-        if (requirements) updateData.requirements = requirements;
-        if (instructions) updateData.instructions = instructions;
-        if (location) updateData.location = location;
         if (venue) updateData.venue = venue;
-        if (terms) updateData.terms = terms;
+        if (location) updateData.location = location;
 
-        const posterTransformations = [
-            { width: 800, height: 600, crop: "limit" },
+        // Cloudinary upload configurations
+        const thumbnailTransformations = [
+            { width: 400, height: 300, crop: "fill" },
             { quality: "auto" },
             { format: "auto" },
         ];
 
-        if (posterFile_1) {
-            const uploadedUrl_1 = await uploadToCloudinary(
-                posterFile_1, 
-                "event_posters", 
-                posterTransformations
-            );
-            updateData.posterUrl_1 = uploadedUrl_1;
-        }
+        const bannerTransformations = [
+            { width: 1200, height: 400, crop: "fill" },
+            { quality: "auto" },
+            { format: "auto" },
+        ];
 
-        if (posterFile_2) {
-            const uploadedUrl_2 = await uploadToCloudinary(
-                posterFile_2, 
-                "event_posters", 
-                posterTransformations
-            );
-            updateData.posterUrl_2 = uploadedUrl_2;
+        // Handle image updates
+        if (thumbnailFile || bannerFile) {
+            updateData.images = { ...event.images };
+            
+            if (thumbnailFile) {
+                const uploadedThumbnail = await uploadToCloudinary(
+                    thumbnailFile, 
+                    "event_thumbnails", 
+                    thumbnailTransformations
+                );
+                updateData.images.thumbnail = uploadedThumbnail;
+            }
+
+            if (bannerFile) {
+                const uploadedBanner = await uploadToCloudinary(
+                    bannerFile, 
+                    "event_banners", 
+                    bannerTransformations
+                );
+                updateData.images.banner = uploadedBanner;
+            }
         }
 
         const updatedEvent = await Event.findByIdAndUpdate(
@@ -267,7 +235,7 @@ export const putEvent = async (req, res) => {
             { new: true, runValidators: true } 
         );
 
-        res.status(200).json({message : "Event updated Successfully"}); 
+        res.status(200).json({message : "Event updated Successfully", event: updatedEvent}); 
 
     } catch (error) {
         console.log("Error in putEvent controller: ", error);
@@ -277,6 +245,7 @@ export const putEvent = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
 //@dec delete Event by id
 //@route delete /api/events/:id
 //@access Admin,EventManager
@@ -292,15 +261,19 @@ export const deleteEvent = async (req, res) => {
         if (role == "eventManager" && event.eventManagerId.toString() !== eventManagerId) {
             return res.status(403).json({ message: "Not Authorised" })
         }
-        const ticket = await Ticket.updateMany({eventId : eventId});
+        
+        // Update related tickets if needed
+        await Ticket.updateMany({ eventId: eventId });
         await Event.findByIdAndDelete(eventId);
-        res.status(200).json({ success: true })
+        
+        res.status(200).json({ success: true, message: "Event deleted successfully" })
     } catch (error) {
         console.log("Something went Wrong in deleteEvent :", error);
         res.status(500).json({ message: 'Server Error' });
     }
 }
-//@dec  Change Event Status by id
+
+//@dec Change Event Status by id
 //@route put /api/eventManager/changeStatus/:id
 //@access eventManager,Admin
 export const changeEventStatus = async(req,res) => {

@@ -1,25 +1,12 @@
 
-import { Product, ProductVariant, ProductImage } from '../models/productsModel.js'; // Added .js
+import { Product, ProductVariant, ProductImage } from '../models/productsModel.js';
+import Customer from '../models/customerModel.js';
 import { Order, OrderItem } from '../models/orderModel.js';       // Added .js
 import multer from 'multer';                                    // Convert to import
 import path from 'path';                                        // Convert to import
 import mongoose from 'mongoose';                                // Convert to import
-
-// Using path.extname in ES Module context requires path.resolve or similar for __dirname, 
-// but since this is just defining storage, it's generally fine.
-
-const productImageStorage = multer.diskStorage({
-    destination: 'uploads/products/',
-    filename: (req, file, cb) => cb(null, `product_${Date.now()}${path.extname(file.originalname)}`)
-});
-const uploadProductImages = multer({
-    storage: productImageStorage,
-    limits: { fileSize: 10 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png)$/i)) return cb(new Error('Only image files are allowed!'), false);
-        cb(null, true);
-    }
-}).array('product-images', 10);
+import uploadToCloudinary from '../utils/cloudinaryUploader.js';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const getPetAccessories = async (req, res) => {
     try {
@@ -116,7 +103,7 @@ const getPetAccessories = async (req, res) => {
                     _id: 0,
                     size: '$_id'
                 }
-            }   
+            }
         ]);
         const sizes = sizesRaw.map(item => item.size).sort();
 
@@ -173,7 +160,6 @@ const getProduct = async (req, res) => {
         return res.json({
             success: true,
             product: productData,
-            user: req.session.user || null
         });
     } catch (err) {
         console.error(err);
@@ -184,30 +170,26 @@ const getProduct = async (req, res) => {
 
 const checkout = async (req, res) => {
     try {
-        // Check if user is logged in
-        if (!req.session.user) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Please login to checkout' 
-            });
-        }
-
         // Check for required user profile fields
-        const user = req.session.user;
-        if (!user.user_name || !user.user_email || !user.user_phone || !user.user_address) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Please complete your profile information before proceeding to checkout.' 
+        const customerID = req.user.customerId;
+
+        const customer = await Customer.findById(customerID);
+        if (!customer) {
+            return res.status(404).json({ message: "User not found" })
+        }
+        if (!customer.userName || !customer.ema || !customer.phoneNumber || !customer.address) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please complete your profile information before proceeding to checkout.'
             });
         }
 
         const { cart } = req.body;
-        
-        // Validate cart
+
         if (!cart || !Array.isArray(cart) || cart.length === 0) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Cart is empty' 
+            return res.status(400).json({
+                success: false,
+                message: 'Cart is empty'
             });
         }
 
@@ -223,14 +205,14 @@ const checkout = async (req, res) => {
         }));
 
         // Validate cart items have required fields
-        const invalidItems = cleanCart.filter(item => 
+        const invalidItems = cleanCart.filter(item =>
             !item.product_id || !item.product_name || item.quantity <= 0 || item.price <= 0
         );
 
         if (invalidItems.length > 0) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid cart items detected' 
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid cart items detected'
             });
         }
 
@@ -239,59 +221,88 @@ const checkout = async (req, res) => {
         const charge = subtotal * 0.04;
         const total = subtotal + charge;
 
-        // Store in session
-        req.session.cart = cleanCart;
-        req.session.orderTotals = { 
-            subtotal: parseFloat(subtotal.toFixed(2)), 
-            charge: parseFloat(charge.toFixed(2)), 
-            total: parseFloat(total.toFixed(2)) 
+        const orderTotals = {
+            subtotal, charge, total
+        }
+
+        const payload = {
+            customerId: customerId,
+            orderTotals: orderTotals,
+            cleanCart: cleanCart
         };
-        return res.json({ 
-            success: true, 
-            redirectUrl: '/payment' 
+
+        const checkoutToken = jwt.sign(payload, JWT_SECRET, {
+            expiresIn: '15m'
         });
 
+        // 2. 🍪 Set the JWT in an HTTP-only Cookie
+        // The maxAge should match the token expiry (15 minutes * 60 seconds * 1000 ms)
+        res.cookie('checkout_session', checkoutToken, {
+            httpOnly: true, // Crucial for security (prevents client-side JS access)
+            secure: process.env.NODE_ENV === 'production', // Use 'secure: true' in production (requires HTTPS)
+            maxAge: 15 * 60 * 1000,
+            sameSite: 'Lax' // Recommended setting for CSRF mitigation
+        });
+
+        return res.json({
+            success: true,
+            redirectUrl: '/payment',
+        });
     } catch (err) {
         console.error('Checkout error:', err);
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Server error during checkout' 
+        return res.status(500).json({
+            success: false,
+            message: 'Server error during checkout'
         });
     }
 };
 
 const processPayment = async (req, res) => {
     try {
-        if (!req.session.user) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'User not logged in' 
+
+        const { cardNumber, expiryDate, cvv } = req.body;
+
+        if (!checkoutToken) {
+            return res.status(401).json({ message: 'Checkout session expired or missing token.' });
+        }
+
+        let orderTotals;
+        let cleanCart;
+        let customerID;
+
+        try {
+            // 2. JWT Verification and extraction
+            const decoded = jwt.verify(checkoutToken, JWT_SECRET);
+
+            orderTotals = decoded.orderTotals;
+            cleanCart = decoded.cleanCart;
+            customerID = decoded.customerId;
+
+        } catch (err) {
+            console.error('JWT validation failed:', err.message);
+            // Clear the invalid cookie
+            res.clearCookie('checkout_session');
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid or expired checkout session. Please start checkout again.'
             });
         }
 
-        const { cardNumber, expiryDate, cvc } = req.body;
-        const cart = req.session.cart;
-        const orderTotals = req.session.orderTotals;
-
         // Validate all required data
         if (!cart || !orderTotals || !cardNumber) {
-            console.error('Missing session data:', { 
-                hasCart: !!cart, 
-                hasOrderTotals: !!orderTotals,
-                hasCardNumber: !!cardNumber 
-            });
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Session data missing. Please restart checkout.' 
+            console.error('Missing values');
+            return res.status(400).json({
+                success: false,
+                message: 'Unable to fetch Cart'
             });
         }
 
         // Validate card number (basic validation)
         const cleanCardNumber = cardNumber.replace(/\s/g, '');
         if (cleanCardNumber.length !== 16 || isNaN(cleanCardNumber)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid card number' 
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid card number'
             });
         }
 
@@ -303,7 +314,7 @@ const processPayment = async (req, res) => {
 
         try {
             const order = await Order.create([{
-                user_id: req.session.user.id,
+                customer_id: req.user.customerId,
                 order_date: new Date(),
                 status: 'Pending',
                 subtotal: orderTotals.subtotal,
@@ -327,15 +338,10 @@ const processPayment = async (req, res) => {
 
             // Commit transaction
             await session.commitTransaction();
-            
-            // Clear session
-            req.session.cart = null;
-            req.session.orderTotals = null;
-            return res.json({ 
-                success: true, 
-                redirectUrl: '/my_orders' 
+            return res.json({
+                success: true,
+                redirectUrl: '/my_orders'
             });
-
         } catch (transactionError) {
             await session.abortTransaction();
             throw transactionError;
@@ -345,20 +351,17 @@ const processPayment = async (req, res) => {
 
     } catch (err) {
         console.error('Payment processing error:', err);
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Error processing payment. Please try again.' 
+        return res.status(500).json({
+            success: false,
+            message: 'Error processing payment. Please try again.'
         });
     }
 };
 
 const getUserOrders = async (req, res) => {
-    if (!req.session.user) {
-        return res.status(401).json({ success: false, message: 'User not logged in' });
-    }
-
+    
     try {
-        const orders = await Order.find({ user_id: req.session.user.id })
+        const orders = await Order.find({ customer_id: req.user.customerId})
             .sort({ order_date: -1 })
             .lean();
 
@@ -369,7 +372,7 @@ const getUserOrders = async (req, res) => {
                 const imageDoc = await ProductImage.findOne({ product_id: item.product_id, is_primary: true });
                 return {
                     ...item,
-                    image_data: imageDoc?.image_data || '/images/default-product.jpg'
+                    image_data: imageDoc?.image_data
                 };
             }));
 
@@ -388,21 +391,16 @@ const getUserOrders = async (req, res) => {
 };
 
 const reorder = async (req, res) => {
-    if (!req.session.user) return res.status(401).json({ success: false, message: 'User not logged in' });
-
     try {
         const orderId = req.params.orderId;
         const items = await OrderItem.find({ order_id: orderId }).lean();
-
         if (items.length === 0) return res.status(404).json({ success: false, message: 'Order not found' });
-
         // Get product images for each item
         const cartItems = await Promise.all(items.map(async (item) => {
-            const imageDoc = await ProductImage.findOne({ 
-                product_id: item.product_id, 
-                is_primary: true 
+            const imageDoc = await ProductImage.findOne({
+                product_id: item.product_id,
+                is_primary: true
             });
-            
             return {
                 product_id: item.product_id ? item.product_id.toString() : null,
                 variant_id: item.variant_id ? item.variant_id.toString() : null,
@@ -414,31 +412,12 @@ const reorder = async (req, res) => {
                 image_data: imageDoc ? imageDoc.image_data : null
             };
         }));
-
         res.json({ success: true, cart: cartItems });
     } catch (err) {
         console.error('Reorder error:', err);
         res.status(500).json({ success: false, message: 'Failed to fetch order items' });
     }
 };
-
-const getPaymentPage = (req, res) => {
-    const { orderTotals } = req.session;
-    if (orderTotals) {
-        // This is a legacy EJS render/redirect, which should be updated for a React app.
-        // For now, we'll keep the response structure minimal.
-        // In a fully React app, this endpoint might not exist, or it might just return the totals.
-
-        // Since the checkout redirectUrl is '/payment', this must handle it gracefully.
-        // The frontend will handle the UI, so let's redirect to a safe React route.
-        return res.redirect('/payment-summary'); 
-
-    } else {
-        // Redirect to the cart page if no order data is found in the session
-        return res.redirect('/pet_accessory'); 
-    }
-};
-
 export {
     getPetAccessories,
     getProduct,
@@ -446,5 +425,4 @@ export {
     processPayment,
     getUserOrders,
     reorder,
-    getPaymentPage,
 };
