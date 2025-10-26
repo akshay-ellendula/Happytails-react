@@ -6,6 +6,7 @@ import ProductFilters from './components/ProductFilters';
 import ProductGrid from './components/ProductGrid';
 import CartSidebar from './components/CartSidebar';
 import AccessoryFooter from './components/AccessoryFooter';
+import { axiosInstance } from '../../utils/axios';
 
 // --- Utility Functions (Simulating client-side logic) ---
 
@@ -150,7 +151,7 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
             return;
         }
 
-        // Prepare cart data for server
+        // Prepare cart data for server (unchanged)
         const cartWithoutImages = cart.map(item => ({
             product_id: item.product_id,
             variant_id: item.variant_id,
@@ -162,35 +163,31 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
         }));
 
         try {
-            const response = await fetch('/api/products/checkout', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache'
-                },
-                body: JSON.stringify({ cart: cartWithoutImages })
-            });
-            
-            const result = await response.json();
+            // Use axiosInstance instead of fetch
+            const response = await axiosInstance.post('/products/checkout', { cart: cartWithoutImages });
 
-            if (!response.ok) {
+            const result = response.data; // Axios uses .data for the parsed JSON
+
+            if (!response.status === 200 || !result.success) { // Check success
                 alert(result.message || 'Checkout failed. Please try again.');
                 if (response.status === 400 && result.message.includes('profile')) {
                     window.location.href = '/profile';
                 }
                 return;
             }
-        
+
             if (result.success && result.redirectUrl) {
                 setCart([]); // Clear cart state
                 window.location.href = result.redirectUrl;
             } else {
                 alert('Unexpected response from server');
             }
-        
+
         } catch (error) {
             console.error('Checkout error:', error);
-            alert('Network error. Please check your connection and try again.');
+            // More specific error handling (Axios provides better details)
+            const message = error.response?.data?.message || `Network error: ${error.message}. Please check your connection.`;
+            alert(message);
         }
     };
 
