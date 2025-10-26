@@ -7,10 +7,8 @@ const EventCard = ({ event }) => {
   const handleBookClick = () => {
      navigate(`/event/${event.id}`);
   };
-
   const ticketsLeft = event.total_tickets - event.tickets_sold;
   const isSoldOut = ticketsLeft === 0;
-
   return (
     <div className="bg-white rounded-2xl overflow-hidden hover:transform hover:scale-105 transition cursor-pointer border-2 border-transparent shadow-sm hover:shadow-lg">
       <div 
@@ -41,7 +39,7 @@ const EventCard = ({ event }) => {
         <p className="text-[#1a1a1a] text-sm font-semibold mb-3">{event.venue}</p>
         <div className="flex justify-between items-center">
           <span className="text-[#1a1a1a] font-bold">
-            {event.ticketPrice === 0 ? 'Free Entry' : `₹${event.ticketPrice} onwards`}
+            {event.price === 0 ? 'Free Entry' : `₹${event.price} onwards`}
           </span>
           <button 
             onClick={handleBookClick}

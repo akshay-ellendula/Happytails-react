@@ -56,7 +56,6 @@ export const signup = async (req, res) => {
 //@route post /api/auth/signin
 //@access public
 export const signin = async (req, res) => {
-    console.log(req)
     const { email, password } = req.body;
     try {
 
@@ -90,7 +89,6 @@ export const signin = async (req, res) => {
         })
 
         req.user = customer;
-        console.log(token)
         res.status(200).json({ success: true })
     } catch (error) {
         console.log("something went wrong in signin controller", error)

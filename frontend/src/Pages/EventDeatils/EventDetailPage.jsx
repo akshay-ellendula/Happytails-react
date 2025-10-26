@@ -18,7 +18,7 @@ const EventDetailPage = () => {
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
-        const response = await axiosInstance.get(`/api/events/${id}`);
+        const response = await axiosInstance.get(`/events/${id}`);
         setEvent(response.data);
       } catch (error) {
         console.error('Error fetching event details:', error);

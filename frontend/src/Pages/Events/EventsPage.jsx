@@ -15,8 +15,17 @@ const EventsPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axiosInstance.get('/api/getPublicEvents');
+        const response = await axiosInstance.get('/events/public/upcoming');
         const eventsData = response.data;
+        
+        // Handle case when no events found (empty array)
+        if (!eventsData || eventsData.length === 0) {
+          setEvents(getStaticEvents());
+          setCategories(getStaticCategories());
+          setLoading(false);
+          return;
+        }
+
         // Transform events data for frontend
         const transformedEvents = eventsData.map(event => ({
           id: event._id,
@@ -25,15 +34,13 @@ const EventsPage = () => {
           date: formatDate(event.date_time),
           title: event.title,
           venue: event.venue,
-          price: event.ticketPrice === 0 ? 'Free Entry' : `₹${event.ticketPrice} onwards`,
-          buttonText: event.ticketPrice === 0 ? 'Register Now' : 'Book tickets',
-          category: event.category
+          price: event.ticketPrice === 0 || !event.ticketPrice ? 'Free Entry' : `${event.ticketPrice}`,
+          buttonText: event.ticketPrice === 0 ? 'Free Register' : 'Book tickets',
+          category: event.category || 'general'
         }));
-
         setEvents(transformedEvents);
-
         // Extract unique categories from events
-        const uniqueCategories = [...new Set(eventsData.map(event => event.category))];
+        const uniqueCategories = [...new Set(eventsData.map(event => event.category))].filter(Boolean);
         const categoryData = uniqueCategories.map(category => ({
           name: category.toUpperCase(),
           type: category.toLowerCase(),
@@ -44,10 +51,18 @@ const EventsPage = () => {
         setCategories(categoryData.length > 0 ? categoryData : getStaticCategories());
       } catch (error) {
         console.error('Error fetching events:', error);
-        setError('Failed to load events');
-        // Fallback to static data if API fails
-        setEvents(getStaticEvents());
-        setCategories(getStaticCategories());
+        
+        // Check if it's a 404 (no events found) vs other errors
+        if (error.response?.status === 404) {
+          // No events found - use static data instead of showing error
+          setEvents(getStaticEvents());
+          setCategories(getStaticCategories());
+          setError(null);
+        } else {
+          setError('Failed to load events');
+          setEvents(getStaticEvents());
+          setCategories(getStaticCategories());
+        }
       } finally {
         setLoading(false);
       }
@@ -57,18 +72,26 @@ const EventsPage = () => {
   }, []);
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const options = { 
-      weekday: 'short', 
-      day: '2-digit', 
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    };
-    return date.toLocaleDateString('en-US', options);
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Date TBA';
+      }
+      const options = { 
+        weekday: 'short', 
+        day: '2-digit', 
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      };
+      return date.toLocaleDateString('en-US', options);
+    } catch (error) {
+      return 'Date TBA';
+    }
   };
 
   const getEmojiForCategory = (category) => {
+    if (!category) return '🎉';
     const emojiMap = {
       'festival': '🎃',
       'carnival': '🎪',
@@ -78,7 +101,16 @@ const EventsPage = () => {
       'workshop': '📚',
       'sports': '🏃',
       'dog': '🐶',
-      'cat': '🐱'
+      'cat': '🐱',
+      'pets & animals': '🐾',
+      'pets': '🐾',
+      'music': '🎵',
+      'food': '🍕',
+      'art': '🎨',
+      'tech': '💻',
+      'business': '💼',
+      'education': '📖',
+      'general': '🎉'
     };
     return emojiMap[category.toLowerCase()] || '🎉';
   };
@@ -92,20 +124,6 @@ const EventsPage = () => {
     { emoji: '🏥', name: 'HEALTH', type: 'health' },
     { emoji: '🎃', name: 'FESTIVALS', type: 'festival' },
     { emoji: '👥', name: 'MEETUPS', type: 'meetup' },
-  ];
-
-  const getStaticEvents = () => [
-    {
-      id: 1,
-      img: "/images/halloween-pet.jpg",
-      bannerImg: "/images/halloween-pet.jpg",
-      date: 'Sat, 01 Nov, Multiple slots',
-      title: 'Halloween Pet Experience',
-      venue: 'Akan Hyderabad',
-      price: '₹899 onwards',
-      buttonText: 'Book tickets',
-      category: 'festival'
-    },
   ];
 
   if (loading) {

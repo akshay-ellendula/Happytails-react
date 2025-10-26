@@ -17,17 +17,14 @@ export const getEvents = async (req, res) => {
 }
 
 //@dec getPublicEvents
-//@route /api/getPublicEvents/
+//@route /api/events/getPublicEvents/
 //@access public
 export const getPublicEvents = async(req,res) =>{
     try {
         const now = new Date();
-        const upcomingEvents = await Event.find({ 
-            date_time: { $gte: now } 
-        }).populate('eventManagerId');
-        
+        const upcomingEvents = await Event.find().populate('eventManagerId');
         if(upcomingEvents.length === 0){
-            res.status(404).json({message : "No Upcoming Events Found"});
+            res.status(200).json({message : "No Upcoming Events Found"});
         } else {
             res.status(200).json(upcomingEvents);
         }
