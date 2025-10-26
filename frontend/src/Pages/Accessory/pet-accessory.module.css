@@ -684,3 +684,8 @@
         font-size: 1.2rem;
     }
 }
+
+.product_card_link {
+  text-decoration: none;
+  color: inherit; /* This makes the text color the same as the parent */
+}
