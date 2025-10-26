@@ -1,8 +1,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 
-.body {
-    background-color: #effe8b;
+/* --- Typography, Button, & Layout Fixes --- */
+.h2 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-top: 0;
+    margin-bottom: 30px;
 }
+
+.h3 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0;
+}
+ 
+.p {
+    margin: 5px 0;
+    line-height: 1.5;
+}
+ 
+.button {
+    padding: 10px 20px;
+    border-radius: 30px;
+    background-color: #1a1a1a;
+    color: #effe8b;
+    cursor: pointer;
+    border: none;
+    font-size: 1rem;
+    width: 100%;
+}
+
+.collapsed {
+    margin-bottom: 0;
+}
+
+
+/* ... (Navbar, Header, Breadcrumb styles) ... */
 
 .navbar {
     margin: 5px 75px 5px 75px;
@@ -83,6 +116,8 @@
     color: black;
 }
 
+/* --- Main Layout & Filter Container --- */
+
 .main_container {  
     margin: 50px 75px 50px 75px;
     margin-left: 0px;
@@ -91,11 +126,11 @@
 }
 
 .filter_container {
+    all: unset; /* Stops global <form> styles from interfering */
     display: flex;
     flex-direction: column;
     min-width: 300px;
-    padding: 20px;
-    padding-top: 0;
+    padding: 0 20px 20px 20px;
 }
 
 .filters {
@@ -112,6 +147,7 @@
 .heading_button {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 15px;
 }
 
@@ -143,85 +179,50 @@
     cursor: pointer;
 }
 
-.checkbox-input { /* Replaces [type="checkbox"] */
+/* --- NEW Checkbox Styles for lucide-react --- */
+
+.checkbox-input { 
     opacity: 0;
+    position: absolute;
+    pointer-events: none; /* Lets clicks pass through to the label */
 }
 
-.checkbox-input + label { /* Replaces [type="checkbox"] + label */
+.checkbox-input + label {
     position: relative;
-    padding-left: 30px;
+    padding-left: 30px; /* Make space for the icon container */
     cursor: pointer;
     color: #1a1a1a;
-    line-height: 40px;
+    line-height: 40px; 
 }
 
-.checkbox-input + label::before { /* Replaces [type="checkbox"] + label::before */
+/* This is the box */
+.checkbox-input + label::before {
     content: "";
     position: absolute;
     left: 0;
-    top: 0;
+    top: 50%;
+    transform: translateY(-50%);
     width: 18px;
     height: 18px;
     outline: 1px solid #1a1a1a;
 }
 
-.checkbox-input:checked + label::before { /* Replaces [type="checkbox"]:checked + label::before */
-    content: "";
+/* This is the new icon container */
+.checkbox_icon_container {
     position: absolute;
-    left: 0;
-    top: 0;
-    width: 18px;
-    height: 18px;
-    outline: 1px solid #1a1a1a;
+    left: 2px; /* Small offset to center in the 18px box */
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex; 
+    align-items: center;
+    justify-content: center;
+    color: #1a1a1a; /* Color of the checkmark */
 }
 
-.checkbox-input:checked + label::after { /* Replaces [type="checkbox"]:checked + label::after */
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 18px;
-    height: 18px;
-    background-image: url("../icons/check-svgrepo-com.svg");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
-    transform: scale(1);
-    opacity: 1;
-    transition: all 0.3s ease;
-}
 
-.checkbox-input:not(:checked) + label::after { /* Replaces [type="checkbox"]:not(:checked) + label::after */
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 18px;
-    height: 18px;
-    background-image: url("../icons/check-svgrepo-com.svg");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
-    opacity: 0;
-    transform: scale(0);
-}
-
-.filter_container .submit-button { /* Replaces [type="submit"] */
-    padding: 10px 20px;
-    border-radius: 30px;
-    background-color: #1a1a1a;
-    color: #effe8b;
-    cursor: pointer;
-}
-
-#clear-filters {
+.clear-filters {
     margin-bottom: 20px;
-    margin-left: 1px;
-    padding: 10px 20px;
-    border-radius: 30px;
-    background-color: #1a1a1a;
-    color: #effe8b;
-    cursor: pointer;
+    margin-left: 0;
 }
 
 .price_filter_div {
@@ -233,7 +234,7 @@
     margin-bottom: 5px;
 }
 
-.price_filter_div .range-input { /* Replaces [type="range"] */
+.price_filter_div .range-input { 
     width: 100%;
 }
 
@@ -242,11 +243,6 @@
     color: #888;
     font-size: 1.2em;
     margin: 20px 0;
-}
-
-.filter_container .button { /* Replaces [type="button"] */
-    background-color: #6c757d;
-    margin-left: 10px;
 }
 
 .product_container {
@@ -264,7 +260,7 @@
     transition: transform 0.3s ease-in-out;
     cursor: pointer;
 }
-.cart_product_details .p { /* Used .p class for paragraphs */
+.cart_product_details .p { 
     margin: 5px 0;
 }
 
@@ -303,13 +299,16 @@
     }
 }
 
+/* --- ALL CART STYLES RE-ADDED BELOW --- */
+
 .cart {
+    all: unset; /* Stops global <div> styles from interfering */
     height: 100%;
     width: 550px;
     position: fixed;
     z-index: 1000;
     top: 0;
-    right: -110%;
+    right: -110%; /* This hides it off-screen */
     background-color: #1a1a1a;
     overflow-x: hidden;
     transition: 0.5s;
@@ -319,7 +318,12 @@
     overflow-y: hidden;
 }
 
-#CartcloseBtn{
+/* This is the class that opens the cart */
+.cart.open {
+    right: 0;
+}
+
+.close-btn {
     color: #effe8b;
     cursor: pointer;
     font-size: 2rem;
@@ -373,7 +377,7 @@
     gap: 20px;
 }
 
-.cart_product_details .input { /* Replaces general input */
+.cart_product_details .input { 
     padding: 5px;
     width: 50px;
 }
@@ -384,11 +388,7 @@
     gap: 70px;
 }
 
-.cart.open {
-    right: 0;
-}
-
-.hr-cart { /* New class for cart hr to differentiate from filter hr */
+.hr-cart { 
     border: 0;
     border-top: 1px solid #effe8b;
     margin: 10px 0;
@@ -450,6 +450,8 @@
     background-color: #1a1a1a ;
     color: #effe8b;
 }
+
+/* --- FOOTER & SIDENAV STYLES --- */
 
 .footer {
     background-color: #1a1d26;
@@ -566,46 +568,40 @@
     display: none;
 }
 
-.close-btn {
-    display: none;
+/* This .close-btn rule is for the side-navbar */
+.side-navbar .close-btn { 
+    display: block;
 }
 
+/* --- START OF MOBILE STYLES --- */
 @media (max-width: 768px) {
     .navbar {
         margin: 5px 20px;
     }
-
     .header { 
         display: flex;
         padding: 1rem;
     }
-
     .menu-icon {
         padding: 10px;
         display: block;
     }
-
     .badge {
         width: 100%;
         text-align: center;
     }
-
     .breadcrumb {
         display: none;
     }
-
     .mobile_filter {
         display: block;
     }
-
     .menu a, .search-bar {
         display: none;
     }
-
     .side-navbar.open {
         width: 250px; 
     }
-
     .filter_container {
         position: fixed;
         top: 0;
@@ -619,18 +615,18 @@
         transition: transform 0.3s ease-in-out;
         padding: 20px;
         z-index: 1000;
+        overflow-y: auto; 
     }
-
     .filter_container.show {
         transform: translateX(0);
     }
-
     .product_container {
         display: grid;
         grid-template-columns: repeat(1, 1fr);
         margin-left: 50px;
     }
 
+    /* --- Mobile Checkbox Styles --- */
     .checkbox-input + label {
         color: #effe8b;
     }
@@ -638,17 +634,9 @@
     .checkbox-input + label::before {
         outline: 1px solid #effe8b;
     }
-
-    .checkbox-input:checked + label::before {
-        outline: 1px solid #effe8b;
-    }
-
     
-    .checkbox-input:checked + label::after {
-        background-image: url("../icons/check-svgrepo-com-yellow.svg");
-    }
-    .checkbox-input:not(:checked) + label::after {
-        background-image: url("../icons/check-svgrepo-com-yellow.svg");
+    .checkbox_icon_container {
+        color: #effe8b; 
     }
 
     .close-filters {
@@ -658,40 +646,41 @@
         color: #effe8b;
         display: block;
         margin-bottom: 50px;
+        font-size: 2rem; 
+        position: absolute; 
+        top: 10px;
+        right: 20px;
     }
-
     .expand-button {
         color: #effe8b;
         background-color: #1a1a1a;
     }
-
+    
     .footer-container {
         flex-direction: column;
         margin-left: 0;
     }
-
+    
+    /* --- Mobile Cart Styles --- */
     .cart {
+        /* You may need all:unset here too if it's broken on mobile */
         width: 250px
     }
-
     .cart_image {
         width: 150px;
         height: 150px;
         overflow: hidden;
     }
-
     .cart_product {
         display: flex;
         flex-direction: column;
     }
-
     .subtotal {
         display: flex;
         flex-direction: column;
         width: 200px;
     }
-
-    .subtotal_details h3, .subtotal_details .p { /* Used .p class for paragraphs */
+    .subtotal_details h3, .subtotal_details .p {
         font-size: 1.2rem;
     }
 }

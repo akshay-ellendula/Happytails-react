@@ -216,8 +216,8 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
             </div>
 
             <div className={styles.breadcrumb}>
-                <a href="/home">Home</a>
-                <span> &gt </span>
+                <a href= "/">Home</a>
+                <span> {'>'} </span>
                 <a href="/pet_accessory">Accessories</a>
             </div>
 
