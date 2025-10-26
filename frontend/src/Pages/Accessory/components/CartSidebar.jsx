@@ -1,7 +1,11 @@
+// src/Pages/Accessory/components/CartSidebar.jsx
+
 import React from 'react';
 import styles from '../pet-accessory.module.css';
+import { Trash2 } from 'lucide-react'; // <-- Import the Trash icon
 
 const CartItem = ({ item, index, updateQuantity, removeItem }) => {
+    // ... (imageSrc, price, quantity, itemTotal logic remains the same)
     const imageSrc = item.image_data
         ? item.image_data.startsWith('data:')
             ? item.image_data
@@ -12,6 +16,7 @@ const CartItem = ({ item, index, updateQuantity, removeItem }) => {
     const quantity = typeof item.quantity === 'number' ? item.quantity : 1;
     const itemTotal = (price * quantity).toFixed(2);
 
+
     return (
         <div className={styles.cart_product}>
             <div className={styles.cart_image}>
@@ -20,14 +25,16 @@ const CartItem = ({ item, index, updateQuantity, removeItem }) => {
             <div className={styles.cart_product_details}>
                 <div className={styles.name_header}>
                     <h3 className={styles.h3}>{item.product_name}</h3>
-                    <img
-                        src="/icons/dustbin.svg"
-                        alt="Remove item"
-                        height="18"
-                        width="18"
+                    {/* --- Replace img with Lucide icon --- */}
+                    <Trash2
+                        size={18} // Set size
+                        // color="#effe8b" // Set color if needed (inherits text color by default)
+                        strokeWidth={2} // Adjust stroke width if needed
                         onClick={() => removeItem(index)}
-                        style={{ cursor: 'pointer' }}
+                        style={{ cursor: 'pointer', flexShrink: 0 }} // Prevent shrinking
+                        aria-label="Remove item" // Accessibility
                     />
+                    {/* --- End replacement --- */}
                 </div>
                 <p className={styles.p}>
                     Price: ₹<span className={styles['unit-price']}>{price.toFixed(2)}</span>
@@ -40,7 +47,7 @@ const CartItem = ({ item, index, updateQuantity, removeItem }) => {
                         className={styles.input}
                         min="1"
                         value={quantity}
-                        onChange={(e) => updateQuantity(index, e.target.value)}
+                        onChange={(e) => updateQuantity(index, parseInt(e.target.value))} // Ensure integer
                     />
                     <p className={styles.p}>
                         ₹<span className={styles['total-price']}>{itemTotal}</span>
@@ -51,6 +58,7 @@ const CartItem = ({ item, index, updateQuantity, removeItem }) => {
     );
 };
 
+// --- CartSidebar component remains largely the same ---
 const CartSidebar = ({
     isOpen,
     setIsOpen,
@@ -82,7 +90,7 @@ const CartSidebar = ({
                     ) : (
                         cart.map((item, index) => (
                             <CartItem
-                                key={item.variant_id || index}
+                                key={item.variant_id || `${item.product_id}-${index}`} // Use a more robust key
                                 item={item}
                                 index={index}
                                 updateQuantity={updateQuantity}
@@ -92,7 +100,9 @@ const CartSidebar = ({
                     )}
                 </div>
 
+                 {/* Subtotal section remains the same */}
                 <div className={styles.subtotal}>
+                   {/* ... hr, subtotal, charge, total details ... */}
                     <hr className={styles['hr-cart']} />
                     <div className={styles.subtotal_details}>
                         <h3 className={styles.h3}>Subtotal</h3>
