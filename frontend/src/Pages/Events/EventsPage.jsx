@@ -4,7 +4,7 @@ import Header from '../Home/components/Header';
 import HeroBanner from './components/HeroBanner';
 import CategoriesSection from './components/CategoriesSection';
 import EventsSection from './components/EventsSection';
-import Footer from './components/Footer';
+import Footer from '../Home/components/Footer';
 
 const EventsPage = () => {
   const [events, setEvents] = useState([]);

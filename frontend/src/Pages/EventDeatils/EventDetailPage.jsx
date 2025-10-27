@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import { axiosInstance } from "../../utils/axios.js";
 import Header from '../Home/components/Header';
-import Footer from '../Events/components/Footer';
+import Footer from '../Home/components/Footer';
 import HeroSection from './components/HeroSection';
 import AboutSection from './components/AboutSection';
 import EventGuideSection from './components/EventGuideSection';
