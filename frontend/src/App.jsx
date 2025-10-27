@@ -1,27 +1,47 @@
 // App.jsx
-import HomePage from "./pages/Home/HomePage"; // Corrected path case
+import { Routes, Route, Navigate } from "react-router";
+import { Toaster } from "react-hot-toast";
+import { AuthProvider, useAuth } from './context/AuthContext';
+import HomePage from "./pages/Home/HomePage";
 import AuthPage from "./pages/Auth/Authpage";
-import ProductAccessoryPageWrapper from './pages/Accessory/ProductAccessoryPageWrapper'; // Import the wrapper
+import ProductAccessoryPageWrapper from './pages/Accessory/ProductAccessoryPageWrapper';
 import EventsPage from './pages/Events/EventsPage';
 import EventDetailPage from "./pages/EventDeatils/EventDetailPage";
 import BookingPage from "./pages/BookingPage/BookingPage";
-import { Routes, Route } from "react-router";
-import { Toaster } from "react-hot-toast";
+
+// Protected Route Wrapper
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/pet_accessory" element={<ProductAccessoryPageWrapper />} />
+      <Route path="/signup" element={<AuthPage/>}/>
+      <Route path="/login" element={<AuthPage/>}/>
+      <Route path="/events" element={<EventsPage/>}/>
+      <Route path='/event/:id' element={<EventDetailPage/>}/>
+      <Route 
+        path="/booking" 
+        element={
+          <ProtectedRoute>
+            <BookingPage />
+          </ProtectedRoute>
+        } 
+      />
+    </Routes>
+  );
+}
 
 function App() {
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/pet_accessory" element={<ProductAccessoryPageWrapper />} />
-        <Route path="/signup" element={<AuthPage/>}/>
-        <Route path="/login" element={<AuthPage/>}/>
-        <Route path="/events" element={<EventsPage/>}/>
-        <Route path='/event/:id' element={<EventDetailPage/>}/>
-        <Route path="/booking" element={<BookingPage />} /> 
-      </Routes>
+    <AuthProvider>
+      <AppRoutes />
       <Toaster/>
-    </>
+    </AuthProvider>
   );
 }
 

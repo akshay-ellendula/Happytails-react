@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import { axiosInstance } from "../../utils/axios.js";
-import Header from '../Events/components/Header';
+import Header from '../Home/components/Header';
 import Footer from '../Events/components/Footer';
 import HeroSection from './components/HeroSection';
 import AboutSection from './components/AboutSection';
@@ -32,7 +32,6 @@ const EventDetailPage = () => {
 
   const handleBookTickets = () => {
     if (!event) return;
-    
     navigate('/booking', { 
       state: { 
         event: {

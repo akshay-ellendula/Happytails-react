@@ -1,7 +1,8 @@
+// pages/Auth/Authpage.jsx
 import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import { PawPrint } from "lucide-react";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router";
 import AuthForm from "./components/AuthForm";
 
@@ -14,11 +15,17 @@ function AuthPage() {
     password: "",
   });
 
-  const { signup, signin, loading } = useAuth();
-  const navigate = useNavigate();
+  const { signup, signin, loading, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
 
   useEffect(() => {
-    // Clear forms when switching modes
+    if (isAuthenticated) {
+      console.log('User is authenticated, redirecting to home');
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
     if (isSignIn) {
       setLoginInput({ email: "", password: "" });
     } else {
@@ -28,7 +35,6 @@ function AuthPage() {
 
   const handleInputChange = (e, isLogin) => {
     const { name, value } = e.target;
-
     if (isLogin) {
       setLoginInput((prev) => ({ ...prev, [name]: value }));
     } else {
@@ -38,53 +44,57 @@ function AuthPage() {
 
   const validateForm = (isLogin) => {
     const data = isLogin ? loginInput : signupInput;
-
-    // Basic frontend validation
     if (!isLogin && (!data.userName || data.userName.trim().length < 2)) {
       toast.error("Please enter a valid name (at least 2 characters)");
       return false;
     }
-
-    if (!data.email || !/^[^\s@]+@gmail\.com$/.test(data.email)) {
-      toast.error("Please enter a valid email address");
+    if (!data.email || !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(data.email)) {
+      toast.error("Please enter a valid Gmail address");
       return false;
     }
-
     if (!data.password || data.password.length < 6) {
       toast.error("Password must be at least 6 characters");
       return false;
     }
-
     return true;
   };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm(true)) return;
+    if (!validateForm(true)) {
+      console.log('Login form validation failed');
+      return;
+    }
     const result = await signin(loginInput);
-    if(result.success){
-      setTimeout(() => {
-        navigate('/')
-      }, 1000);
+    
+    if(result && result.success){
+      toast.success('Login successful!');
+    } else {
+      console.log('Signin failed:', result);
+      toast.error(result?.error || 'Login failed');
     }
   };
 
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm(false)) return;
+    if (!validateForm(false)) {
+      console.log('Signup form validation failed');
+      return;
+    }
     const result = await signup(signupInput);
-    if (result.success) {
-      setTimeout(() => {
-        navigate('/')
-      }, 1000);
+    if (result && result.success) {
+      toast.success('Registration successful!');
+    } else {
+      console.log('Signup failed:', result);
+      toast.error(result?.error || 'Signup failed');
     }
   };
 
   const handleForgotPassword = (e) => {
     e.preventDefault();
     const email = loginInput.email.trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Please enter your email address first");
+    if (!email || !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
+      toast.error("Please enter your Gmail address first");
       return;
     }
     toast.success("Password reset link sent!");
@@ -98,29 +108,14 @@ function AuthPage() {
       <Toaster
         position="top-center"
         toastOptions={{
-          duration: 2000,
+          duration: 4000, // Increased duration for debugging
           style: {
             background: "#363636",
             color: "#fff",
             fontSize: "14px",
           },
-          success: {
-            duration: 2000,
-            iconTheme: {
-              primary: "#10B981",
-              secondary: "#fff",
-            },
-          },
-          error: {
-            duration: 2000,
-            iconTheme: {
-              primary: "#EF4444",
-              secondary: "#fff",
-            },
-          },
         }}
       />
-
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>

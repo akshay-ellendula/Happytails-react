@@ -273,3 +273,42 @@ export const adminSignin = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
+// Add this to your auth controller
+//@dec verify auth status
+//@route GET /api/auth/verify
+//@access public
+export const verifyAuth = async (req, res) => {
+    try {
+        const token = req.cookies.jwt;
+        
+        if (!token) {
+            return res.status(200).json({ authenticated: false });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        
+        // Check if user still exists (optional but recommended)
+        let user;
+        if (decoded.role === 'customer') {
+            user = await Customer.findById(decoded.customerId);
+        } else if (decoded.role === 'eventManager') {
+            user = await EventManager.findById(decoded.customerId);
+        } else if (decoded.role === 'admin') {
+            user = await Admin.findById(decoded.customerId);
+        }
+
+        if (!user) {
+            res.clearCookie("jwt");
+            return res.status(200).json({ authenticated: false });
+        }
+
+        res.status(200).json({ 
+            authenticated: true,
+            role: decoded.role 
+        });
+    } catch (error) {
+        console.log("JWT verification failed:", error);
+        res.clearCookie("jwt");
+        res.status(200).json({ authenticated: false });
+    }
+}

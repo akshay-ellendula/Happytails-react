@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { axiosInstance } from "../../utils/axios";
-import Header from './components/Header';
+import Header from '../Home/components/Header';
 import HeroBanner from './components/HeroBanner';
 import CategoriesSection from './components/CategoriesSection';
 import EventsSection from './components/EventsSection';
