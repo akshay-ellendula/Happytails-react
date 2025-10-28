@@ -2,6 +2,8 @@ import Customer from '../models/customerModel.js'
 import jwt from 'jsonwebtoken';
 import EventManager from '../models/eventManagerModel.js';
 import Admin from '../models/adminModel.js'
+import StorePartner from '../models/storePartnerModel.js';
+
 
 //@dec signup  for customer
 //@route post /api/auth/signup
@@ -10,7 +12,7 @@ export const signup = async (req, res) => {
 
     const { userName, email, password } = req.body;
     try {
-        
+
         if (!userName || !email || !password) {
             return res.status(404).json({ message: "all fields are requires" })
         }
@@ -25,7 +27,7 @@ export const signup = async (req, res) => {
         }
 
         const oldCustomer = await Customer.findOne({ email })
-        
+
         if (oldCustomer) {
             return res.status(409).json({ message: "email is all ready registered" })
         }
@@ -280,13 +282,13 @@ export const adminSignin = async (req, res) => {
 export const verifyAuth = async (req, res) => {
     try {
         const token = req.cookies.jwt;
-        
+
         if (!token) {
             return res.status(200).json({ authenticated: false });
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        
+
         // Check if user still exists (optional but recommended)
         let user;
         if (decoded.role === 'customer') {
@@ -302,9 +304,9 @@ export const verifyAuth = async (req, res) => {
             return res.status(200).json({ authenticated: false });
         }
 
-        res.status(200).json({ 
+        res.status(200).json({
             authenticated: true,
-            role: decoded.role 
+            role: decoded.role
         });
     } catch (error) {
         console.log("JWT verification failed:", error);
@@ -312,3 +314,152 @@ export const verifyAuth = async (req, res) => {
         res.status(200).json({ authenticated: false });
     }
 }
+
+// @desc    Register store partner
+// @route   POST /api/auth/storeSignup
+// @access  Public
+export const storePartnerSignup = async (req, res) => {
+    const { userName, email, password, contactnumber, storename, storelocation } = req.body;
+
+    try {
+        // Validation
+        if (!userName || !email || !password || !contactnumber || !storename || !storelocation) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required"
+            });
+        }
+
+        // Check if email already exists
+        const existingStorePartner = await StorePartner.findOne({ email });
+        if (existingStorePartner) {
+            return res.status(409).json({
+                success: false,
+                message: "Email is already registered"
+            });
+        }
+
+        const oldStoreName = await StorePartner.findOne({storename});
+        if(oldStoreName){
+            return res.status(409).json({message : "All Ready  Store name has Taken"})
+        }
+
+        // Generate random profile picture
+        const randomGen = Math.floor(Math.random() * 100) + 1;
+        const profilePic = `https://avatar-api-theta.vercel.app/${randomGen}.png`;
+
+        // Create store partner
+        const storePartner = await StorePartner.create({
+            userName,
+            email,
+            password,
+            contactnumber,
+            storename,
+            storelocation,
+            profilePic
+        });
+
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                storePartnerId: storePartner._id,
+                role: 'storePartner',
+            },
+            process.env.JWT_SECRET_KEY,
+            { expiresIn: '30min' }
+        );
+
+        // Set cookie
+        res.cookie('jwt', token, {
+            maxAge: 30 * 60 * 1000,
+            httpOnly: true,
+            sameSite: "strict",
+            secure: process.env.NODE_ENV === 'production'
+        });
+
+        res.status(201).json({ success: true, });
+
+    }
+    catch (error) {
+        console.log("Error in store partner signup:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+};
+// @desc    Login store partner
+// @route   POST /api/auth/storeSignin
+// @access  Public
+export const storePartnerSignin = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Email and password are required"
+            });
+        }
+
+        const storePartner = await StorePartner.findOne({ email });
+        if (!storePartner) {
+            return res.status(404).json({
+                success: false,
+                message: "Email is not registered"
+            });
+        }
+
+        if (!storePartner.isActive) {
+            return res.status(403).json({
+                success: false,
+                message: "Your account is disabled. Please contact support."
+            });
+        }
+
+        const isMatch = await storePartner.matchPassword(password);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email or password'
+            });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                storePartnerId: storePartner._id,
+                role: 'storePartner',
+                email: storePartner.email
+            },
+            process.env.JWT_SECRET_KEY,
+            { expiresIn: '30min' }
+        );
+
+        // Set cookie
+        res.cookie('jwt', token, {
+            maxAge: 30 * 60 * 1000,
+            httpOnly: true,
+            sameSite: "strict",
+            secure: process.env.NODE_ENV === 'production'
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Login successful",
+            data: {
+                id: storePartner._id,
+                userName: storePartner.userName,
+                email: storePartner.email,
+                storename: storePartner.storename,
+                role: 'storePartner'
+            }
+        });
+    } catch (error) {
+        console.log("Error in store partner signin:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+};
