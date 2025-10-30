@@ -102,7 +102,7 @@ function AuthPage() {
 
   return (
     <div
-      className="min-h-screen bg-[#effe8b]"
+      className="max-h-screen bg-[#effe8b]"
       style={{ fontFamily: "'Outfit', sans-serif" }}
     >
       <Toaster

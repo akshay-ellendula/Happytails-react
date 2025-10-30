@@ -130,6 +130,14 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
         applyFilters();
     }, [applyFilters]);
 
+    
+    useEffect(() => {
+      document.documentElement.style.background = "#effe8b";
+      document.documentElement.style.margin = "0";
+      document.documentElement.style.padding = "0";
+    }, []);
+
+
 
     const handleFilterChange = (newFilters) => {
         setFilterState(prev => ({ ...prev, ...newFilters }));
@@ -192,7 +200,12 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
     };
 
     return (
-        <>
+        <div style={{
+            backgroundColor: "#effe8b", 
+            minHeight: "100vh",
+            margin: 0,
+            padding: 0
+        }}>
             {/* Navbars */}
             <AccessoryNavbar user={user} setIsCartOpen={setIsCartOpen} />
 
@@ -235,7 +248,7 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
 
             {/* Footer */}
             <AccessoryFooter />
-        </>
+        </div>
     );
 };
 

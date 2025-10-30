@@ -1,4 +1,5 @@
 // App.jsx
+import { useState } from "react";
 import { Routes, Route, Navigate } from "react-router";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -9,6 +10,7 @@ import EventsPage from "./pages/Events/EventsPage";
 import EventDetailPage from "./pages/EventDeatils/EventDetailPage";
 import BookingPage from "./pages/BookingPage/BookingPage";
 import PartnerRegistration from "./pages/PartnerRegistration/PartnerRegistrationPage";
+import ProductDetailPage from "./pages/Accessory/ProductDetailPage";
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -21,6 +23,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/pet_accessory" element={<ProductAccessoryPageWrapper />} />
+      <Route path="/product/:id" element={<ProductDetailPage />} />
       <Route path="/signup" element={<AuthPage />} />
       <Route path="/login" element={<AuthPage />} />
       <Route path="/events" element={<EventsPage />} />

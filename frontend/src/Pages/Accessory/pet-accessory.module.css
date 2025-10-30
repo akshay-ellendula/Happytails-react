@@ -39,6 +39,7 @@
 
 .navbar {
     margin: 5px 75px 5px 75px;
+    background-color: #effe8b;
 }
 
 .header {
@@ -46,6 +47,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem 3rem;
+    background-color: #effe8b;
 }
 
 .header a {
