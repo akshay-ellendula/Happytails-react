@@ -5,7 +5,7 @@ import mongoose from 'mongoose'; // <-- CHANGE 1: Use ES import
 // --- Schemas related to Orders and Transactions ---
 
 const orderSchema = new mongoose.Schema({
-    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    customer_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
     order_date: { type: Date, default: Date.now },
     status: { type: String, required: true, default: 'Pending' },
     subtotal: { type: Number, required: true },

@@ -14,7 +14,7 @@ const ProductAccessoryPageWrapper = () => {
             setError(null); // Clear previous errors
             try {
                 // Fetch from the API endpoint
-                const response = await axiosInstance.get('/products/pet_accessory');
+                const response = await axiosInstance.get('/products/getProducts');
                 console.log("API Response:", response.data); // Debug log
                 if (response.data.success) {
                     setPageData({

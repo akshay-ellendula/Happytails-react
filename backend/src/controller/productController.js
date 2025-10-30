@@ -1,25 +1,13 @@
 // backend/src/controller/productController.js
 
 import { Product, ProductVariant, ProductImage } from '../models/productsModel.js';
-import { Order, OrderItem } from '../models/orderModel.js';
-import Customer from '../models/customerModel.js'; // Import Customer model
-import multer from 'multer';
-import path from 'path';
-import mongoose from 'mongoose';
-
-// --- Multer Configuration ---
-const productImageStorage = multer.diskStorage({
-    destination: 'uploads/products/',
-    filename: (req, file, cb) => cb(null, `product_${Date.now()}${path.extname(file.originalname)}`)
-});
-const uploadProductImages = multer({
-    storage: productImageStorage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-    fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png)$/i)) return cb(new Error('Only image files (jpg, jpeg, png) are allowed!'), false);
-        cb(null, true);
-    }
-}).array('product-images', 10); // Allows up to 10 images with field name 'product-images'
+import Customer from '../models/customerModel.js';
+import { Order, OrderItem } from '../models/orderModel.js';       // Added .js
+import multer from 'multer';                                    // Convert to import
+import path from 'path';                                        // Convert to import
+import mongoose from 'mongoose';                                // Convert to import
+import uploadToCloudinary from '../utils/cloudinaryUploader.js';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // --- getPetAccessories (UPDATED) ---
 const getPetAccessories = async (req, res) => {
@@ -112,10 +100,19 @@ const getPetAccessories = async (req, res) => {
         ]);
         const colors = colorsRaw.map(item => item.color).sort();
 
-        const sizesRaw = await ProductVariant.aggregate([ // Added await
-            { $match: { size: { $ne: null, $ne: "" } } }, // Exclude null/empty strings
-            { $group: { _id: { $toLower: { $trim: { input: '$size' } } } } },
-            { $project: { _id: 0, size: '$_id' } }
+        const sizesRaw = await ProductVariant.aggregate([
+            { $match: { size: { $ne: null } } },
+            {
+                $group: {
+                    _id: { $toLower: { $trim: { input: '$size' } } }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    size: '$_id'
+                }
+            }
         ]);
         const sizes = sizesRaw.map(item => item.size).sort();
 
@@ -197,35 +194,22 @@ const getProduct = async (req, res) => {
 // --- checkout (UPDATED) ---
 const checkout = async (req, res) => {
     try {
-        // Check user via req.user populated by protectRoute middleware
-        if (!req.user || !req.user.customerId) {
-            return res.status(401).json({
-                success: false,
-                message: 'Please login to checkout'
-            });
+        // Check for required user profile fields
+        const customerID = req.user.customerId;
+
+        const customer = await Customer.findById(customerID);
+        if (!customer) {
+            return res.status(404).json({ message: "User not found" })
         }
-
-        // Fetch the customer's profile to check required fields
-        const customer = await Customer.findById(req.user.customerId).select('userName email phoneNumber address');
-         if (!customer) {
-            return res.status(404).json({
-                success: false,
-                message: 'User profile not found.'
-            });
-         }
-
-        // Check for required profile fields
-        // Add more specific address checks if needed (e.g., customer.address.streetNo)
-        if (!customer.userName || !customer.email || !customer.phoneNumber || !customer.address || !customer.address.houseNumber /* ... add other required address fields ... */ ) {
+        if (!customer.userName || !customer.ema || !customer.phoneNumber || !customer.address) {
             return res.status(400).json({
                 success: false,
-                message: 'Please complete your profile information (Name, Email, Phone, Full Address) before proceeding to checkout.'
+                message: 'Please complete your profile information before proceeding to checkout.'
             });
         }
 
         const { cart } = req.body;
 
-        // Validate cart
         if (!cart || !Array.isArray(cart) || cart.length === 0) {
             return res.status(400).json({
                 success: false,
@@ -244,15 +228,15 @@ const checkout = async (req, res) => {
             color: item.color || null
         }));
 
+        // Validate cart items have required fields
         const invalidItems = cleanCart.filter(item =>
-            !item.product_id || !item.variant_id || !item.product_name || item.quantity <= 0 || item.price < 0 // Price can be 0 (e.g. free item), ensure variant_id exists
+            !item.product_id || !item.product_name || item.quantity <= 0 || item.price <= 0
         );
 
         if (invalidItems.length > 0) {
-             console.error('Invalid cart items detected:', invalidItems); // Log invalid items
             return res.status(400).json({
                 success: false,
-                message: 'Invalid cart items detected (missing product/variant ID, name, or invalid quantity/price).'
+                message: 'Invalid cart items detected'
             });
         }
 
@@ -262,26 +246,32 @@ const checkout = async (req, res) => {
         const total = subtotal + charge;
 
         const orderTotals = {
-            subtotal: parseFloat(subtotal.toFixed(2)),
-            charge: parseFloat(charge.toFixed(2)),
-            total: parseFloat(total.toFixed(2))
+            subtotal, charge, total
+        }
+
+        const payload = {
+            customerId: customerId,
+            orderTotals: orderTotals,
+            cleanCart: cleanCart
         };
 
-        // NOTE: Decide how to pass cart & totals to payment step.
-        // Option 1: Store in session (Requires express-session middleware in server.js)
-        // req.session.cart = cleanCart;
-        // req.session.orderTotals = orderTotals;
-
-        // Option 2: Send back to frontend to be passed in the payment request body
-        // This is often preferred for SPAs to avoid session reliance.
-        return res.json({
-            success: true,
-            // Send necessary data for the next step
-            cart: cleanCart,
-            orderTotals: orderTotals,
-            redirectUrl: '/payment' // Frontend uses this to navigate
+        const checkoutToken = jwt.sign(payload, JWT_SECRET, {
+            expiresIn: '15m'
         });
 
+        // 2. 🍪 Set the JWT in an HTTP-only Cookie
+        // The maxAge should match the token expiry (15 minutes * 60 seconds * 1000 ms)
+        res.cookie('checkout_session', checkoutToken, {
+            httpOnly: true, // Crucial for security (prevents client-side JS access)
+            secure: process.env.NODE_ENV === 'production', // Use 'secure: true' in production (requires HTTPS)
+            maxAge: 15 * 60 * 1000,
+            sameSite: 'Lax' // Recommended setting for CSRF mitigation
+        });
+
+        return res.json({
+            success: true,
+            redirectUrl: '/payment',
+        });
     } catch (err) {
         console.error('Checkout error:', err);
         return res.status(500).json({
@@ -295,30 +285,51 @@ const checkout = async (req, res) => {
 // --- processPayment (UPDATED) ---
 const processPayment = async (req, res) => {
     try {
-        // Check user via req.user
-        if (!req.user || !req.user.customerId) {
+
+        const { cardNumber, expiryDate, cvv } = req.body;
+
+        if (!checkoutToken) {
+            return res.status(401).json({ message: 'Checkout session expired or missing token.' });
+        }
+
+        let orderTotals;
+        let cleanCart;
+        let customerID;
+
+        try {
+            // 2. JWT Verification and extraction
+            const decoded = jwt.verify(checkoutToken, JWT_SECRET);
+
+            orderTotals = decoded.orderTotals;
+            cleanCart = decoded.cleanCart;
+            customerID = decoded.customerId;
+
+        } catch (err) {
+            console.error('JWT validation failed:', err.message);
+            // Clear the invalid cookie
+            res.clearCookie('checkout_session');
             return res.status(401).json({
                 success: false,
-                message: 'User not logged in'
+                message: 'Invalid or expired checkout session. Please start checkout again.'
             });
         }
 
-        // Get data from request body (assuming frontend sends card details AND cart/totals)
-        const { cardNumber, expiryDate, cvc, cart, orderTotals } = req.body;
-
-        // Validate required data
-        if (!cart || !Array.isArray(cart) || cart.length === 0 || !orderTotals || !cardNumber || !expiryDate || !cvc ) {
-             console.error('Missing payment data:', { /* ... log details ... */ });
+        // Validate all required data
+        if (!cart || !orderTotals || !cardNumber) {
+            console.error('Missing values');
             return res.status(400).json({
                 success: false,
-                message: 'Required payment details, cart, or order totals missing.'
+                message: 'Unable to fetch Cart'
             });
         }
 
         // Basic card validation (Add more robust validation as needed)
         const cleanCardNumber = cardNumber.replace(/\s/g, '');
-        if (!/^\d{16}$/.test(cleanCardNumber)) { // Basic 16 digit check
-            return res.status(400).json({ success: false, message: 'Invalid card number format' });
+        if (cleanCardNumber.length !== 16 || isNaN(cleanCardNumber)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid card number'
+            });
         }
         // Add expiry (MM/YY format, future date) and CVC (3-4 digits) validation here
 
@@ -330,7 +341,7 @@ const processPayment = async (req, res) => {
         try {
             // Create Order document
             const order = await Order.create([{
-                user_id: req.user.customerId, // Use ID from authenticated user
+                customer_id: req.user.customerId,
                 order_date: new Date(),
                 status: 'Pending', // Or 'Processing'
                 subtotal: orderTotals.subtotal,
@@ -368,20 +379,10 @@ const processPayment = async (req, res) => {
 
             // Commit transaction
             await session.commitTransaction();
-
-            // Clear session data if it was used
-            // req.session.cart = null;
-            // req.session.orderTotals = null;
-
-            console.log(`Order ${order[0]._id} created successfully for user ${req.user.customerId}`); // Log success
-
             return res.json({
                 success: true,
-                message: 'Payment successful, order created.', // Add success message
-                orderId: order[0]._id, // Send back order ID
-                redirectUrl: '/my_orders' // Redirect instruction for frontend
+                redirectUrl: '/my_orders'
             });
-
         } catch (transactionError) {
             await session.abortTransaction();
             console.error('Transaction Error during payment:', transactionError); // Log transaction error
@@ -396,24 +397,19 @@ const processPayment = async (req, res) => {
         // --- End Transaction ---
 
     } catch (err) {
-        console.error('Payment processing error (outer):', err);
+        console.error('Payment processing error:', err);
         return res.status(500).json({
             success: false,
-            message: 'An unexpected error occurred while processing payment.'
+            message: 'Error processing payment. Please try again.'
         });
     }
 };
 
 // --- getUserOrders (UPDATED) ---
 const getUserOrders = async (req, res) => {
-    // Check user via req.user
-    if (!req.user || !req.user.customerId) {
-        return res.status(401).json({ success: false, message: 'User not logged in' });
-    }
-
+    
     try {
-        // Fetch orders for the logged-in customer
-        const orders = await Order.find({ user_id: req.user.customerId }) // Use ID from req.user
+        const orders = await Order.find({ customer_id: req.user.customerId})
             .sort({ order_date: -1 })
             .lean(); // Use .lean() for plain JS objects
 
@@ -436,8 +432,7 @@ const getUserOrders = async (req, res) => {
                 }
                 return {
                     ...item,
-                    id: item._id.toString(), // Add item ID if needed by frontend
-                    image_data: imageData
+                    image_data: imageDoc?.image_data
                 };
             }));
             return {
@@ -456,11 +451,6 @@ const getUserOrders = async (req, res) => {
 
 // --- reorder (UPDATED) ---
 const reorder = async (req, res) => {
-    // Check user via req.user
-    if (!req.user || !req.user.customerId) {
-        return res.status(401).json({ success: false, message: 'User not logged in' });
-    }
-
     try {
         const orderId = req.params.orderId;
 
@@ -471,17 +461,13 @@ const reorder = async (req, res) => {
         }
 
         const items = await OrderItem.find({ order_id: orderId }).lean();
-        if (items.length === 0) return res.status(404).json({ success: false, message: 'No items found for this order' });
-
-        // Get product images and potentially current price/stock (optional)
+        if (items.length === 0) return res.status(404).json({ success: false, message: 'Order not found' });
+        // Get product images for each item
         const cartItems = await Promise.all(items.map(async (item) => {
-            let imageData = null;
-            // Fetch current variant details if needed (e.g., to check stock/price changes)
-            // const currentVariant = await ProductVariant.findById(item.variant_id).lean();
-            if (item.product_id) {
-                const imageDoc = await ProductImage.findOne({ product_id: item.product_id, is_primary: true }).select('image_data').lean();
-                imageData = imageDoc ? imageDoc.image_data : null;
-            }
+            const imageDoc = await ProductImage.findOne({
+                product_id: item.product_id,
+                is_primary: true
+            });
             return {
                 // Use original order details for reorder cart
                 product_id: item.product_id ? item.product_id.toString() : null,
@@ -496,26 +482,12 @@ const reorder = async (req, res) => {
                 // Add current_stock: currentVariant?.stock_quantity if fetched
             };
         }));
-
-        // Send cart items back to frontend to populate the cart
         res.json({ success: true, cart: cartItems });
     } catch (err) {
         console.error('Reorder error:', err);
         res.status(500).json({ success: false, message: 'Failed to fetch order items for reorder' });
     }
 };
-
-// --- getPaymentPage (REVIEW/REMOVE) ---
-const getPaymentPage = (req, res) => {
-    // This endpoint is likely NOT needed for a React SPA.
-    // The frontend should handle routing to its payment component.
-    console.warn("GET /api/products/payment endpoint hit - consider removing if unused in SPA.");
-    // If it were needed, it might fetch session data or return static info.
-    res.status(404).json({ success: false, message: "Endpoint not typically used in SPA flow." });
-};
-
-
-// --- Exports ---
 export {
     getPetAccessories,
     getProduct,
@@ -523,6 +495,4 @@ export {
     processPayment,
     getUserOrders,
     reorder,
-    getPaymentPage,
-    // uploadProductImages // Only export if needed elsewhere
 };

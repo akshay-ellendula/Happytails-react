@@ -1,46 +1,46 @@
 // App.jsx
-import React, { useState } from 'react'; // Added useState for example user state
-import { Routes, Route } from "react-router"; // Use react-router-dom
+import { Routes, Route, Navigate } from "react-router";
+import { Toaster } from "react-hot-toast";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import HomePage from "./pages/Home/HomePage";
+import AuthPage from "./pages/Auth/Authpage";
+import ProductAccessoryPageWrapper from "./pages/Accessory/ProductAccessoryPageWrapper";
+import EventsPage from "./pages/Events/EventsPage";
+import EventDetailPage from "./pages/EventDeatils/EventDetailPage";
+import BookingPage from "./pages/BookingPage/BookingPage";
+import PartnerRegistration from "./pages/PartnerRegistration/PartnerRegistrationPage";
 
-// --- Page Imports ---
-import HomePage from "./Pages/Home/HomePage";
-import AuthPage from "./Pages/Auth/Authpage";
-import ProductAccessoryPageWrapper from './pages/Accessory/ProductAccessoryPageWrapper';
+// Protected Route Wrapper
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
 
-// --- 1. IMPORT YOUR NEW PAGE ---
-import ProductDetailPage from './pages/Accessory/ProductDetailPage'; // Correct path based on structure
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/pet_accessory" element={<ProductAccessoryPageWrapper />} />
+      <Route path="/signup" element={<AuthPage />} />
+      <Route path="/login" element={<AuthPage />} />
+      <Route path="/events" element={<EventsPage />} />
+      <Route path="/event/:id" element={<EventDetailPage />} />
+      <Route path="/booking" element={<ProtectedRoute> <BookingPage /> </ProtectedRoute>} />
+      <Route path="/partnerRegistrataion" element={<PartnerRegistration />} />
+    </Routes>
+  );
+}
 
 function App() {
   // Example user state - replace with your actual auth logic (Context, Redux, etc.)
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(null);
   // You would typically have a useEffect here to check for a logged-in user
 
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        
-        {/* --- Accessory Shop Page --- */}
-        <Route 
-          path="/pet_accessory" 
-          element={<ProductAccessoryPageWrapper user={user} />} // Pass user prop if needed
-        />
-
-        {/* --- 2. ADD THE ROUTE FOR PRODUCT DETAIL --- */}
-        <Route 
-          path="/product/:id" 
-          element={<ProductDetailPage user={user} />} // Pass user prop
-        />
-
-        {/* --- Auth Routes --- */}
-        {/* You might want separate routes for login/signup if AuthPage handles both */}
-        <Route path="/signup" element={<AuthPage setUser={setUser} />}/> 
-        <Route path="/login" element={<AuthPage setUser={setUser} />}/> 
-
-        {/* Add other application routes here */}
-        
-      </Routes>
-    </>
+    <AuthProvider>
+      <AppRoutes />
+      <Toaster />
+    </AuthProvider>
   );
 }
 
