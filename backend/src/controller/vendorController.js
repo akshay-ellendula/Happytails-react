@@ -58,7 +58,7 @@ const serviceProviderLogin = async (req, res) => {
     res.cookie("jwt", token, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       secure: process.env.NODE_ENV === "production",
     });
 
@@ -133,7 +133,7 @@ const vendorSignup = async (req, res) => {
     res.cookie("jwt", token, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       secure: process.env.NODE_ENV === "production",
     });
 
@@ -286,10 +286,16 @@ const getVendorProducts = async (req, res) => {
     const vendorId = req.user.vendorId;
     const { category, sort } = req.query;
 
+    console.log("Fetching products for vendor:", vendorId);
+
     const matchStage = {
-        vendor_id: new mongoose.Types.ObjectId(vendorId),
+        $or: [
+            { vendor_id: new mongoose.Types.ObjectId(vendorId) },
+            { vendor_id: vendorId }
+        ],
         is_deleted: { $ne: true },
     };
+    
     if (category && category !== "All Categories")
         matchStage.product_category = category;
 
@@ -364,9 +370,12 @@ const getVendorProducts = async (req, res) => {
             },
         },
         ]);
+        
+        console.log(`Found ${products.length} products for vendor ${vendorId}`);
         sendJson(res, { products });
     } catch (error) {
-        sendError(res, "Server error");
+        console.error("getVendorProducts error:", error);
+        sendError(res, error.message || "Server error");
     }
 };
 
@@ -1228,4 +1237,4 @@ const vendorController = {
   getVendorDashboard,
 };
 
-export default vendorController;
+export default vendorController

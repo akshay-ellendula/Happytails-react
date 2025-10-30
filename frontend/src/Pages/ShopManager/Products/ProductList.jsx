@@ -11,9 +11,13 @@ const ProductList = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axiosInstance.get("/vendors/products", { params: filters }).then((res) => {
-      if (res.data.success) setProducts(res.data.products);
-    });
+    axiosInstance.get("/vendors/products", { params: filters })
+      .then((res) => {
+        if (res.data.success) setProducts(res.data.products);
+      })
+      .catch((err) => {
+        console.error("Error fetching products:", err);
+      });
   }, [filters]);
 
   const handleFilterChange = (e) =>

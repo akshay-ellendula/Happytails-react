@@ -1,3 +1,5 @@
+// Load environment variables as a side-effect before importing other modules
+import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -13,6 +15,8 @@ import productRoutes from "./router/productRoutes.js";
 import eventAnalyticsRoutes from "./router/eventAnalyticsRoutes.js";
 import adminRoutes from "./router/adminRoutes.js";
 import vendorRoutes from "./router/vendorRoutes.js";
+
+// Environment variables loaded via `import "dotenv/config"` above
 
 const app = express();
 
@@ -41,7 +45,8 @@ app.use("/api/eventAnalytics", eventAnalyticsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/vendors", vendorRoutes);
 
-const port = process.env.PORT;
+// Provide a sensible default if PORT isn't set
+const port = process.env.PORT || 5001;
 
 app.listen(port, () => {
   console.log(`http://localhost:${port}`);
