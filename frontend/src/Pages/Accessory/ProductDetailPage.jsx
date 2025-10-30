@@ -1,10 +1,11 @@
 // src/Pages/Accessory/ProductDetailPage.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom'; // Use react-router-dom
+import { useParams, Link } from 'react-router-dom';
 import AccessoryNavbar from './components/AccessoryNavbar';
 import AccessoryFooter from './components/AccessoryFooter';
-import { axiosInstance } from '../../utils/axios'; // Import axiosInstance
+import { axiosInstance } from '../../utils/axios'; // This is needed for fetchProduct
+import { useCart } from '../../context/CartContext'; // ADDED
 // --- Import Social Icons ---
 import { Facebook, Instagram, Twitter, ArrowLeft, ShoppingCart, Package, Star } from 'lucide-react';
 // --- End Import ---
@@ -24,8 +25,8 @@ const ProductDetailPage = ({ user }) => {
     const [cartMessage, setCartMessage] = useState({ text: '', type: 'error' });
     const [showCartMessage, setShowCartMessage] = useState(false);
 
-    // State to control cart sidebar (potentially lift this up later)
-    const [isCartOpen, setIsCartOpen] = useState(false);
+    // Get functions from global cart context
+    const { openCart, addToCart } = useCart(); // ADDED
 
     // Fetch product data on component mount
     useEffect(() => {
@@ -69,24 +70,19 @@ const ProductDetailPage = ({ user }) => {
     }, [id]); // Dependency array ensures fetch runs when 'id' changes
 
     // --- Reactive Logic ---
+    // (All useMemo hooks for availableSizes, availableColors, currentVariant, and priceDisplay remain exactly the same)
 
-    // Get available sizes
-     const availableSizes = useMemo(() => {
+    const availableSizes = useMemo(() => {
         if (!product) return [];
         return [...new Set(product.variants.map(v => v.size).filter(s => s !== null))].sort(); // Sort for consistent order
     }, [product]);
 
-    // Get available colors based on selected size
     const availableColors = useMemo(() => {
         if (!product) return [];
         const hasSizes = availableSizes.length > 0;
-
-        // If no sizes exist, show all available colors
         if (!hasSizes) {
             return [...new Set(product.variants.map(v => v.color).filter(c => c !== null))].sort();
         }
-
-        // If a size is selected, filter colors for that size
         if (selectedSize !== 'default') {
             return [...new Set(
                 product.variants
@@ -94,45 +90,29 @@ const ProductDetailPage = ({ user }) => {
                     .map(v => v.color)
             )].sort();
         }
-
-        // If size exists but none is selected, show no colors yet
         return [];
     }, [product, selectedSize, availableSizes]);
 
-
-    // Get the currently selected variant based on size and color
     const currentVariant = useMemo(() => {
         if (!product) return null;
         const hasSizes = availableSizes.length > 0;
-        const hasColors = product.variants.some(v => v.color !== null); // Check if *any* variant has a color
-
-        // Find variant matching selected size and color
+        const hasColors = product.variants.some(v => v.color !== null); 
         let variant = product.variants.find(v =>
             (!hasSizes || v.size === selectedSize) &&
             (!hasColors || v.color === selectedColor)
         );
-
-         // Fallback logic if only size is selected and color isn't applicable/chosen yet
         if (!variant && hasSizes && selectedSize !== 'default' && (!hasColors || selectedColor === 'default')) {
-            // Find the first variant matching the size (prefer one with sale price if multiple)
             const sizeVariants = product.variants.filter(v => v.size === selectedSize);
             variant = sizeVariants.find(v => v.sale_price !== null) || sizeVariants[0];
         }
-
-         // Fallback logic if only color is selected (when no sizes exist)
          if (!variant && !hasSizes && hasColors && selectedColor !== 'default') {
              variant = product.variants.find(v => v.color === selectedColor);
          }
-
-
-        // Final fallback to the very first variant if no specific match
         return variant || product.variants[0];
     }, [product, selectedSize, selectedColor, availableSizes]);
 
-    // Create the price display string/JSX
     const priceDisplay = useMemo(() => {
-        if (!currentVariant) return "Price unavailable"; // Handle case where no variant is found
-
+        if (!currentVariant) return "Price unavailable"; 
         if (currentVariant.sale_price !== null && currentVariant.sale_price < currentVariant.regular_price) {
             return (
                 <div className="flex items-baseline gap-3">
@@ -144,7 +124,6 @@ const ProductDetailPage = ({ user }) => {
                 </div>
             );
         }
-         // Ensure regular_price exists before calling toFixed
          return currentVariant.regular_price !== null ? <span className="text-3xl font-bold text-gray-900">₹{currentVariant.regular_price.toFixed(2)}</span> : "Price unavailable";
     }, [currentVariant]);
 
@@ -153,22 +132,22 @@ const ProductDetailPage = ({ user }) => {
 
     const handleSizeChange = (e) => {
         setSelectedSize(e.target.value);
-        setSelectedColor('default'); // Reset color when size changes
-        setShowCartMessage(false); // Hide any previous messages
+        setSelectedColor('default'); 
+        setShowCartMessage(false); 
     };
 
     const handleColorChange = (e) => {
         setSelectedColor(e.target.value);
-        setShowCartMessage(false); // Hide any previous messages
+        setShowCartMessage(false); 
     };
 
     const displayMessage = (text, type = 'error') => {
         setCartMessage({ text, type });
         setShowCartMessage(true);
-        // Automatically hide after a delay
         setTimeout(() => setShowCartMessage(false), 4000);
     };
 
+    // --- MODIFIED handleAddToCart ---
     const handleAddToCart = () => {
         setShowCartMessage(false); // Clear previous message
         const hasSizes = availableSizes.length > 0;
@@ -179,73 +158,24 @@ const ProductDetailPage = ({ user }) => {
             displayMessage('Please select a size.');
             return;
         }
-        // Only require color selection if colors are available *for the selected size* (or if no sizes exist)
         if (hasColors && availableColors.length > 0 && selectedColor === 'default') {
             displayMessage('Please select a color.');
             return;
         }
-
-        // Find the specific variant to add based on current selections
-         const variantToAdd = product.variants.find(v =>
-            (!hasSizes || v.size === selectedSize) &&
-            (!hasColors || v.color === selectedColor) // This condition might need refinement if a product has size OR color but not both
-        );
-
-
-        // Re-check: If colors exist but aren't relevant for the selected size, variantToAdd might be found too early.
-        // Let's refine the check based on currentVariant which already has fallback logic.
         if (!currentVariant) {
              displayMessage('Could not determine the product variant. Please try again.');
              return;
         }
 
-        // Check stock
-        if (currentVariant.stock_quantity < quantity) {
-            displayMessage(`Only ${currentVariant.stock_quantity} left in stock for the selected options.`);
-            return;
-        }
+        // --- Use Global Context Function ---
+        const result = addToCart(product, currentVariant, quantity);
 
-        // Prepare item for cart
-        let cart = JSON.parse(localStorage.getItem('cart')) || [];
-        const image_data = product.image_data; // Use the image data fetched for the product
-
-        const cartItem = {
-            product_id: product.id,
-            variant_id: currentVariant.variant_id, // Use the determined currentVariant's ID
-            product_name: product.product_name,
-            price: currentVariant.sale_price !== null ? currentVariant.sale_price : currentVariant.regular_price,
-            size: currentVariant.size, // Use size from currentVariant
-            color: currentVariant.color, // Use color from currentVariant
-            quantity: parseInt(quantity),
-            image_data: image_data // Store image data with the cart item
-        };
-
-        // Check if item already exists in cart (same product and variant)
-        const existingItemIndex = cart.findIndex(item =>
-            item.product_id === cartItem.product_id &&
-            item.variant_id === cartItem.variant_id
-        );
-
-        if (existingItemIndex > -1) {
-            // Update quantity if item exists
-            const newQuantity = cart[existingItemIndex].quantity + cartItem.quantity;
-            // Check stock again for combined quantity
-            if (currentVariant.stock_quantity < newQuantity) {
-                 displayMessage(`Cannot add ${cartItem.quantity} more; only ${currentVariant.stock_quantity - cart[existingItemIndex].quantity} additional items available in stock.`);
-                 return;
-            }
-            cart[existingItemIndex].quantity = newQuantity;
+        if (result.success) {
+            displayMessage(result.message, 'success');
         } else {
-            // Add new item if it doesn't exist
-            cart.push(cartItem);
+            displayMessage(result.message, 'error');
         }
-
-        // Save updated cart to localStorage
-        localStorage.setItem('cart', JSON.stringify(cart));
-        displayMessage(`Added ${quantity} "${product.product_name}" ${currentVariant.size ? `(${currentVariant.size})` : ''} ${currentVariant.color ? `(${currentVariant.color})` : ''} to cart!`, 'success');
-
-        // Optional: Open the cart sidebar after adding
-        // setIsCartOpen(true);
+        // The context's addToCart function automatically opens the cart.
     };
 
     // --- Render Logic ---
@@ -275,19 +205,16 @@ const ProductDetailPage = ({ user }) => {
 
     // Determine if selectors should be shown
     const showSizeSelector = availableSizes.length > 0;
-    // Show color selector if colors exist *at all* for this product,
-    // but disable it until a size is chosen if sizes also exist.
     const showColorSelector = product.variants.some(v => v.color !== null);
     const isColorDisabled = showSizeSelector && selectedSize === 'default';
 
 
     return (
         <>
-            {/* Pass user and cart state control to Navbar */}
-            <AccessoryNavbar user={user} setIsCartOpen={setIsCartOpen} />
+            {/* Pass global openCart function */}
+            <AccessoryNavbar user={user} setIsCartOpen={openCart} />
 
-            {/* TODO: Add CartSidebar component here, passing relevant props */}
-            {/* <CartSidebar isOpen={isCartOpen} setIsOpen={setIsCartOpen} ... /> */}
+            {/* --- REMOVED CartSidebar component --- */}
 
             <div className="min-h-screen font-['Outfit',sans-serif]" style={{ backgroundColor: '#effe8b' }}>
                 {/* Back Navigation */}
@@ -453,7 +380,7 @@ const ProductDetailPage = ({ user }) => {
                                         href="#" 
                                         aria-label="Share on Instagram"
                                         title="Share on Instagram"
-                                        className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
+                                        className="w-12 h-12 flex items-center justify-center rounded-full bg-linear-to-br from-purple-600 via-pink-600 to-orange-500 text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
                                     >
                                         <Instagram className="w-6 h-6" />
                                     </a>

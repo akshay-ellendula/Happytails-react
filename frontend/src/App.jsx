@@ -1,8 +1,9 @@
 // App.jsx
-import { useState } from "react";
 import { Routes, Route, Navigate } from "react-router";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { CartProvider, useCart } from "./context/CartContext"; // 1. Import CartProvider and useCart
+
 import HomePage from "./pages/Home/HomePage";
 import AuthPage from "./pages/Auth/Authpage";
 import ProductAccessoryPageWrapper from "./pages/Accessory/ProductAccessoryPageWrapper";
@@ -11,6 +12,7 @@ import EventDetailPage from "./pages/EventDeatils/EventDetailPage";
 import BookingPage from "./pages/BookingPage/BookingPage";
 import PartnerRegistration from "./pages/PartnerRegistration/PartnerRegistrationPage";
 import ProductDetailPage from "./pages/Accessory/ProductDetailPage";
+import CartSidebar from "./pages/Accessory/components/CartSidebar"; // 2. Import CartSidebar
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -34,15 +36,46 @@ function AppRoutes() {
   );
 }
 
-function App() {
-  // Example user state - replace with your actual auth logic (Context, Redux, etc.)
-  const [user, setUser] = useState(null);
-  // You would typically have a useEffect here to check for a logged-in user
+// 3. New component to render the global cart
+function AppContent() {
+  const { 
+    isCartOpen, 
+    closeCart, 
+    cart, 
+    calculateTotals, 
+    updateQuantity, 
+    removeItem, 
+    handleCheckout 
+  } = useCart();
+  
+  const totals = calculateTotals();
 
   return (
-    <AuthProvider>
+    <>
       <AppRoutes />
-      <Toaster />
+      
+      {/* 4. Render CartSidebar globally */}
+      <CartSidebar
+        isOpen={isCartOpen}
+        setIsOpen={closeCart} // Use closeCart to close
+        cart={cart}
+        totals={totals}
+        updateQuantity={updateQuantity}
+        removeItem={removeItem}
+        handleCheckout={handleCheckout}
+      />
+      <Toaster /> {/* Moved Toaster here */}
+    </>
+  );
+}
+
+
+function App() {
+  return (
+    <AuthProvider>
+      <CartProvider> {/* 5. Wrap content in CartProvider */}
+        <AppContent />
+      </CartProvider>
     </AuthProvider>
   );
 }

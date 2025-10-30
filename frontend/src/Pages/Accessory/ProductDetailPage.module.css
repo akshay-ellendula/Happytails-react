@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 
 /* --- Global Reset for this Module --- */
-.navbar, .container, .footer {
+.container {
     all: unset;
     font-family: 'Outfit', sans-serif;
     box-sizing: border-box;
@@ -14,9 +14,7 @@ body {
 
 /* --- Navbar Styles --- */
 /* These styles are now only for the *wrapper* Your actual navbar component has its own styles */
-.navbar {
-    margin: 5px 75px 5px 75px;
-}
+
 
 /* --- Product Detail Styles --- */
 
@@ -158,13 +156,7 @@ body {
 }
 
 /* --- Footer Styles --- */
-.footer {
-    background-color: #1a1d26;
-    color: #ffffff;
-    padding: 40px 20px;
-    font-family: 'Outfit', sans-serif;
-    margin-top: 50px; /* Added spacing */
-}
+
 
 /* --- Mobile Styles --- */
 @media (max-width: 768px) {
