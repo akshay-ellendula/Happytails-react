@@ -38,6 +38,14 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus();
   }, []);
 
+  // ADD THIS FUNCTION
+  const updateUser = (newUserData) => {
+    setUser(prevUser => ({
+      ...prevUser,
+      ...newUserData
+    }));
+  };
+
   const signin = async (userData) => {
     setLoading(true);
     try {
@@ -96,6 +104,7 @@ export const AuthProvider = ({ children }) => {
     signin,
     signup,
     signout,
+    updateUser, // <-- MODIFICATION
   };
 
   return (

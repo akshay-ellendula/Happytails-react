@@ -8,14 +8,14 @@ export default function Navbar() {
       <nav className="mx-4 md:mx-20 lg:mx-28 py-6">
         <div className="flex justify-between items-center px-4 md:px-12">
           <a
-            href="/home"
+            href="/"
             className="text-dark text-3xl md:text-4xl font-bold transition-transform duration-300 hover:scale-110"
           >
             Happy Tails
           </a>
 
           <div className="hidden md:flex gap-8 lg:gap-12">
-            {["Pet Essentials", "Events", "Profile"].map((item, i) => (
+            {["Pet Accessory", "Events", "Profile"].map((item, i) => (
               <a
                 key={i}
                 href={`/${item.replace(" ", "_").toLowerCase()}`}

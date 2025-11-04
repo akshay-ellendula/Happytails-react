@@ -16,7 +16,7 @@ export default function ProfileForm() {
   });
   
   const [newImageFile, setNewImageFile] = useState(null); 
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth(); // <-- MODIFICATION
 
   // Load user data
   useEffect(() => {
@@ -101,6 +101,7 @@ export default function ProfileForm() {
 
       if (response.data.success) {
         alert("Profile updated successfully!");
+        updateUser(response.data.user); // <-- MODIFICATION
         setEditMode(false);
         setNewImageFile(null);
         // Optional: refresh user in context

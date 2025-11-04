@@ -338,6 +338,8 @@ export const verifyAuth = async (req, res) => {
                 userData.email = user.email;
                 userData.userName = user.userName;
                 userData.profilePic = user.profilePic;
+                userData.phoneNumber = user.phoneNumber; // <-- MODIFICATION
+                userData.address = user.address;       // <-- MODIFICATION
             }
         } else if (decoded.role === 'eventManager') {
             user = await EventManager.findById(decoded.eventManagerId).select('-password');
