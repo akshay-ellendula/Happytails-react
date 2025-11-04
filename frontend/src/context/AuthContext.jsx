@@ -14,19 +14,22 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null); // UPDATED: Add user state
   const [loading, setLoading] = useState(true);
 
   // Check authentication status on app start
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        // Since JWT is in httpOnly cookie, we need an endpoint to verify auth
-        // Add this endpoint to your backend: /api/auth/verify
         const response = await axiosInstance.get('/auth/verify');
         setIsAuthenticated(response.data.authenticated);
+        if (response.data.authenticated) {
+            setUser(response.data.user); // UPDATED: Set user
+        }
       } catch (error) {
         console.log('User not authenticated or verification failed');
         setIsAuthenticated(false);
+        setUser(null); // UPDATED: Ensure user is null
       } finally {
         setLoading(false);
       }
@@ -42,8 +45,8 @@ export const AuthProvider = ({ children }) => {
       const response = await axiosInstance.post('/auth/signin', userData);
       console.log('Signin response:', response.data);
       
-      // If we reach here, the request was successful and cookie is set
       setIsAuthenticated(true);
+      setUser(response.data.user); // UPDATED: Set user from response
       
       return { success: true };
     } catch (error) {
@@ -62,8 +65,8 @@ export const AuthProvider = ({ children }) => {
       const response = await axiosInstance.post('/auth/signup', userData);
       console.log('Signup response:', response.data);
       
-      // If we reach here, the request was successful and cookie is set
       setIsAuthenticated(true);
+      setUser(response.data.user); // UPDATED: Set user from response
       
       return { success: true };
     } catch (error) {
@@ -81,14 +84,15 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Always set authenticated to false on logout
       setIsAuthenticated(false);
+      setUser(null); // UPDATED: Clear user on logout
     }
   };
 
   const value = {
     isAuthenticated,
     loading,
+    user, // UPDATED: Provide user in context
     signin,
     signup,
     signout,

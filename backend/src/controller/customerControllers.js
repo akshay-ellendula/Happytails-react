@@ -1,5 +1,6 @@
 import Customer from '../models/customerModel.js';
 import cloudinary from '../config/cloudinary.js';
+
 //@desc  Fetch all customers from the database
 //@route   GET /api/customers
 //@access Public
@@ -18,7 +19,7 @@ export const getCustomers = async (req, res) => {
 export const getCustomer = async (req, res) => {
     const { id: customerId } = req.params;
     try {
-        const customer = await Customer.findById(customerId);
+        const customer = await Customer.findById(customerId).select('-password'); // Exclude password
         if (!customer) {
             return res.status(404).json({ message: 'Customer not found' });
         }
@@ -34,13 +35,21 @@ export const getCustomer = async (req, res) => {
 export const putCustomer = async (req, res) => {
     const { id: customerId } = req.params;
     const { userName, email, phoneNumber, houseNumber, streetNo, city, pincode } = req.body;
+    
+    // Security Check: Ensure logged-in customer can only edit their own profile
+    if (req.user.role === 'customer' && req.user.customerId !== customerId) {
+         return res.status(403).json({ message: 'Forbidden: You can only edit your own profile.' });
+    }
+
     try {
         const customer = await Customer.findById(customerId);
         if (!customer) {
             return res.status(404).json({ message: 'Customer not found' });
         }
-        if (!!userName || !email) {
-            return res.status(400).json({ message: 'Please provide all fields' });
+        
+        // UPDATED: Correct validation
+        if (!userName || !email) {
+            return res.status(400).json({ message: 'Username and email are required fields' });
         }
 
         const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
@@ -48,32 +57,53 @@ export const putCustomer = async (req, res) => {
             return res.status(400).json({ message: "Invalid email format" });
         }
         
+        // UPDATED: Check if email is taken by *another* user
         const findCustomer = await Customer.findOne({ email });
-        if (findCustomer.email && findCustomer.email == email) {
+        if (findCustomer && findCustomer._id.toString() !== customerId) {
             return res.status(400).json({ message: 'Email already exists' });
         }
 
-        //cloudinary logic
+        // UPDATED: Handle profile picture upload
+        let profilePicUrl = customer.profilePic; // Start with the existing picture
         if(req.file){
+            console.log("File received:", req.file.originalname);
             const b64 = Buffer.from(req.file.buffer).toString('base64');
-            let dataUrl = 'data:'+req.file.minetype+';base64,'+b64;
+            let dataUrl = 'data:' + req.file.mimetype + ';base64,' + b64; 
             const result = await cloudinary.uploader.upload(dataUrl,{folder:'customers'});
-            profilePic = result.secure_url;
+            profilePicUrl = result.secure_url; // Assign new URL
         }
 
-        const updatedCustomer = await Customer.findByIdAndUpdate(customerId, {
-            userName,
-            email,
-            phoneNumber,
-            address: {
-                houseNumber,
-                streetNo,
-                city,
-                pincode
-            },
-            profilePic
-        }, { new: true });
-        res.status(200).json({ success: true, message: 'Customer updated successfully' });
+        // Update fields on the customer object
+        customer.userName = userName;
+        customer.email = email;
+        customer.phoneNumber = phoneNumber || customer.phoneNumber;
+        customer.profilePic = profilePicUrl;
+        
+        // Ensure address object exists
+        if (!customer.address) {
+            customer.address = {};
+        }
+        
+        customer.address = {
+            houseNumber: houseNumber || customer.address.houseNumber,
+            streetNo: streetNo || customer.address.streetNo,
+            city: city || customer.address.city,
+            pincode: pincode || customer.address.pincode
+        };
+
+        const updatedCustomer = await customer.save(); // Save the updated customer
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Customer updated successfully',
+            user: { // Send back updated user data
+                customerId: updatedCustomer._id,
+                email: updatedCustomer.email,
+                userName: updatedCustomer.userName,
+                profilePic: updatedCustomer.profilePic,
+                role: 'customer'
+            }
+        });
     } catch (error) {
         console.log("something went wrong in updateCustomer controller", error);
         res.status(500).json({ message: 'Server Error' });

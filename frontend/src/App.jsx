@@ -2,7 +2,7 @@
 import { Routes, Route, Navigate } from "react-router";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { CartProvider, useCart } from "./context/CartContext"; // 1. Import CartProvider and useCart
+import { CartProvider, useCart } from "./context/CartContext"; 
 
 import HomePage from "./pages/Home/HomePage";
 import AuthPage from "./pages/Auth/Authpage";
@@ -12,11 +12,26 @@ import EventDetailPage from "./pages/EventDeatils/EventDetailPage";
 import BookingPage from "./pages/BookingPage/BookingPage";
 import PartnerRegistration from "./pages/PartnerRegistration/PartnerRegistrationPage";
 import ProductDetailPage from "./pages/Accessory/ProductDetailPage";
-import CartSidebar from "./pages/Accessory/components/CartSidebar"; // 2. Import CartSidebar
+import CartSidebar from "./pages/Accessory/components/CartSidebar"; 
+
+// UPDATED: Import new pages
+import ProfilePage from "./pages/ProfilePage/ProfilePage";
+import MyOrdersPage from "./pages/MyOrdersPage/MyOrdersPage";
+
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth(); // UPDATED: Get loading state
+
+  // UPDATED: Wait for auth check to complete
+  if (loading) {
+    return (
+        <div className="bg-[#effe8b] min-h-screen flex items-center justify-center">
+            <div className="text-xl font-bold">Loading...</div>
+        </div>
+    ); 
+  }
+
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
@@ -32,11 +47,15 @@ function AppRoutes() {
       <Route path="/event/:id" element={<EventDetailPage />} />
       <Route path="/booking" element={<ProtectedRoute> <BookingPage /> </ProtectedRoute>} />
       <Route path="/partnerRegistrataion" element={<PartnerRegistration />} />
+      
+      {/* UPDATED: Add new protected routes */}
+      <Route path="/profile" element={<ProtectedRoute> <ProfilePage /> </ProtectedRoute>} />
+      <Route path="/my_orders" element={<ProtectedRoute> <MyOrdersPage /> </ProtectedRoute>} />
     </Routes>
   );
 }
 
-// 3. New component to render the global cart
+// AppContent remains the same
 function AppContent() {
   const { 
     isCartOpen, 
@@ -54,26 +73,25 @@ function AppContent() {
     <>
       <AppRoutes />
       
-      {/* 4. Render CartSidebar globally */}
       <CartSidebar
         isOpen={isCartOpen}
-        setIsOpen={closeCart} // Use closeCart to close
+        setIsOpen={closeCart} 
         cart={cart}
         totals={totals}
         updateQuantity={updateQuantity}
         removeItem={removeItem}
         handleCheckout={handleCheckout}
       />
-      <Toaster /> {/* Moved Toaster here */}
+      <Toaster /> 
     </>
   );
 }
 
-
+// App remains the same
 function App() {
   return (
     <AuthProvider>
-      <CartProvider> {/* 5. Wrap content in CartProvider */}
+      <CartProvider> 
         <AppContent />
       </CartProvider>
     </AuthProvider>

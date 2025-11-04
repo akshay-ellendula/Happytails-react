@@ -1,9 +1,10 @@
 import { Search, Menu, LogOut } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom'; // UPDATED: Use react-router-dom
 import { useAuth } from '../../../context/AuthContext';
 
 const Header = ({ onMenuToggle }) => {
-  const { isAuthenticated, signout } = useAuth();
+  // UPDATED: Get the full 'user' object
+  const { isAuthenticated, signout, user } = useAuth();
 
   const handleLogout = () => {
     signout();
@@ -37,11 +38,13 @@ const Header = ({ onMenuToggle }) => {
             </button>
             {isAuthenticated ? (
               <div className="hidden sm:flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
+                {/* UPDATED: Wrapped icon in a Link to /profile */}
+                <Link to="/profile" className="flex items-center space-x-2" title="View Profile">
                   <div className="w-10 h-10 bg-yellow-400 rounded-full items-center justify-center text-[#1a1a1a] font-bold border border-black flex">
-                    U
+                    {/* UPDATED: Show user's initial */}
+                    {user?.userName ? user.userName.charAt(0).toUpperCase() : 'U'}
                   </div>
-                </div>
+                </Link>
                 <button 
                   onClick={handleLogout}
                   className="flex items-center space-x-2 px-3 py-2 text-[#1a1a1a] hover:text-[#1a1a1a]/70 transition"

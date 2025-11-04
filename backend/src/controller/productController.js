@@ -3,21 +3,20 @@
 import { Product, ProductVariant, ProductImage } from '../models/productsModel.js';
 import Customer from '../models/customerModel.js';
 import { Order, OrderItem } from '../models/orderModel.js';       // Added .js
-import multer from 'multer';                                    // Convert to import
-import path from 'path';                                        // Convert to import
-import mongoose from 'mongoose';                                // Convert to import
+import jwt from 'jsonwebtoken'; // UPDATED: Import jwt
+import mongoose from 'mongoose';                                
 import uploadToCloudinary from '../utils/cloudinaryUploader.js';
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET_KEY; // UPDATED: Use correct env variable
 
 // --- getPetAccessories (UPDATED) ---
 const getPetAccessories = async (req, res) => {
     try {
-        console.log("Fetching pet accessories..."); // Log start
+        console.log("Fetching pet accessories..."); 
 
         const products = await Product.aggregate([
             {
                 $lookup: {
-                    from: 'productvariants', // Ensure collection name matches MongoDB (usually lowercase, plural)
+                    from: 'productvariants', 
                     localField: '_id',
                     foreignField: 'product_id',
                     as: 'variants'
@@ -25,13 +24,12 @@ const getPetAccessories = async (req, res) => {
             },
             {
                 $lookup: {
-                    from: 'productimages', // Ensure collection name matches MongoDB
+                    from: 'productimages', 
                     localField: '_id',
                     foreignField: 'product_id',
                     as: 'images'
                 }
             },
-            // Add a field containing only the primary image(s)
             {
                 $addFields: {
                     primaryImage: {
@@ -44,64 +42,58 @@ const getPetAccessories = async (req, res) => {
                 }
             },
             {
-                 // Unwind the primaryImage array (should have 0 or 1 element)
-                 // This makes accessing the primary image data easier in $project
                 $unwind: {
                     path: '$primaryImage',
-                    preserveNullAndEmptyArrays: true // Keep products even if they have no primary image
+                    preserveNullAndEmptyArrays: true 
                 }
             },
             {
                 $project: {
-                    // Project fields for the frontend
                     id: { $toString: '$_id' },
                     product_name: 1,
-                    // Handle potential null/missing product_type safely
                     product_type: { $ifNull: [ { $toLower: { $trim: { input: '$product_type' } } }, "unknown" ] },
-                    product_category: 1, // Keep category if needed
+                    product_category: 1, 
                     variants: {
-                        // Map variants to desired structure, handle nulls
                         $map: {
                             input: '$variants',
                             as: 'variant',
                             in: {
-                                variant_id: { $toString: '$$variant._id'}, // Include variant ID
+                                variant_id: { $toString: '$$variant._id'}, 
                                 size: { $ifNull: [ { $toLower: { $trim: { input: '$$variant.size' } } }, null ] },
                                 color: { $ifNull: [ { $toLower: { $trim: { input: '$$variant.color' } } }, null ] },
                                 regular_price: '$$variant.regular_price',
                                 sale_price: '$$variant.sale_price',
-                                stock_quantity: '$$variant.stock_quantity' // Include stock
+                                stock_quantity: '$$variant.stock_quantity' 
                             }
                         }
                     },
-                    // Access the primary image data from the unwound field
-                    image_data: '$primaryImage.image_data', // Defaults to null if no primary image found/unwound
-                    created_at: 1, // Keep created_at if you sort by it
-                    _id: 0 // Exclude the default _id
+                    image_data: '$primaryImage.image_data', 
+                    created_at: 1, 
+                    _id: 0 
                 }
             },
-            { $sort: { created_at: -1 } } // Sort requires created_at to be included in $project
+            { $sort: { created_at: -1 } } 
         ]);
-        console.log(`Found ${products.length} products after aggregation.`); // Log count
+        console.log(`Found ${products.length} products after aggregation.`); 
 
         // --- Fetch Filters (Ensure these are awaited) ---
-        console.log("Fetching filters..."); // Log filter fetching start
-        const productTypesRaw = await Product.aggregate([ // Added await
-            { $match: { product_type: { $ne: null, $ne: "" } } }, // Exclude null/empty strings
+        console.log("Fetching filters..."); 
+        const productTypesRaw = await Product.aggregate([ 
+            { $match: { product_type: { $ne: null, $ne: "" } } }, 
             { $group: { _id: { $toLower: { $trim: { input: '$product_type' } } } } },
             { $project: { _id: 0, product_type: '$_id' } }
         ]);
         const productTypes = productTypesRaw.map(item => item.product_type).sort();
 
-        const colorsRaw = await ProductVariant.aggregate([ // Added await
-            { $match: { color: { $ne: null, $ne: "" } } }, // Exclude null/empty strings
+        const colorsRaw = await ProductVariant.aggregate([ 
+            { $match: { color: { $ne: null, $ne: "" } } }, 
             { $group: { _id: { $toLower: { $trim: { input: '$color' } } } } },
             { $project: { _id: 0, color: '$_id' } }
         ]);
         const colors = colorsRaw.map(item => item.color).sort();
 
         const sizesRaw = await ProductVariant.aggregate([
-            { $match: { size: { $ne: null } } },
+            { $match: { size: { $ne: null, $ne: "" } } }, // Added not empty check
             {
                 $group: {
                     _id: { $toLower: { $trim: { input: '$size' } } }
@@ -116,34 +108,28 @@ const getPetAccessories = async (req, res) => {
         ]);
         const sizes = sizesRaw.map(item => item.size).sort();
 
-        // Use aggregate to find max price for consistency and better null handling
-        const maxPriceResult = await ProductVariant.aggregate([ // Added await
-             { $match: { regular_price: { $ne: null } } }, // Ensure price exists
+        const maxPriceResult = await ProductVariant.aggregate([ 
+             { $match: { regular_price: { $ne: null } } }, 
              { $sort: { regular_price: -1 } },
              { $limit: 1 },
              { $project: { _id: 0, regular_price: 1 } }
         ]);
-        // Provide a default maxPrice if no variants with prices exist
         const maxPrice = maxPriceResult.length > 0 ? maxPriceResult[0].regular_price : 15000;
-        console.log("Filters fetched:", { productTypes, colors, sizes, maxPrice }); // Log fetched filters
+        console.log("Filters fetched:", { productTypes, colors, sizes, maxPrice }); 
 
         const filters = { productTypes, colors, sizes, maxPrice };
 
         return res.json({
             success: true,
-            products: products || [], // Ensure products is always an array
+            products: products || [], 
             filters,
-            // Pass user if this route is protected, otherwise remove/comment out
-            // user: req.user || null
         });
     } catch (err) {
-        // Log the full error object for detailed debugging
         console.error("!!! Error in getPetAccessories:", err);
-        // Send a more informative error response during development
         return res.status(500).json({
              success: false,
              message: 'Server error fetching pet accessories.',
-             error: err.message // Include the actual error message
+             error: err.message 
         });
     }
 };
@@ -152,7 +138,12 @@ const getPetAccessories = async (req, res) => {
 const getProduct = async (req, res) => {
     try {
         const productId = req.params.id;
-        // Fetch product details
+        
+        // Validate if productId is a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+             return res.status(400).json({ success: false, message: 'Invalid product ID format' });
+        }
+
         const product = await Product.findById(productId)
             .select('id product_name product_type product_category product_description');
         if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
@@ -169,7 +160,7 @@ const getProduct = async (req, res) => {
             product_category: product.product_category,
             product_description: product.product_description,
             variants: variants.map(v => ({
-                variant_id: v._id, // Send variant _id
+                variant_id: v._id, 
                 size: v.size,
                 color: v.color,
                 regular_price: v.regular_price,
@@ -179,14 +170,13 @@ const getProduct = async (req, res) => {
             image_data: image ? image.image_data : null
         };
 
-        // **REMOVED** the line accessing req.session.user
         return res.json({
             success: true,
             product: productData,
         });
 
     } catch (err) {
-        console.error("Error fetching product:", err); // Log the specific error
+        console.error("Error fetching product:", err); 
         return res.status(500).json({ success: false, message: 'Server error fetching product details.' });
     }
 };
@@ -194,17 +184,18 @@ const getProduct = async (req, res) => {
 // --- checkout (UPDATED) ---
 const checkout = async (req, res) => {
     try {
-        // Check for required user profile fields
         const customerID = req.user.customerId;
 
         const customer = await Customer.findById(customerID);
         if (!customer) {
             return res.status(404).json({ message: "User not found" })
         }
-        if (!customer.userName || !customer.ema || !customer.phoneNumber || !customer.address) {
+        
+        // UPDATED: Check for address object and city
+        if (!customer.userName || !customer.email || !customer.phoneNumber || !customer.address || !customer.address.city) {
             return res.status(400).json({
                 success: false,
-                message: 'Please complete your profile information before proceeding to checkout.'
+                message: 'Please complete your profile information (including address) before proceeding to checkout.'
             });
         }
 
@@ -217,10 +208,9 @@ const checkout = async (req, res) => {
             });
         }
 
-        // Clean and validate cart items
         const cleanCart = cart.map(item => ({
             product_id: item.product_id || null,
-            variant_id: item.variant_id || null, // Ensure variant_id is included
+            variant_id: item.variant_id || null, 
             product_name: item.product_name,
             quantity: parseInt(item.quantity) || 1,
             price: parseFloat(item.price) || 0,
@@ -228,21 +218,20 @@ const checkout = async (req, res) => {
             color: item.color || null
         }));
 
-        // Validate cart items have required fields
         const invalidItems = cleanCart.filter(item =>
-            !item.product_id || !item.product_name || item.quantity <= 0 || item.price <= 0
+            !item.product_id || !item.variant_id || !item.product_name || item.quantity <= 0 || item.price < 0 // Price can be 0 for free items
         );
 
         if (invalidItems.length > 0) {
+            console.warn("Invalid cart items detected:", invalidItems);
             return res.status(400).json({
                 success: false,
                 message: 'Invalid cart items detected'
             });
         }
 
-        // Calculate totals
         const subtotal = cleanCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const charge = subtotal * 0.04; // Consider making tax/charge rate configurable
+        const charge = subtotal * 0.04; 
         const total = subtotal + charge;
 
         const orderTotals = {
@@ -250,7 +239,7 @@ const checkout = async (req, res) => {
         }
 
         const payload = {
-            customerId: customerId,
+            customerId: customerID,
             orderTotals: orderTotals,
             cleanCart: cleanCart
         };
@@ -259,18 +248,16 @@ const checkout = async (req, res) => {
             expiresIn: '15m'
         });
 
-        // 2. 🍪 Set the JWT in an HTTP-only Cookie
-        // The maxAge should match the token expiry (15 minutes * 60 seconds * 1000 ms)
         res.cookie('checkout_session', checkoutToken, {
-            httpOnly: true, // Crucial for security (prevents client-side JS access)
-            secure: process.env.NODE_ENV === 'production', // Use 'secure: true' in production (requires HTTPS)
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production', 
             maxAge: 15 * 60 * 1000,
-            sameSite: 'Lax' // Recommended setting for CSRF mitigation
+            sameSite: 'strict' 
         });
 
         return res.json({
             success: true,
-            redirectUrl: '/payment',
+            redirectUrl: '/payment', // You need to create this frontend route
         });
     } catch (err) {
         console.error('Checkout error:', err);
@@ -285,11 +272,12 @@ const checkout = async (req, res) => {
 // --- processPayment (UPDATED) ---
 const processPayment = async (req, res) => {
     try {
-
-        const { cardNumber, expiryDate, cvv } = req.body;
+        // UPDATED: Read token from cookie
+        const checkoutToken = req.cookies.checkout_session;
+        const { cardNumber, expiryDate, cvv } = req.body; // You would use these to call a real payment gateway
 
         if (!checkoutToken) {
-            return res.status(401).json({ message: 'Checkout session expired or missing token.' });
+            return res.status(401).json({ success: false, message: 'Checkout session expired or missing token.' });
         }
 
         let orderTotals;
@@ -297,16 +285,14 @@ const processPayment = async (req, res) => {
         let customerID;
 
         try {
-            // 2. JWT Verification and extraction
             const decoded = jwt.verify(checkoutToken, JWT_SECRET);
 
             orderTotals = decoded.orderTotals;
-            cleanCart = decoded.cleanCart;
+            cleanCart = decoded.cleanCart; // UPDATED: Use 'cleanCart'
             customerID = decoded.customerId;
 
         } catch (err) {
             console.error('JWT validation failed:', err.message);
-            // Clear the invalid cookie
             res.clearCookie('checkout_session');
             return res.status(401).json({
                 success: false,
@@ -314,16 +300,16 @@ const processPayment = async (req, res) => {
             });
         }
 
-        // Validate all required data
-        if (!cart || !orderTotals || !cardNumber) {
-            console.error('Missing values');
+        // UPDATED: Validate 'cleanCart'
+        if (!cleanCart || !orderTotals || !cardNumber) {
+            console.error('Missing values for payment processing');
             return res.status(400).json({
                 success: false,
-                message: 'Unable to fetch Cart'
+                message: 'Unable to fetch Cart or payment details'
             });
         }
 
-        // Basic card validation (Add more robust validation as needed)
+        // Basic card validation (SIMULATION)
         const cleanCardNumber = cardNumber.replace(/\s/g, '');
         if (cleanCardNumber.length !== 16 || isNaN(cleanCardNumber)) {
             return res.status(400).json({
@@ -341,56 +327,56 @@ const processPayment = async (req, res) => {
         try {
             // Create Order document
             const order = await Order.create([{
-                customer_id: req.user.customerId,
+                customer_id: customerID, // Use customerID from token
                 order_date: new Date(),
-                status: 'Pending', // Or 'Processing'
+                status: 'Pending', 
                 subtotal: orderTotals.subtotal,
                 total_amount: orderTotals.total,
                 payment_last_four: paymentLastFour
-                // Add shipping address details here if needed
             }], { session });
 
             // Create OrderItem documents
-            const orderItems = cart.map(item => ({
+            // UPDATED: Use 'cleanCart'
+            const orderItems = cleanCart.map(item => ({
                 order_id: order[0]._id,
-                product_id: item.product_id, // Already validated in checkout
-                variant_id: item.variant_id, // Already validated in checkout
+                product_id: item.product_id, 
+                variant_id: item.variant_id, 
                 product_name: item.product_name,
                 quantity: item.quantity,
-                price: item.price, // Price at the time of order
+                price: item.price, 
                 size: item.size,
                 color: item.color
             }));
             await OrderItem.insertMany(orderItems, { session });
 
-            // TODO: Update product variant stock quantity
-            // Important: Handle potential race conditions and errors robustly
-            for (const item of cart) {
+            // UPDATED: Update product variant stock quantity
+            for (const item of cleanCart) {
                 const updateResult = await ProductVariant.updateOne(
-                    { _id: item.variant_id, stock_quantity: { $gte: item.quantity } }, // Ensure enough stock
+                    { _id: item.variant_id, stock_quantity: { $gte: item.quantity } }, 
                     { $inc: { stock_quantity: -item.quantity } },
                     { session }
                 );
-                // If updateResult.modifiedCount is 0, it means stock was insufficient or variant not found
                 if (updateResult.matchedCount === 0 || updateResult.modifiedCount === 0) {
-                     throw new Error(`Insufficient stock for variant ${item.variant_id} (${item.product_name})`);
+                     throw new Error(`Insufficient stock for ${item.product_name} (${item.size || ''} ${item.color || ''})`);
                 }
             }
 
             // Commit transaction
             await session.commitTransaction();
+            
+            res.clearCookie('checkout_session'); // Clear cookie on success
+            
             return res.json({
                 success: true,
                 redirectUrl: '/my_orders'
             });
         } catch (transactionError) {
             await session.abortTransaction();
-            console.error('Transaction Error during payment:', transactionError); // Log transaction error
-            // Send specific error message if it's related to stock
+            console.error('Transaction Error during payment:', transactionError); 
             const errorMessage = transactionError.message.includes('Insufficient stock')
                 ? transactionError.message
                 : 'Failed to process payment due to a server error.';
-            return res.status(400).json({ success: false, message: errorMessage }); // Use 400 for stock issues
+            return res.status(400).json({ success: false, message: errorMessage }); 
         } finally {
             session.endSession();
         }
@@ -411,40 +397,38 @@ const getUserOrders = async (req, res) => {
     try {
         const orders = await Order.find({ customer_id: req.user.customerId})
             .sort({ order_date: -1 })
-            .lean(); // Use .lean() for plain JS objects
+            .lean(); 
 
         if (!orders || orders.length === 0) {
-            return res.json({ success: true, orders: [] }); // Return empty array if no orders
+            return res.json({ success: true, orders: [] }); 
         }
 
-        // Populate items with images
         const populatedOrders = await Promise.all(orders.map(async order => {
             const items = await OrderItem.find({ order_id: order._id }).lean();
             const detailedItems = await Promise.all(items.map(async item => {
-                // Ensure item.product_id exists before querying ProductImage
-                let imageData = '/images/default-product.jpg'; // Default image
+                let imageData = null; // Use null instead of path
                 if (item.product_id) {
                     const imageDoc = await ProductImage.findOne({
                         product_id: item.product_id,
                         is_primary: true
-                    }).select('image_data').lean(); // Add lean() here too
-                    imageData = imageDoc?.image_data || imageData; // Use default if no image found
+                    }).select('image_data').lean(); 
+                    imageData = imageDoc?.image_data || null; // Use null if no image
                 }
                 return {
                     ...item,
-                    image_data: imageDoc?.image_data
+                    image_data: imageData
                 };
             }));
             return {
                 ...order,
-                id: order._id.toString(), // Ensure order ID is string
+                id: order._id.toString(), 
                 items: detailedItems
             };
         }));
 
         res.json({ success: true, orders: populatedOrders });
     } catch (error) {
-        console.error("Error fetching user orders:", error); // Log specific error
+        console.error("Error fetching user orders:", error); 
         res.status(500).json({ success: false, message: 'Failed to fetch orders' });
     }
 };
@@ -454,32 +438,35 @@ const reorder = async (req, res) => {
     try {
         const orderId = req.params.orderId;
 
-        // Verify the order belongs to the current user
-        const order = await Order.findOne({ _id: orderId, user_id: req.user.customerId }).lean(); // Use lean
+        // UPDATED: Use 'customer_id' to match schema
+        const order = await Order.findOne({ _id: orderId, customer_id: req.user.customerId }).lean(); 
         if (!order) {
             return res.status(404).json({ success: false, message: 'Order not found or access denied' });
         }
 
         const items = await OrderItem.find({ order_id: orderId }).lean();
-        if (items.length === 0) return res.status(404).json({ success: false, message: 'Order not found' });
-        // Get product images for each item
+        if (items.length === 0) return res.status(404).json({ success: false, message: 'Order items not found' });
+        
         const cartItems = await Promise.all(items.map(async (item) => {
-            const imageDoc = await ProductImage.findOne({
-                product_id: item.product_id,
-                is_primary: true
-            });
+            // UPDATED: Fetch image data
+            let imageData = null;
+            if (item.product_id) {
+                 const imageDoc = await ProductImage.findOne({
+                    product_id: item.product_id,
+                    is_primary: true
+                }).select('image_data').lean();
+                imageData = imageDoc ? imageDoc.image_data : null;
+            }
+           
             return {
-                // Use original order details for reorder cart
                 product_id: item.product_id ? item.product_id.toString() : null,
                 variant_id: item.variant_id ? item.variant_id.toString() : null,
                 product_name: item.product_name,
                 quantity: item.quantity,
-                // Price might need to be re-fetched if prices change, or use original price
-                price: item.price, // Using original price for simplicity
+                price: item.price, 
                 size: item.size || null,
                 color: item.color || null,
-                image_data: imageData
-                // Add current_stock: currentVariant?.stock_quantity if fetched
+                image_data: imageData // UPDATED: Include image data
             };
         }));
         res.json({ success: true, cart: cartItems });

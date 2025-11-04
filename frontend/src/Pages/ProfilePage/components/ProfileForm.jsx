@@ -1,14 +1,38 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../../context/AuthContext";
+import { axiosInstance } from "../../../utils/axios";
 
 export default function ProfileForm() {
   const [editMode, setEditMode] = useState(false);
   const [profile, setProfile] = useState({
-    name: "John Doe",
-    email: "john@example.com",
+    name: "",
+    email: "",
     phone: "",
-    address: "",
     profilePic: "/icons/profile-circle-svgrepo-com.svg",
+    houseNumber: "",
+    streetNo: "",
+    city: "",
+    pincode: ""
   });
+  
+  const [newImageFile, setNewImageFile] = useState(null); 
+  const { user } = useAuth();
+
+  // Load user data
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        name: user.userName || "",
+        email: user.email || "",
+        phone: user.phoneNumber || "",
+        profilePic: user.profilePic || "/icons/profile-circle-svgrepo-com.svg",
+        houseNumber: user.address?.houseNumber || "",
+        streetNo: user.address?.streetNo || "",
+        city: user.address?.city || "",
+        pincode: user.address?.pincode || ""
+      });
+    }
+  }, [user]);
 
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -17,36 +41,100 @@ export default function ProfileForm() {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setNewImageFile(file);
       const reader = new FileReader();
-      reader.onload = () =>
-        setProfile({ ...profile, profilePic: reader.result });
+      reader.onload = () => setProfile({ ...profile, profilePic: reader.result });
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSave = (e) => {
+  // Check if any field changed
+  const hasChanges = () => {
+    return (
+      profile.name !== (user.userName || "") ||
+      profile.email !== (user.email || "") ||
+      profile.phone !== (user.phoneNumber || "") ||
+      profile.houseNumber !== (user.address?.houseNumber || "") ||
+      profile.streetNo !== (user.address?.streetNo || "") ||
+      profile.city !== (user.address?.city || "") ||
+      profile.pincode !== (user.address?.pincode || "") ||
+      newImageFile !== null
+    );
+  };
+
+  const handleSave = async (e) => {
     e.preventDefault();
+
+    if (!hasChanges()) {
+      alert("No changes to save.");
+      setEditMode(false);
+      setNewImageFile(null);
+      return;
+    }
 
     if (profile.phone && !/^[6-9]\d{9}$/.test(profile.phone)) {
       alert("Please enter a valid 10-digit Indian phone number.");
       return;
     }
 
-    // Example backend call
-    console.log("Profile updated:", profile);
-    alert("Profile updated successfully!");
+    if (!user || !user.customerId) {
+      alert("Could not find user ID. Please log in again.");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("userName", profile.name);
+      formData.append("email", profile.email);
+      formData.append("phoneNumber", profile.phone);
+      formData.append("houseNumber", profile.houseNumber);
+      formData.append("streetNo", profile.streetNo);
+      formData.append("city", profile.city);
+      formData.append("pincode", profile.pincode);
+      if (newImageFile) {
+        formData.append("profilePicImage", newImageFile);
+      }
+
+      const response = await axiosInstance.put(`/public/${user.customerId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (response.data.success) {
+        alert("Profile updated successfully!");
+        setEditMode(false);
+        setNewImageFile(null);
+        // Optional: refresh user in context
+      } else {
+        alert("Error: " + response.data.message);
+      }
+    } catch (error) {
+      console.error("Profile update error:", error);
+      alert("An error occurred: " + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleCancel = () => {
     setEditMode(false);
+    setNewImageFile(null);
+    if (user) {
+      setProfile({
+        name: user.userName || "",
+        email: user.email || "",
+        phone: user.phoneNumber || "",
+        profilePic: user.profilePic || "/icons/profile-circle-svgrepo-com.svg",
+        houseNumber: user.address?.houseNumber || "",
+        streetNo: user.address?.streetNo || "",
+        city: user.address?.city || "",
+        pincode: user.address?.pincode || ""
+      });
+    }
   };
 
   return (
-    <form onSubmit={handleSave}>
+    <>
       {/* Profile Picture */}
       <div className="mb-12">
-        <div
-          className={`relative w-32 h-32 group ${
-            editMode ? "cursor-pointer" : ""
-          }`}
-        >
+        <div className={`relative w-32 h-32 group ${editMode ? "cursor-pointer" : ""}`}>
           <div className="w-32 h-32 rounded-full border-4 border-dark overflow-hidden">
             <img
               src={profile.profilePic}
@@ -57,24 +145,9 @@ export default function ProfileForm() {
           {editMode && (
             <>
               <div className="absolute inset-0 flex items-center justify-center bg-dark/50 rounded-full border-4 border-dashed border-dark">
-                <svg
-                  className="w-12 h-12 text-primary"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
+                <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
               <input
@@ -86,21 +159,28 @@ export default function ProfileForm() {
             </>
           )}
         </div>
-        <p className="text-sm text-gray-600 mt-3">Click to change profile picture</p>
+        {editMode && <p className="text-sm text-gray-600 mt-3">Click to change profile picture</p>}
       </div>
 
       {/* Profile Fields */}
       <div className="grid md:grid-cols-2 gap-8 mb-8">
         <InputField label="Name" name="name" value={profile.name} editMode={editMode} onChange={handleChange} />
-        <InputField label="Email" name="email" value={profile.email} editMode={false} readOnly />
+        <InputField label="Email" name="email" value={profile.email} editMode={editMode} onChange={handleChange} />
       </div>
 
       <div className="grid md:grid-cols-2 gap-8 mb-12">
         <InputField label="Phone" name="phone" value={profile.phone} editMode={editMode} onChange={handleChange} />
-        <InputField label="Address" name="address" value={profile.address} editMode={editMode} onChange={handleChange} />
+        <InputField label="House Number" name="houseNumber" value={profile.houseNumber} editMode={editMode} onChange={handleChange} />
+      </div>
+      <div className="grid md:grid-cols-2 gap-8 mb-12">
+        <InputField label="Street / Area" name="streetNo" value={profile.streetNo} editMode={editMode} onChange={handleChange} />
+        <InputField label="City" name="city" value={profile.city} editMode={editMode} onChange={handleChange} />
+      </div>
+      <div className="grid md:grid-cols-2 gap-8 mb-12">
+        <InputField label="Pincode" name="pincode" value={profile.pincode} editMode={editMode} onChange={handleChange} />
       </div>
 
-      {/* Buttons */}
+      {/* Buttons: Edit outside, Save/Cancel inside form */}
       <div className="flex gap-4">
         {!editMode ? (
           <button
@@ -111,7 +191,7 @@ export default function ProfileForm() {
             Edit
           </button>
         ) : (
-          <>
+          <form onSubmit={handleSave} className="flex gap-4">
             <button
               type="submit"
               className="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
@@ -120,15 +200,15 @@ export default function ProfileForm() {
             </button>
             <button
               type="button"
-              onClick={() => setEditMode(false)}
+              onClick={handleCancel}
               className="bg-red-600 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
             >
               Cancel
             </button>
-          </>
+          </form>
         )}
       </div>
-    </form>
+    </>
   );
 }
 
@@ -142,7 +222,7 @@ function InputField({ label, name, value, onChange, editMode, readOnly = false }
         </span>
       ) : (
         <input
-          type="text"
+          type={name === 'phone' || name === 'pincode' ? 'tel' : 'text'}
           name={name}
           value={value}
           onChange={onChange}

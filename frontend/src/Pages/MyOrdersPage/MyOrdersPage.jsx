@@ -1,30 +1,34 @@
 import React, { useEffect, useState } from "react";
-import Navbar from "../../components/common/Navbar"; // reuse shared Navbar
-import Sidebar from "../../components/common/Sidebar"; // reuse shared Sidebar
-import Footer from "../../components/common/Footer"; // reuse shared Footer
+// UPDATED: Corrected import paths based on your file structure
+import Navbar from "../../components/Navbar"; 
+import Sidebar from "../../components/Sidebar"; 
+import Footer from "../../components/Footer"; 
+import { axiosInstance } from "../../utils/axios"; // UPDATED: Import axios
 
 export default function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/my_orders")
-      .then((res) => res.json())
+    // UPDATED: Use axiosInstance and correct route
+    axiosInstance.get("/products/getUserOrders")
+      .then((res) => res.data) // axios response is in .data
       .then((data) => {
         if (data.success) setOrders(data.orders);
         else alert("Error fetching orders: " + data.message);
       })
-      .catch(() => alert("Error fetching orders"))
+      .catch((err) => {
+          console.error("Error fetching orders:", err);
+          alert("Error fetching orders: " + (err.response?.data?.message || err.message));
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const handleBuyAgain = async (orderId) => {
     try {
-      const res = await fetch(`/api/orders/${orderId}/reorder`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await res.json();
+      // UPDATED: Use axiosInstance and correct route
+      const res = await axiosInstance.post(`/products/orders/${orderId}/reorder`);
+      const data = res.data; // axios response is in .data
 
       if (data.success) {
         let cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -46,7 +50,7 @@ export default function MyOrdersPage() {
       } else alert("Error reordering: " + data.message);
     } catch (err) {
       console.error(err);
-      alert("Error adding items to cart. Please try again.");
+      alert("Error adding items to cart: " + (err.response?.data?.message || err.message));
     }
   };
 
