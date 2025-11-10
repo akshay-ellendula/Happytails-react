@@ -33,6 +33,13 @@ const ShopProfile = () => {
       return;
     }
 
+    // Phone number validation
+    const phoneRegex = /^\+91[6-9]\d{9}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      toast.error("Phone number must be in format +91 followed by 10 digits starting with 6, 7, 8, or 9");
+      return;
+    }
+
     try {
       const res = await axiosInstance.put("/vendors/profile", {
         storeName: formData.store_name,
@@ -159,8 +166,10 @@ const ShopProfile = () => {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="+919876543210"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 />
+                <p className="text-xs text-gray-500 mt-1">Format: +91 followed by 10 digits (starting with 6, 7, 8, or 9)</p>
               </div>
 
               <div>

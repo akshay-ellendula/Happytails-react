@@ -32,6 +32,7 @@ const OrderDetails = () => {
       });
       setOrder(res.data.order);
       toast.success("Status updated successfully!");
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       toast.error("Failed to update status");
     }
@@ -44,6 +45,7 @@ const OrderDetails = () => {
       await axiosInstance.delete(`/vendors/orders/${orderId}`);
       toast.success("Order deleted successfully");
       navigate("/shop/orders");
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       toast.error("Failed to delete order");
     }
@@ -67,8 +69,19 @@ const OrderDetails = () => {
   const status = order.status;
   const timeline = order.timeline || [];
 
-  // Only allow delete on Confirmed orders
-  const canDelete = status === "Confirmed";
+  // Allow delete on all orders
+  const canDelete = true;
+  
+  // Get allowed next statuses based on current status
+  const getAllowedNextStatuses = () => {
+    if (status === "Pending") return ["Confirmed", "Cancelled"];
+    if (status === "Confirmed") return ["Shipped", "Delivered", "Cancelled"];
+    if (status === "Shipped") return ["Delivered", "Cancelled"];
+    if (status === "Delivered") return [];
+    return [];
+  };
+  
+  const allowedStatuses = getAllowedNextStatuses();
 
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white rounded-xl shadow-lg my-8 print:shadow-none print:max-w-full print:p-0">
@@ -111,7 +124,7 @@ const OrderDetails = () => {
         <Package size={26} className="text-white" />
       </div>
       <div className="pt-2">
-        <p className="font-semibold text-gray-800">Order was placed and Confirmed.</p>
+        <p className="font-semibold text-gray-800">Order was placed.</p>
         <p className="text-sm text-gray-500 mt-1">
           {new Date(order.order_date).toLocaleDateString("en-IN", {
             day: "numeric",
@@ -175,58 +188,53 @@ const OrderDetails = () => {
   </div>
 </div>
 
-      {/* Update Status Buttons */}
-      <div className="mb-12 print:hidden">
-        <h3 className="text-2xl font-bold mb-6">Update Order Status</h3>
-        <div className="flex flex-wrap gap-5">
-          {status === "Confirmed" && (
-            <>
-              <button
-                onClick={() => updateStatus("Shipped")}
-                className="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition text-lg shadow-md"
-              >
-                Mark as Shipped
-              </button>
-              <button
-                onClick={() => updateStatus("Delivered")}
-                className="px-8 py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition text-lg shadow-md"
-              >
-                Mark as Delivered
-              </button>
-              <button
-                onClick={() => updateStatus("Cancelled")}
-                className="px-8 py-4 border-2 border-red-300 text-red-600 font-bold rounded-xl hover:bg-red-50 transition text-lg"
-              >
-                Cancel Order
-              </button>
-            </>
-          )}
-          {status === "Shipped" && (
-            <>
-              <button
-                onClick={() => updateStatus("Delivered")}
-                className="px-8 py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition text-lg shadow-md"
-              >
-                Mark as Delivered
-              </button>
-              <button
-                onClick={() => updateStatus("Cancelled")}
-                className="px-8 py-4 border-2 border-red-300 text-red-600 font-bold rounded-xl hover:bg-red-50 transition text-lg"
-              >
-                Cancel Order
-              </button>
-            </>
-          )}
-          {status === "Delivered" && (
-            <button
-              onClick={() => updateStatus("Cancelled")}
-              className="px-8 py-4 border-2 border-red-300 text-red-600 font-bold rounded-xl hover:bg-red-50 transition text-lg"
-            >
-              Cancel Order
-            </button>
-          )}
+      {/* Update Status Section */}
+      {allowedStatuses.length > 0 && (
+        <div className="mb-12 print:hidden bg-gradient-to-r from-gray-50 to-gray-100 p-8 rounded-2xl border border-gray-200">
+          <h3 className="text-2xl font-bold mb-6 text-gray-800">Update Order Status</h3>
+          <p className="text-gray-600 mb-6">Current Status: <span className={`px-4 py-2 rounded-full text-sm font-bold ${
+            status === "Pending" ? "bg-yellow-100 text-yellow-800" :
+            status === "Confirmed" ? "bg-purple-100 text-purple-800" :
+            status === "Shipped" ? "bg-blue-100 text-blue-800" :
+            status === "Delivered" ? "bg-green-100 text-green-800" :
+            "bg-red-100 text-red-800"
+          }`}>{status}</span></p>
+          
+          <div className="flex flex-wrap gap-4">
+            {allowedStatuses.map((newStatus) => {
+              const statusConfig = {
+                Pending: { bg: "bg-yellow-500 hover:bg-yellow-600", icon: "⏳" },
+                Confirmed: { bg: "bg-purple-500 hover:bg-purple-600", icon: "✓" },
+                Shipped: { bg: "bg-blue-500 hover:bg-blue-600", icon: "🚚" },
+                Delivered: { bg: "bg-green-500 hover:bg-green-600", icon: "✅" },
+                Cancelled: { bg: "bg-white hover:bg-red-50 border-2 border-red-400 text-red-600", icon: "✕" }
+              };
+              
+              const config = statusConfig[newStatus];
+              const isCancelled = newStatus === "Cancelled";
+              
+              return (
+                <button
+                  key={newStatus}
+                  onClick={() => updateStatus(newStatus)}
+                  className={`flex items-center gap-3 px-6 py-3.5 ${config.bg} ${
+                    isCancelled ? "" : "text-white"
+                  } font-semibold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5`}
+                >
+                  <span className="text-xl">{config.icon}</span>
+                  <span>Mark as {newStatus}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {status === "Delivered" && (
+        <div className="mb-12 print:hidden bg-green-50 p-6 rounded-xl border border-green-200">
+          <p className="text-green-800 font-semibold text-center">✅ This order has been delivered successfully!</p>
+        </div>
+      )}
 
       {/* Customer & Shipping */}
       <div className="grid md:grid-cols-2 gap-10 mb-12">

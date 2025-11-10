@@ -8,13 +8,22 @@ const ShopDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axiosInstance.get("/vendors/dashboard").then((res) => {
-      if (res.data.success) setStats(res.data.stats);
-      setLoading(false);
-    });
+    axiosInstance.get("/vendors/dashboard")
+      .then((res) => {
+        console.log('Dashboard response:', res.data);
+        if (res.data.success) {
+          setStats(res.data.stats);
+        }
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Dashboard fetch error:', error);
+        setLoading(false);
+      });
   }, []);
 
   if (loading) return <div className="p-8 text-center">Loading Dashboard...</div>;
+  if (!stats) return <div className="p-8 text-center">No dashboard data available. Please ensure you have orders or products.</div>;
 
   return (
     <div className="p-6">
@@ -27,14 +36,16 @@ const ShopDashboard = () => {
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-gray-500 text-sm font-medium uppercase tracking-wider">Total Revenue</p>
-              <h3 className="text-3xl font-bold text-gray-800 mt-1">₹{stats?.totalRevenue || "0.00"}</h3>
+              <h3 className="text-3xl font-bold text-gray-800 mt-1">₹{stats.totalRevenue || "0.00"}</h3>
             </div>
             <div className="p-3 bg-green-100 rounded-full text-green-600">
               <DollarSign size={24} />
             </div>
           </div>
           <div className="text-sm text-gray-500">
-            <span className="text-green-500 font-medium">+{stats?.revenueChange || 0}%</span> from last month
+            <span className={`font-medium ${parseFloat(stats.revenueChange || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {parseFloat(stats.revenueChange || 0) >= 0 ? '+' : ''}{stats.revenueChange || 0}%
+            </span> from last month
           </div>
         </div>
 
@@ -43,14 +54,16 @@ const ShopDashboard = () => {
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-gray-500 text-sm font-medium uppercase tracking-wider">Products Sold</p>
-              <h3 className="text-3xl font-bold text-gray-800 mt-1">{stats?.productsSold || 0}</h3>
+              <h3 className="text-3xl font-bold text-gray-800 mt-1">{stats.productsSold || 0}</h3>
             </div>
             <div className="p-3 bg-blue-100 rounded-full text-blue-600">
               <Package size={24} />
             </div>
           </div>
           <div className="text-sm text-gray-500">
-            <span className="text-blue-500 font-medium">+{stats?.productsSoldChange || 0}%</span> from last month
+            <span className={`font-medium ${parseFloat(stats.productsSoldChange || 0) >= 0 ? 'text-blue-500' : 'text-red-500'}`}>
+              {parseFloat(stats.productsSoldChange || 0) >= 0 ? '+' : ''}{stats.productsSoldChange || 0}%
+            </span> from last month
           </div>
         </div>
 
@@ -59,7 +72,7 @@ const ShopDashboard = () => {
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-gray-500 text-sm font-medium uppercase tracking-wider">New Orders</p>
-              <h3 className="text-3xl font-bold text-gray-800 mt-1">{stats?.newOrders || 0}</h3>
+              <h3 className="text-3xl font-bold text-gray-800 mt-1">{stats.newOrders || 0}</h3>
             </div>
             <div className="p-3 bg-orange-100 rounded-full text-orange-600">
               <ShoppingBag size={24} />
@@ -90,12 +103,12 @@ const ShopDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {stats?.recentOrders?.length > 0 ? (
+              {stats.recentOrders && stats.recentOrders.length > 0 ? (
                 stats.recentOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                     <td className="py-4 px-6 text-sm text-gray-800 font-medium">#ORD-{order.id.slice(-6).toUpperCase()}</td>
-                    <td className="py-4 px-6 text-sm text-gray-600">{order.user_name}</td>
-                    <td className="py-4 px-6 text-sm text-gray-600">{order.product_name}</td>
+                    <td className="py-4 px-6 text-sm text-gray-600">{order.user_name || 'Unknown'}</td>
+                    <td className="py-4 px-6 text-sm text-gray-600">{order.product_name || 'N/A'}</td>
                     <td className="py-4 px-6 text-sm text-gray-600">
                       {new Date(order.order_date).toLocaleDateString("en-US", {
                         month: "short",
@@ -103,7 +116,7 @@ const ShopDashboard = () => {
                         year: "numeric",
                       })}
                     </td>
-                    <td className="py-4 px-6 text-sm font-medium text-gray-800">₹{order.total_amount.toFixed(2)}</td>
+                    <td className="py-4 px-6 text-sm font-medium text-gray-800">₹{(order.total_amount || 0).toFixed(2)}</td>
                     <td className="py-4 px-6">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -111,17 +124,19 @@ const ShopDashboard = () => {
                             ? "bg-yellow-100 text-yellow-800"
                             : order.status === "Shipped"
                             ? "bg-blue-100 text-blue-800"
-                            : "bg-green-100 text-green-800"
+                            : order.status === "Delivered"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
                         }`}
                       >
-                        {order.status === "Confirmed" ? "Confirmed" : order.status}
+                        {order.status || 'Pending'}
                       </span>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colspan="6" className="py-8 text-center text-gray-500">
+                  <td colSpan="6" className="py-8 text-center text-gray-500">
                     No recent orders found.
                   </td>
                 </tr>

@@ -15,6 +15,12 @@ const orderSchema = new mongoose.Schema({
     delivered_at: { type: Date, default: null },
     cancelled_at: { type: Date, default: null },
     payment_last_four: { type: String, default: null },
+    is_deleted: { type: Boolean, default: false },
+    timeline: [{
+        status: { type: String },
+        date: { type: Date },
+        description: { type: String }
+    }],
 });
 
 const orderItemSchema = new mongoose.Schema({
@@ -27,6 +33,7 @@ const orderItemSchema = new mongoose.Schema({
     price: { type: Number, required: true },
     size: { type: String, default: null },
     color: { type: String, default: null },
+    is_deleted: { type: Boolean, default: false },
 });
 
 // --- Create Models ---

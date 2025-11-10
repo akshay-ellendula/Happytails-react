@@ -209,7 +209,7 @@ const getVendorAnalytics = async (req, res) => {
         // 3. Filter by Order Status (Only count valid sales)
         {
           $match: {
-            "order.status": { $in: ["Confirmed", "Shipped", "Delivered"] },
+            "order.status": { $in: ["Pending", "Confirmed", "Shipped", "Delivered"] },
           },
         },
       ];
@@ -588,8 +588,11 @@ const getVendorOrders = async (req, res) => {
     const vendorId = req.user.vendorId;
     const statusFilter = req.query.status;
 
-    // 1. Find all items belonging to this vendor
-    const matchStage = { vendor_id: new mongoose.Types.ObjectId(vendorId) };
+    // 1. Find all items belonging to this vendor (exclude deleted)
+    const matchStage = { 
+      vendor_id: new mongoose.Types.ObjectId(vendorId),
+      is_deleted: { $ne: true }
+    };
 
     const orders = await OrderItem.aggregate([
       { $match: matchStage },
@@ -605,6 +608,8 @@ const getVendorOrders = async (req, res) => {
         },
       },
       { $unwind: "$order" },
+      // Exclude deleted orders
+      { $match: { "order.is_deleted": { $ne: true } } },
       // 4. Apply Status Filter (case-insensitive)
       ...(statusFilter && statusFilter !== "all"
         ? [
@@ -676,6 +681,7 @@ const getVendorCustomerDetails = async (req, res) => {
       {
         $match: {
           vendor_id: new mongoose.Types.ObjectId(vendorId),
+          is_deleted: { $ne: true },
         },
       },
       {
@@ -690,6 +696,7 @@ const getVendorCustomerDetails = async (req, res) => {
       {
         $match: {
           "order.customer_id": new mongoose.Types.ObjectId(customerId),
+          "order.is_deleted": { $ne: true },
         },
       },
       {
@@ -778,7 +785,7 @@ const getOrderDetails = async (req, res) => {
     const order = await Order.findById(req.params.orderId).populate(
       "customer_id"
     );
-    if (!order) return sendError(res, "Order not found", 404);
+    if (!order || order.is_deleted) return sendError(res, "Order not found", 404);
 
     const items = await OrderItem.find({ order_id: req.params.orderId });
 
@@ -791,6 +798,7 @@ const getOrderDetails = async (req, res) => {
       shipped_at: order.shipped_at,
       delivered_at: order.delivered_at,
       cancelled_at: order.cancelled_at,
+      timeline: order.timeline || [],
       customer: {
         name: order.customer_id?.userName || "Unknown",
         email: order.customer_id?.email || "N/A",
@@ -830,14 +838,15 @@ const updateOrderStatus = async (req, res) => {
     if (!req.user) return sendError(res, "Unauthorized", 401);
     const vendorId = req.user.vendorId;
 
-    const validStatuses = ["Confirmed", "Shipped", "Delivered", "Cancelled"];
+    const validStatuses = ["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"];
     if (!validStatuses.includes(status)) {
       return sendError(res, "Invalid status", 400);
     }
 
     const updateFields = { status };
 
-    if (status === "Confirmed") updateFields.Confirmed_at = new Date();
+    if (status === "Pending") updateFields.pending_at = new Date();
+    if (status === "Confirmed") updateFields.confirmed_at = new Date();
     if (status === "Shipped") updateFields.shipped_at = new Date();
     if (status === "Delivered") updateFields.delivered_at = new Date();
     if (status === "Cancelled") updateFields.cancelled_at = new Date();
@@ -847,13 +856,15 @@ const updateOrderStatus = async (req, res) => {
         status,
         date: new Date(),
         description:
-          status === "Shipped"
+          status === "Pending"
+            ? "Order is pending."
+            : status === "Confirmed"
+            ? "Order confirmed by seller."
+            : status === "Shipped"
             ? "Your order has been shipped."
             : status === "Delivered"
             ? "Your order has been delivered."
-            : status === "Cancelled"
-            ? "Your order has been cancelled."
-            : "Order Confirmed by seller.",
+            : "Your order has been cancelled.",
       },
     };
 
@@ -907,7 +918,10 @@ const getVendorCustomers = async (req, res) => {
 
     const customers = await OrderItem.aggregate([
       {
-        $match: { vendor_id: new mongoose.Types.ObjectId(vendorId) },
+        $match: { 
+          vendor_id: new mongoose.Types.ObjectId(vendorId),
+          is_deleted: { $ne: true }
+        },
       },
       {
         $lookup: {
@@ -918,6 +932,7 @@ const getVendorCustomers = async (req, res) => {
         },
       },
       { $unwind: "$order" },
+      { $match: { "order.is_deleted": { $ne: true } } },
       {
         $lookup: {
           from: "customers",
@@ -1008,36 +1023,24 @@ const deleteOrder = async (req, res) => {
     const order = await Order.findOne({ _id: orderId });
     if (!order) return sendError(res, "Order not found", 404);
 
-    const productMatch = await Order.aggregate([
-      { $match: { _id: new mongoose.Types.ObjectId(orderId) } },
-      {
-        $lookup: {
-          from: "orderitems",
-          localField: "_id",
-          foreignField: "order_id",
-          as: "order_items",
-        },
-      },
-      {
-        $lookup: {
-          from: "products",
-          localField: "order_items.product_id",
-          foreignField: "_id",
-          as: "products",
-        },
-      },
-      {
-        $match: { "products.vendor_id": new mongoose.Types.ObjectId(vendorId) },
-      },
-    ]);
-    if (!productMatch.length) return sendError(res, "Unauthorized", 403);
+    const hasItem = await OrderItem.findOne({
+      order_id: orderId,
+      vendor_id: vendorId,
+    });
 
-    await Order.deleteOne({ _id: orderId });
-    await OrderItem.deleteMany({ order_id: orderId });
+    if (!hasItem) {
+      return sendError(res, "Unauthorized: You do not own this order", 403);
+    }
+
+    // Soft delete: Mark as deleted instead of removing from database
+    await Order.findByIdAndUpdate(orderId, { is_deleted: true });
+    await OrderItem.updateMany({ order_id: orderId }, { is_deleted: true });
+    
     res
       .status(200)
       .json({ success: true, message: "Order deleted successfully" });
   } catch (error) {
+    console.error("Delete order error:", error);
     sendError(res, "Server error");
   }
 };
@@ -1050,8 +1053,9 @@ const deleteSelectedOrders = async (req, res) => {
     return sendError(res, "No orders selected", 400);
   }
   try {
-    await Order.deleteMany({ _id: { $in: orderIds } });
-    await OrderItem.deleteMany({ order_id: { $in: orderIds } });
+    // Soft delete: Mark as deleted instead of removing
+    await Order.updateMany({ _id: { $in: orderIds } }, { is_deleted: true });
+    await OrderItem.updateMany({ order_id: { $in: orderIds } }, { is_deleted: true });
     res.status(200).json({ success: true, message: "Selected orders deleted" });
   } catch (error) {
     sendError(res, "Server error");
@@ -1069,6 +1073,21 @@ const getVendorDashboard = async (req, res) => {
     }
     const vendorObjectId = new mongoose.Types.ObjectId(vendorId);
 
+    console.log('=== DASHBOARD DEBUG ===');
+    console.log('Vendor ID:', vendorId);
+    console.log('Vendor ObjectId:', vendorObjectId);
+    
+    // Check if OrderItems exist for this vendor
+    const orderItemsCount = await OrderItem.countDocuments({ vendor_id: vendorObjectId });
+    console.log('OrderItems found for vendor:', orderItemsCount);
+    
+    if (orderItemsCount === 0) {
+      console.log('WARNING: No order items found for this vendor');
+      // Check if vendor_id is stored as string instead of ObjectId
+      const orderItemsAsString = await OrderItem.countDocuments({ vendor_id: vendorId });
+      console.log('OrderItems with vendor_id as string:', orderItemsAsString);
+    }
+
     // 1. Total Revenue & Products Sold (All Time)
     const totalStats = await OrderItem.aggregate([
       { $match: { vendor_id: vendorObjectId } },
@@ -1083,7 +1102,7 @@ const getVendorDashboard = async (req, res) => {
       { $unwind: "$order" },
       {
         $match: {
-          "order.status": { $in: ["Confirmed", "Shipped", "Delivered"] },
+          "order.status": { $in: ["Pending", "Confirmed", "Shipped", "Delivered"] },
         },
       },
       {
@@ -1095,9 +1114,9 @@ const getVendorDashboard = async (req, res) => {
       },
     ]);
 
-    // 2. New Orders (Pending)
+    // 2. New Orders (Pending/Confirmed - exclude deleted)
     const newOrdersStats = await OrderItem.aggregate([
-      { $match: { vendor_id: vendorObjectId } },
+      { $match: { vendor_id: vendorObjectId, is_deleted: { $ne: true } } },
       {
         $lookup: {
           from: "orders",
@@ -1107,14 +1126,17 @@ const getVendorDashboard = async (req, res) => {
         },
       },
       { $unwind: "$order" },
-      { $match: { "order.status": "Confirmed" } },
+      { $match: { 
+        "order.status": { $in: ["Pending", "Confirmed"] },
+        "order.is_deleted": { $ne: true }
+      } },
       { $group: { _id: "$order._id" } },
       { $count: "count" },
     ]);
 
-    // 3. Recent Orders
+    // 3. Recent Orders (exclude deleted)
     const recentOrders = await OrderItem.aggregate([
-      { $match: { vendor_id: vendorObjectId } },
+      { $match: { vendor_id: vendorObjectId, is_deleted: { $ne: true } } },
       {
         $lookup: {
           from: "orders",
@@ -1124,6 +1146,7 @@ const getVendorDashboard = async (req, res) => {
         },
       },
       { $unwind: "$order" },
+      { $match: { "order.is_deleted": { $ne: true } } },
       {
         $lookup: {
           from: "customers",
@@ -1167,7 +1190,7 @@ const getVendorDashboard = async (req, res) => {
         { $unwind: "$order" },
         {
           $match: {
-            "order.status": { $in: ["Confirmed", "Shipped", "Delivered"] },
+            "order.status": { $in: ["Pending", "Confirmed", "Shipped", "Delivered"] },
             "order.order_date": { $gte: startDate, $lt: endDate },
           },
         },
@@ -1190,6 +1213,10 @@ const getVendorDashboard = async (req, res) => {
       return ((current - previous) / previous) * 100;
     };
 
+    console.log('Total Stats Result:', totalStats);
+    console.log('New Orders Result:', newOrdersStats);
+    console.log('Recent Orders Count:', recentOrders.length);
+
     const stats = {
       totalRevenue: (totalStats[0]?.totalRevenue || 0).toFixed(2),
       productsSold: totalStats[0]?.productsSold || 0,
@@ -1202,12 +1229,13 @@ const getVendorDashboard = async (req, res) => {
         currentMonth.sold,
         lastMonth.sold
       ).toFixed(1),
-      recentOrders: recentOrders.map((o) => ({
+      recentOrders: recentOrders.slice(0, 5).map((o) => ({
         ...o,
         id: o.id.toString(),
       })),
     };
 
+    console.log('Final Dashboard Stats:', JSON.stringify(stats, null, 2));
     sendJson(res, { stats });
   } catch (error) {
     console.error("Dashboard Error:", error);

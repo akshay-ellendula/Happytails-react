@@ -48,6 +48,8 @@ const OrderList = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
+      case "Pending":
+        return "bg-yellow-100 text-yellow-800";
       case "Confirmed":
         return "bg-purple-100 text-purple-800";
       case "Shipped":
@@ -62,9 +64,10 @@ const OrderList = () => {
   };
 
   const getAllowedNextStatuses = (current) => {
+    if (current === "Pending") return ["Confirmed", "Cancelled"];
     if (current === "Confirmed") return ["Shipped", "Delivered", "Cancelled"];
     if (current === "Shipped") return ["Delivered", "Cancelled"];
-    if (current === "Delivered") return ["Cancelled"];
+    if (current === "Delivered") return [];
     return [];
   };
 
@@ -74,7 +77,7 @@ const OrderList = () => {
 
       {/* Filter Tabs */}
       <div className="flex gap-3 mb-8 flex-wrap">
-        {["all", "Confirmed", "Shipped", "Delivered", "Cancelled"].map((s) => (
+        {["all", "Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"].map((s) => (
           <button
             key={s}
             onClick={() => setFilter(s === "all" ? "all" : s)}
@@ -164,42 +167,47 @@ const OrderList = () => {
                     {/* Actions */}
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
-                        {/* Status Dropdown */}
+                        {/* Status Change Buttons */}
                         {allowedStatuses.length > 0 && (
-                          <select
-                            onChange={(e) =>
-                              updateStatus(order.id, e.target.value)
-                            }
-                            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                            defaultValue=""
-                          >
-                            <option value="" disabled>
-                              Change Status
-                            </option>
-                            {allowedStatuses.map((s) => (
-                              <option key={s} value={s}>
-                                → {s}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="flex gap-2">
+                            {allowedStatuses.map((s) => {
+                              const statusStyles = {
+                                Pending: "bg-yellow-500 hover:bg-yellow-600",
+                                Confirmed: "bg-purple-500 hover:bg-purple-600",
+                                Shipped: "bg-blue-500 hover:bg-blue-600",
+                                Delivered: "bg-green-500 hover:bg-green-600",
+                                Cancelled: "bg-red-500 hover:bg-red-600"
+                              };
+                              
+                              return (
+                                <button
+                                  key={s}
+                                  onClick={() => updateStatus(order.id, s)}
+                                  className={`px-3 py-1.5 text-white text-xs font-semibold rounded-lg ${statusStyles[s]} transition-all shadow-sm hover:shadow-md`}
+                                  title={`Mark as ${s}`}
+                                >
+                                  {s === "Confirmed" ? "✓" : s === "Shipped" ? "🚚" : s === "Delivered" ? "✅" : s === "Cancelled" ? "✕" : s.charAt(0)}
+                                </button>
+                              );
+                            })}
+                          </div>
                         )}
 
-                        {/* Delete Button - Only for Confirmed */}
-                        {order.status === "Confirmed" && (
-                          <button
-                            onClick={() => deleteOrder(order.id)}
-                            className="text-red-600 hover:text-red-800 font-medium text-sm"
-                          >
-                            Delete
-                          </button>
-                        )}
+                        {/* Delete Button - Always visible */}
+                        <button
+                          onClick={() => deleteOrder(order.id)}
+                          className="text-red-600 hover:text-red-800 font-medium text-sm hover:underline"
+                          title="Delete Order"
+                        >
+                          🗑️
+                        </button>
 
                         {/* View Button */}
                         <Link
                           to={`/shop/orders/${order.id}`}
-                          className="text-blue-600 hover:text-blue-800 font-medium"
+                          className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm rounded-lg transition-all"
                         >
-                          View →
+                          View
                         </Link>
                       </div>
                     </td>

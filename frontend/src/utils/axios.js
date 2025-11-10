@@ -1,8 +1,8 @@
-import axios from 'axios';
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5001/api" : "/api"
-export const axiosInstance = axios.create(
-    {
-        baseURL : BASE_URL,
-        withCredentials :true 
-    }
-)
+import axios from "axios";
+
+// Use same-origin `/api` base so Vite dev server proxy handles routing to backend.
+// This avoids cross-site requests and ensures cookies (HttpOnly) work in development.
+export const axiosInstance = axios.create({
+  baseURL: "/api",
+  withCredentials: true,
+});
