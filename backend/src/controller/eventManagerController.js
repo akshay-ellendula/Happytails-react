@@ -138,18 +138,26 @@ export const getEventAttendees = async (req, res) => {
     try {
         const event = await Event.findById(eventId);
         if (!event) {
-            return res.status(404).json({ message: "event not found" })
+            return res.status(404).json({ message: "Event not found" });
         }
 
         const tickets = await Ticket.find({ eventId }).populate('customerId');
         const attendees = tickets.map(ticket => ({
-            customerId: ticket.customerId,
+            customerId: ticket.customerId?._id,
             customerName: ticket.customerId?.userName,
             customerEmail: ticket.customerId?.email,
             purchasedAt: ticket.createdAt,
             noOfTickets: ticket.numberOfTickets,
-        }))
-        res.status(200).json({ attendees, eventTitle: title });
+            petName: ticket.petName,
+            petBreed: ticket.petBreed,
+            petAge: ticket.petAge
+        }));
+        
+        res.status(200).json({ 
+            attendees, 
+            eventTitle: event.title
+        });
+        
     } catch (error) {
         console.log("Something went Wrong in getEventAttendees :", error);
         res.status(500).json({ message: 'Server Error' });
@@ -191,3 +199,111 @@ export const getEventManagerRevenue = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 }
+//@desc Change password
+//@route PUT /api/event-manager/change-password
+//@access Event Manager
+export const changePassword = async (req, res) => {
+    try {
+        const eventManagerId = req.user.eventManagerId;
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: "Current password and new password are required" });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: "Password must be at least 6 characters" });
+        }
+
+        const eventManager = await EventManager.findById(eventManagerId);
+        if (!eventManager) {
+            return res.status(404).json({ message: "Event manager not found" });
+        }
+
+        const isMatch = await eventManager.matchPassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Current password is incorrect" });
+        }
+
+        eventManager.password = newPassword;
+        await eventManager.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Password updated successfully"
+        });
+
+    } catch (error) {
+        console.log("Error in changePassword controller:", error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+//@desc Get my profile
+//@route GET /api/eventManagers/profile/me
+//@access Event Manager
+export const getMyProfile = async (req, res) => {
+    try {
+        const eventManagerId = req.user.eventManagerId;
+        const eventManager = await EventManager.findById(eventManagerId).select('-password');
+        
+        if (!eventManager) {
+            return res.status(404).json({ message: "Event manager not found" });
+        }
+
+        res.status(200).json(eventManager);
+    } catch (error) {
+        console.log("Error in getMyProfile controller:", error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+//@desc Update my profile
+//@route PUT /api/eventManagers/profile/me
+//@access Event Manager
+export const updateMyProfile = async (req, res) => {
+    try {
+        const eventManagerId = req.user.eventManagerId;
+        const { userName, email, profilePic, companyName, phoneNumber } = req.body;
+
+        const eventManager = await EventManager.findById(eventManagerId);
+        if (!eventManager) {
+            return res.status(404).json({ message: "Event manager not found" });
+        }
+
+        // Update fields if provided
+        if (userName) eventManager.userName = userName;
+        if (email) {
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({ message: "Invalid email format" });
+            }
+            eventManager.email = email;
+        }
+        if (profilePic) eventManager.profilePic = profilePic;
+        if (companyName) eventManager.companyName = companyName;
+        if (phoneNumber) {
+            if (phoneNumber.length !== 10) {
+                return res.status(400).json({ message: "Invalid phone number format" });
+            }
+            eventManager.phoneNumber = phoneNumber;
+        }
+
+        await eventManager.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            eventManager: {
+                userName: eventManager.userName,
+                email: eventManager.email,
+                profilePic: eventManager.profilePic,
+                companyName: eventManager.companyName,
+                phoneNumber: eventManager.phoneNumber
+            }
+        });
+
+    } catch (error) {
+        console.log("Error in updateMyProfile controller:", error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};

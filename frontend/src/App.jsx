@@ -9,6 +9,7 @@ import EventsPage from "./pages/Events/EventsPage";
 import EventDetailPage from "./pages/EventDeatils/EventDetailPage";
 import BookingPage from "./pages/BookingPage/BookingPage";
 import PartnerRegistration from "./pages/PartnerRegistration/PartnerRegistrationPage";
+import EventManagerPage from "./pages/EventManager/EventManagerPage";
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -27,6 +28,7 @@ function AppRoutes() {
       <Route path="/event/:id" element={<EventDetailPage />} />
       <Route path="/booking" element={<ProtectedRoute> <BookingPage /> </ProtectedRoute>}/>
       <Route path="/partnerRegistrataion" element={<PartnerRegistration/> } />
+      <Route path="/eventManager" element={<EventManagerPage/>}/>
     </Routes>
   );
 }

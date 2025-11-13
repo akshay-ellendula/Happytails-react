@@ -1,37 +1,36 @@
 import express from 'express';
-import { 
-    postEvent, 
-    getEvents, 
-    getEvent, 
-    putEvent, 
-    deleteEvent, 
-    getPublicEvents,
-    changeEventStatus
-} from '../controller/eventController.js';
 import protectRoute from '../middleware/authMiddleware.js';
-import upload from "../middleware/uploadMiddleware.js";
+import upload from '../middleware/uploadMiddleware.js';
+import {
+    createEvent,
+    getEventManagerEvents,
+    getEvent,
+    updateEvent,
+    deleteEvent,
+    getEventAnalytics,
+    getAllEvents
+} from '../controller/eventController.js';
 
 const router = express.Router();
 
-// Public route
-router.get('/public/upcoming', getPublicEvents);
+router.get('/public', getAllEvents);
 
-// Protected routes
+
 router.route('/')
-    .get(protectRoute(['admin']), getEvents)
     .post(protectRoute(['eventManager']), upload.fields([
         { name: 'thumbnail', maxCount: 1 },
         { name: 'banner', maxCount: 1 }
-    ]), postEvent);
+    ]), createEvent)
+    .get(protectRoute(['eventManager']), getEventManagerEvents);
 
 router.route('/:id')
-    .get(getEvent)
-    .put(protectRoute(["eventManager"]), upload.fields([
+    .get(protectRoute(['eventManager', 'admin']), getEvent)
+    .put(protectRoute(['eventManager']), upload.fields([
         { name: 'thumbnail', maxCount: 1 },
         { name: 'banner', maxCount: 1 }
-    ]), putEvent)
-    .delete(protectRoute(["admin", "eventManager"]), deleteEvent);
-
-router.put('/:id/status', protectRoute(["admin", "eventManager"]), changeEventStatus);
+    ]), updateEvent)
+    .delete(protectRoute(['eventManager']), deleteEvent);
+    
+router.get('/:id/analytics', protectRoute(['eventManager']), getEventAnalytics);
 
 export default router;

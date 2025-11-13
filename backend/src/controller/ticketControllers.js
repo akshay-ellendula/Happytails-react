@@ -116,3 +116,69 @@ export const getUserTicket = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 }
+//@desc Get all tickets for event manager
+//@route GET /api/tickets/manager
+//@access Event Manager
+export const getEventManagerTickets = async (req, res) => {
+    try {
+        const eventManagerId = req.user.eventManagerId;
+        
+        // Get events by this manager
+        const events = await Event.find({ eventManagerId });
+        const eventIds = events.map(event => event._id);
+        
+        // Get tickets for these events
+        const tickets = await Ticket.find({ eventId: { $in: eventIds } })
+            .populate('eventId')
+            .populate('customerId')
+            .sort({ createdAt: -1 });
+
+        const formattedTickets = tickets.map(ticket => ({
+            id: ticket._id,
+            ticketId: `TKT-${ticket._id.toString().slice(-10)}`,
+            eventName: ticket.eventId?.title,
+            customerName: ticket.customerId?.userName,
+            customerEmail: ticket.customerId?.email,
+            purchaseDate: ticket.createdAt,
+            price: ticket.price,
+            status: ticket.status ? 'active' : 'cancelled',
+            numberOfTickets: ticket.numberOfTickets,
+            petDetails: ticket.petName ? `${ticket.petName} (${ticket.petBreed}, ${ticket.petAge} months)` : 'No pet info'
+        }));
+
+        res.status(200).json(formattedTickets);
+
+    } catch (error) {
+        console.log("Error in getEventManagerTickets controller:", error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+//@desc Get single ticket details
+//@route GET /api/tickets/:id
+//@access Event Manager
+export const getTicketDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const eventManagerId = req.user.eventManagerId;
+
+        const ticket = await Ticket.findById(id)
+            .populate('eventId')
+            .populate('customerId');
+
+        if (!ticket) {
+            return res.status(404).json({ message: "Ticket not found" });
+        }
+
+        // Check if ticket belongs to event manager's event
+        if (ticket.eventId.eventManagerId.toString() !== eventManagerId) {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        res.status(200).json(ticket);
+
+    } catch (error) {
+        console.log("Error in getTicketDetails controller:", error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
