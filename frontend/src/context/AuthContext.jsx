@@ -49,13 +49,17 @@ export const AuthProvider = ({ children }) => {
   const signin = async (userData) => {
     setLoading(true);
     try {
-      console.log('Making signin request with:', userData);
+      // Step 1: login
       const response = await axiosInstance.post('/auth/signin', userData);
-      console.log('Signin response:', response.data);
-      
+
+      const id = response.data.user.customerId;
+
+      // Step 2: immediately fetch full customer details
+      const fullUserResponse = await axiosInstance.get(`/public/${id}`);
+
       setIsAuthenticated(true);
-      setUser(response.data.user); // UPDATED: Set user from response
-      
+      setUser(fullUserResponse.data);  // <-- set full user
+
       return { success: true };
     } catch (error) {
       console.error('Signin error:', error);
@@ -66,25 +70,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
   const signup = async (userData) => {
     setLoading(true);
     try {
-      console.log('Making signup request with:', userData);
       const response = await axiosInstance.post('/auth/signup', userData);
-      console.log('Signup response:', response.data);
-      
+
+      const id = response.data.user.customerId;
+      const fullUserResponse = await axiosInstance.get(`/public/${id}`);
+
       setIsAuthenticated(true);
-      setUser(response.data.user); // UPDATED: Set user from response
-      
+      setUser(fullUserResponse.data);
+
       return { success: true };
     } catch (error) {
-      console.error('Signup error:', error);
       const errorMessage = error.response?.data?.message || 'Signup failed. Please try again.';
       return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
-  };
+  };  
+
 
   const signout = async () => {
     try {

@@ -1,18 +1,24 @@
 import React, { useEffect, useState } from "react";
-// UPDATED: Corrected import paths based on your file structure
-import Navbar from "../../components/Navbar"; 
+// UPDATED: Import Header and MobileMenu
+import Header from "../Home/components/Header"; 
+import MobileMenu from "../Home/components/MobileMenu";
 import Sidebar from "../../components/Sidebar"; 
 import Footer from "../../components/Footer"; 
-import { axiosInstance } from "../../utils/axios"; // UPDATED: Import axios
+import { axiosInstance } from "../../utils/axios";
 
 export default function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // UPDATED: Add mobile menu state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   useEffect(() => {
-    // UPDATED: Use axiosInstance and correct route
     axiosInstance.get("/products/getUserOrders")
-      .then((res) => res.data) // axios response is in .data
+      .then((res) => res.data)
       .then((data) => {
         if (data.success) setOrders(data.orders);
         else alert("Error fetching orders: " + data.message);
@@ -26,9 +32,8 @@ export default function MyOrdersPage() {
 
   const handleBuyAgain = async (orderId) => {
     try {
-      // UPDATED: Use axiosInstance and correct route
       const res = await axiosInstance.post(`/products/orders/${orderId}/reorder`);
-      const data = res.data; // axios response is in .data
+      const data = res.data; 
 
       if (data.success) {
         let cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -72,7 +77,7 @@ export default function MyOrdersPage() {
       >
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Image */}
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <div className="text-center mb-4">
               <h3 className="text-lg font-semibold text-dark">
                 {order.status === "Delivered"
@@ -190,8 +195,13 @@ export default function MyOrdersPage() {
 
   return (
     <div className="bg-primary font-outfit min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex flex-col lg:flex-row gap-8 mx-4 md:mx-8 lg:mx-20 mt-12 mb-20 flex-grow">
+      {/* UPDATED: Use Header and MobileMenu */}
+      <Header onMenuToggle={toggleMobileMenu} />
+      {isMobileMenuOpen && (
+        <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+      )}
+      
+      <div className="flex flex-col lg:flex-row gap-8 mx-4 md:mx-8 lg:mx-20 mt-12 mb-20 grow">
         <Sidebar />
         <main className="flex-1 space-y-8">
           <section className="bg-white rounded-3xl shadow-2xl p-8 md:p-10">

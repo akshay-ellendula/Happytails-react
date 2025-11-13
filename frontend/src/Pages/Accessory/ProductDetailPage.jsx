@@ -2,15 +2,19 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import AccessoryNavbar from './components/AccessoryNavbar';
+// UPDATED: Removed AccessoryNavbar
 import AccessoryFooter from './components/AccessoryFooter';
 import { axiosInstance } from '../../utils/axios'; // This is needed for fetchProduct
 import { useCart } from '../../context/CartContext'; // ADDED
+// UPDATED: Import Header and MobileMenu
+import Header from '../Home/components/Header';
+import MobileMenu from '../Home/components/MobileMenu';
 // --- Import Social Icons ---
 import { Facebook, Instagram, Twitter, ArrowLeft, ShoppingCart, Package, Star } from 'lucide-react';
 // --- End Import ---
 
-const ProductDetailPage = ({ user }) => {
+// UPDATED: Removed 'user' prop as Header gets it from context
+const ProductDetailPage = () => {
     const { id } = useParams();
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -24,6 +28,12 @@ const ProductDetailPage = ({ user }) => {
     // State for UI feedback
     const [cartMessage, setCartMessage] = useState({ text: '', type: 'error' });
     const [showCartMessage, setShowCartMessage] = useState(false);
+
+    // UPDATED: Add mobile menu state
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+    };
 
     // Get functions from global cart context
     const { openCart, addToCart } = useCart(); // ADDED
@@ -211,10 +221,11 @@ const ProductDetailPage = ({ user }) => {
 
     return (
         <>
-            {/* Pass global openCart function */}
-            <AccessoryNavbar user={user} setIsCartOpen={openCart} />
-
-            {/* --- REMOVED CartSidebar component --- */}
+            {/* UPDATED: Use Header and MobileMenu */}
+            <Header onMenuToggle={toggleMobileMenu} />
+            {isMobileMenuOpen && (
+                <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+            )}
 
             <div className="min-h-screen font-['Outfit',sans-serif]" style={{ backgroundColor: '#effe8b' }}>
                 {/* Back Navigation */}

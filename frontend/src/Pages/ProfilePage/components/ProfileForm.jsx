@@ -4,6 +4,9 @@ import { axiosInstance } from "../../../utils/axios";
 
 export default function ProfileForm() {
   const [editMode, setEditMode] = useState(false);
+  const { user, updateUser } = useAuth(); 
+
+  // MODIFIED: Initialize state with defaults again.
   const [profile, setProfile] = useState({
     name: "",
     email: "",
@@ -15,15 +18,17 @@ export default function ProfileForm() {
     pincode: ""
   });
   
-  const [newImageFile, setNewImageFile] = useState(null); 
-  const { user, updateUser } = useAuth(); // <-- MODIFICATION
+  const [newImageFile, setNewImageFile] = useState(null);
+  
 
-  // Load user data
+  // ADDED THIS EFFECT: This syncs the component's state
+  // with the user context whenever the user object changes (e.g., after login).
   useEffect(() => {
+    console.log("ProfileForm render: user =", user);
     if (user) {
       setProfile({
-        name: user.userName || "",
-        email: user.email || "",
+        name: user.userName ,
+        email: user.email,
         phone: user.phoneNumber || "",
         profilePic: user.profilePic || "/icons/profile-circle-svgrepo-com.svg",
         houseNumber: user.address?.houseNumber || "",
@@ -32,7 +37,7 @@ export default function ProfileForm() {
         pincode: user.address?.pincode || ""
       });
     }
-  }, [user]);
+  },[user]); // This effect runs when the component mounts AND when 'user' changes.
 
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -92,7 +97,7 @@ export default function ProfileForm() {
       formData.append("city", profile.city);
       formData.append("pincode", profile.pincode);
       if (newImageFile) {
-        formData.append("profilePicImage", newImageFile);
+        formData.append("profilePic", newImageFile);
       }
 
       const response = await axiosInstance.put(`/public/${user.customerId}`, formData, {
@@ -101,10 +106,9 @@ export default function ProfileForm() {
 
       if (response.data.success) {
         alert("Profile updated successfully!");
-        updateUser(response.data.user); // <-- MODIFICATION
+        updateUser(response.data.user); 
         setEditMode(false);
         setNewImageFile(null);
-        // Optional: refresh user in context
       } else {
         alert("Error: " + response.data.message);
       }
@@ -117,6 +121,7 @@ export default function ProfileForm() {
   const handleCancel = () => {
     setEditMode(false);
     setNewImageFile(null);
+    // This logic is still correct for resetting changes.
     if (user) {
       setProfile({
         name: user.userName || "",
@@ -187,7 +192,7 @@ export default function ProfileForm() {
           <button
             type="button"
             onClick={() => setEditMode(true)}
-            className="bg-dark text-primary px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="bg-dark bg-black text-white text-primary px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
           >
             Edit
           </button>

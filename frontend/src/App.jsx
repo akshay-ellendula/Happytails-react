@@ -17,13 +17,13 @@ import CartSidebar from "./pages/Accessory/components/CartSidebar";
 // UPDATED: Import new pages
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
 import MyOrdersPage from "./pages/MyOrdersPage/MyOrdersPage";
+import PaymentPage from "./pages/PaymentPage/PaymentPage"; // <-- 1. IMPORT THE NEW PAGE
 
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth(); // UPDATED: Get loading state
+  const { isAuthenticated, loading } = useAuth(); 
 
-  // UPDATED: Wait for auth check to complete
   if (loading) {
     return (
         <div className="bg-[#effe8b] min-h-screen flex items-center justify-center">
@@ -51,6 +51,9 @@ function AppRoutes() {
       {/* UPDATED: Add new protected routes */}
       <Route path="/profile" element={<ProtectedRoute> <ProfilePage /> </ProtectedRoute>} />
       <Route path="/my_orders" element={<ProtectedRoute> <MyOrdersPage /> </ProtectedRoute>} />
+      
+      {/* 2. ADD THE NEW ROUTE HERE */}
+      <Route path="/payment" element={<ProtectedRoute> <PaymentPage /> </ProtectedRoute>} />
     </Routes>
   );
 }

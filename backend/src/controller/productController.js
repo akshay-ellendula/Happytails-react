@@ -6,7 +6,7 @@ import { Order, OrderItem } from '../models/orderModel.js';       // Added .js
 import jwt from 'jsonwebtoken'; // UPDATED: Import jwt
 import mongoose from 'mongoose';                                
 import uploadToCloudinary from '../utils/cloudinaryUploader.js';
-const JWT_SECRET = process.env.JWT_SECRET_KEY; // UPDATED: Use correct env variable
+// REMOVED: const JWT_SECRET = process.env.JWT_SECRET_KEY; 
 
 // --- getPetAccessories (UPDATED) ---
 const getPetAccessories = async (req, res) => {
@@ -244,7 +244,8 @@ const checkout = async (req, res) => {
             cleanCart: cleanCart
         };
 
-        const checkoutToken = jwt.sign(payload, JWT_SECRET, {
+        // FIXED: Use process.env.JWT_SECRET_KEY directly
+        const checkoutToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
             expiresIn: '15m'
         });
 
@@ -285,7 +286,8 @@ const processPayment = async (req, res) => {
         let customerID;
 
         try {
-            const decoded = jwt.verify(checkoutToken, JWT_SECRET);
+            // FIXED: Use process.env.JWT_SECRET_KEY directly
+            const decoded = jwt.verify(checkoutToken, process.env.JWT_SECRET_KEY);
 
             orderTotals = decoded.orderTotals;
             cleanCart = decoded.cleanCart; // UPDATED: Use 'cleanCart'

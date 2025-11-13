@@ -3,11 +3,11 @@ import React, { useState } from "react";
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
 
+  // UPDATED: Removed "Logout" from this array
   const links = [
     { name: "My Profile", href: "/profile" },
     { name: "My Orders", href: "/my_orders" },
     { name: "My Events", href: "/my_events" },
-    { name: "Logout", href: "/user_logout" },
   ];
 
   return (

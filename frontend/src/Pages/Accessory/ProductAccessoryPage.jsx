@@ -1,22 +1,14 @@
-// src/Pages/Accessory/ProductAccessoryPage.jsx
-
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './pet-accessory.module.css';
-import AccessoryNavbar from './components/AccessoryNavbar';
+// UPDATED: Import Header and MobileMenu
+import Header from '../Home/components/Header';
+import MobileMenu from '../Home/components/MobileMenu';
 import ProductFilters from './components/ProductFilters';
 import ProductGrid from './components/ProductGrid';
-// import CartSidebar from './components/CartSidebar'; // REMOVED
 import AccessoryFooter from './components/AccessoryFooter';
-// import { axiosInstance } from '../../utils/axios'; // REMOVED
-import { useCart } from '../../context/CartContext'; // ADDED
-
-// --- REMOVED local useCart hook ---
-
-// --- Main Page Component ---
+import { useCart } from '../../context/CartContext';
 
 const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) => {
-    // Note: In a real React app, productsData and initialFilters would be fetched via useEffect/API call.
-    // We assume they are passed as props from the server-side render or initial load.
     const allProducts = productsData;
     const initialPrice = parseFloat(initialFilters.maxPrice);
 
@@ -28,24 +20,23 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
     });
     const [visibleProducts, setVisibleProducts] = useState(allProducts);
     const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
-    // const [isCartOpen, setIsCartOpen] = useState(false); // REMOVED
+    
+    // UPDATED: Add mobile menu state
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+    };
 
-    // const { cart, updateQuantity, removeItem, calculateTotals, setCart } = useCart(); // REMOVED
-    // const totals = calculateTotals(); // REMOVED
+    const { openCart } = useCart(); // This is now used by the Header
     
-    const { openCart } = useCart(); // ADDED
-    
-    // Logic to apply filters
     const applyFilters = useCallback(() => {
         const { productTypes, colors, sizes, maxPrice } = filterState;
         let count = 0;
 
         const newVisibleProducts = allProducts.map(product => {
-            // 1. Filter by product type
             const matchesType = productTypes.length === 0 || 
                 productTypes.some(type => product.product_type.toLowerCase().includes(type.toLowerCase()));
 
-            // 2. Filter by color/size variants
             let matchingVariants = product.variants || [];
             
             if (colors.length > 0) {
@@ -60,7 +51,6 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
                 );
             }
 
-            // Determine the variant to display for price check
             const variantSource = (matchingVariants.length > 0 || (colors.length === 0 && sizes.length === 0))
                 ? matchingVariants.length > 0 ? matchingVariants : product.variants
                 : [];
@@ -74,7 +64,6 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
                 return { ...product, isVisible: false, displayVariant: null };
             }
 
-            // 3. Filter by price
             const price = variantToDisplay.sale_price || variantToDisplay.regular_price;
             const matchesPrice = price <= maxPrice;
 
@@ -85,7 +74,7 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
             return { 
                 ...product, 
                 isVisible, 
-                displayVariant: variantToDisplay // Pass variant for correct price display
+                displayVariant: variantToDisplay
             };
         });
 
@@ -95,8 +84,6 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
     useEffect(() => {
         applyFilters();
     }, [applyFilters]);
-
-
 
     const handleFilterChange = (newFilters) => {
         setFilterState(prev => ({ ...prev, ...newFilters }));
@@ -111,8 +98,6 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
         });
     };
 
-    // --- REMOVED handleCheckout function ---
-
     return (
         <div style={{
             backgroundColor: "#effe8b", 
@@ -120,10 +105,11 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
             margin: 0,
             padding: 0
         }}>
-            {/* Navbars */}
-            <AccessoryNavbar user={user} setIsCartOpen={openCart} /> {/* MODIFIED */}
-
-            {/* --- REMOVED CartSidebar component --- */}
+            {/* UPDATED: Use Header and MobileMenu */}
+            <Header onMenuToggle={toggleMobileMenu} />
+            {isMobileMenuOpen && (
+                <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+            )}
 
             <div className={styles.mobile_filter}>
                 <h2 className={styles.filter_btn} onClick={() => setIsFilterPanelOpen(true)}>Filters</h2>
