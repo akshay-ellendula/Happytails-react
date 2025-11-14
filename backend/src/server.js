@@ -30,7 +30,7 @@ app.use("/api/eventManagers", eventManagerRoutes);
 app.use("/api/events", eventRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/products', productRoutes);
-app.use('/api/admins',adminRoutes);
+app.use('/api/admin',adminRoutes);
 
 const port = process.env.PORT;
 app.listen(port, () => {

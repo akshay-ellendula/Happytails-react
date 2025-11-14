@@ -5,12 +5,35 @@ import { Order, OrderItem } from '../models/orderModel.js';
 import Event from '../models/eventModel.js';
 import EventManager from '../models/eventManagerModel.js';
 import Ticket from '../models/ticketModel.js'; 
+import jwt from 'jsonwebtoken';
+// Generate JWT token
+const generateToken = (payload) => {
+  return jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
+};
+
+// Verify JWT token
+const verifyToken = (token) => {
+  return jwt.verify(token, process.env.JWT_SECRET_KEY);
+};
 
 const adminLogin = (req, res) => {
     const { admin_email, admin_password } = req.body;
     const admin = { email: "admin@gmail.com", password: "admin123#" };
+    
     if (admin_email === admin.email && admin_password === admin.password) {
-        req.session.admin = { email: admin_email };
+        const token = generateToken({ 
+            email: admin_email, 
+            role: 'admin',
+            id: 'admin'
+        });
+
+        res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+        
         res.json({ success: true });
     } else {
         res.json({ success: false, error: "Invalid email or password" });
@@ -1726,16 +1749,14 @@ const updateProduct = async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to update product' });
     }
 };
-
 const logout = (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            return res.status(500).json({ success: false, message: 'Error logging out' });
-        }
-        res.redirect('/admin-login');
+    res.clearCookie('jwt', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
     });
+    res.json({ success: true, message: 'Logged out successfully' });
 };
-
 const getEventsData = async (req, res) => {
     try {
         const [

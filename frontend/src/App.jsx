@@ -8,6 +8,7 @@ import ProductAccessoryPageWrapper from './pages/Accessory/ProductAccessoryPageW
 import EventsPage from './pages/Events/EventsPage';
 import EventDetailPage from "./pages/EventDeatils/EventDetailPage";
 import BookingPage from "./pages/BookingPage/BookingPage";
+import AdminLoginPage from "./pages/AdminLogin/AdminLoginPage";
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -32,6 +33,7 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
+      <Route path="/adminLogin" element={<AdminLoginPage/>}/>
     </Routes>
   );
 }
