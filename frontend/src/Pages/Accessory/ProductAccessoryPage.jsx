@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './pet-accessory.module.css';
 // UPDATED: Import Header and MobileMenu
-import Header from '../Home/components/Header';
-import MobileMenu from '../Home/components/MobileMenu';
+import Header from "../../components/Header";
+import MobileMenu from "../../components/MobileMenu";
 import ProductFilters from './components/ProductFilters';
 import ProductGrid from './components/ProductGrid';
-import AccessoryFooter from './components/AccessoryFooter';
+import Footer from '../../components/Footer';
 import { useCart } from '../../context/CartContext';
 
 const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) => {
@@ -138,7 +138,7 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
             </div>
 
             {/* Footer */}
-            <AccessoryFooter />
+            <Footer />
         </div>
     );
 };

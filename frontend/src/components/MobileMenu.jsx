@@ -1,6 +1,6 @@
 import { Search, X } from 'lucide-react';
 import { Link } from 'react-router';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 const MobileMenu = ({ onClose }) => {
   const { isAuthenticated, signout } = useAuth();

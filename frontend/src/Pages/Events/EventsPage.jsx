@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import { axiosInstance } from "../../utils/axios";
-import Header from '../Home/components/Header';
+import Header from '../../components/Header';
+import MobileMenu from '../../components/MobileMenu';
 import HeroBanner from './components/HeroBanner';
 import CategoriesSection from './components/CategoriesSection';
 import EventsSection from './components/EventsSection';
-import Footer from '../Home/components/Footer';
+import Footer from '../../components/Footer';
 
 const EventsPage = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
   const [events, setEvents] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -152,7 +157,10 @@ const EventsPage = () => {
 
   return (
     <div className="bg-[#effe8b] min-h-screen">
-      <Header />
+      <Header onMenuToggle={toggleMobileMenu} />
+      {isMobileMenuOpen && (
+        <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+      )}
       <HeroBanner events={events} />
       <CategoriesSection categories={categories} />
       <EventsSection events={events} />

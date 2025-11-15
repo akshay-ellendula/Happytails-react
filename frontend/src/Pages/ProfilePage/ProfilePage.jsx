@@ -1,10 +1,10 @@
 import React, { useState } from "react"; // UPDATED: Import useState
 // UPDATED: Import Header and MobileMenu
-import Header from "../Home/components/Header"; 
-import MobileMenu from "../Home/components/MobileMenu";
+import Header from "../../components/Header"; 
+import MobileMenu from "../../components/MobileMenu";
 import Sidebar from "./components/Sidebar";
 import ProfileForm from "./components/ProfileForm";
-import Footer from "./components/Footer";
+import Footer from "../../components/Footer";
 
 export default function ProfilePage() {
   // UPDATED: Add mobile menu state

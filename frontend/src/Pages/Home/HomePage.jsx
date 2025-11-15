@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import Header from './components/Header';
-import MobileMenu from './components/MobileMenu';
+import Header from '../../components/Header';
+import MobileMenu from '../../components/MobileMenu';
 import Hero from './components/Hero';
 import PetEvents from './components/PetEvents';
 import Shop from './components/Shop';
 import About from './components/About';
-import Footer from './components/Footer';
+import Footer from '../../components/Footer';
 
 function HomePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

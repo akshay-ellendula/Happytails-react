@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 // UPDATED: Removed AccessoryNavbar
-import AccessoryFooter from './components/AccessoryFooter';
+import Footer from '../../components/Footer';
 import { axiosInstance } from '../../utils/axios'; // This is needed for fetchProduct
 import { useCart } from '../../context/CartContext'; // ADDED
 // UPDATED: Import Header and MobileMenu
-import Header from '../Home/components/Header';
-import MobileMenu from '../Home/components/MobileMenu';
+import Header from '../../components/Header';
+import MobileMenu from '../../components/MobileMenu';
 // --- Import Social Icons ---
 import { Facebook, Instagram, Twitter, ArrowLeft, ShoppingCart, Package, Star } from 'lucide-react';
 // --- End Import ---
@@ -410,7 +410,7 @@ const ProductDetailPage = () => {
                 </div>
             </div>
 
-            <AccessoryFooter />
+            <Footer />
         </>
     );
 };

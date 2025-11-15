@@ -2,13 +2,18 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../../utils/axios.js";
-import Header from "./components/Header";
+import Header from "../../components/Header";
+import MobileMenu from "../../components/MobileMenu";
 import TimerBanner from "./components/TimerBanner";
 import OrderSummary from "./components/OrderSummary";
 import BillingDetails from "./components/BillingDetails";
 import CheckoutModal from "./components/CheckoutModal";
 
 const BookingPage = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const event = location.state?.event;
@@ -130,7 +135,10 @@ const BookingPage = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <Header />
+      <Header onMenuToggle={toggleMobileMenu} />
+      {isMobileMenuOpen && (
+        <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+      )}
       <TimerBanner time={formatTime(timeLeft)} />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

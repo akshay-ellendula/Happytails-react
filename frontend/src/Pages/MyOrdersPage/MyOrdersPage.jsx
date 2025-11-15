@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 // UPDATED: Import Header and MobileMenu
-import Header from "../Home/components/Header"; 
-import MobileMenu from "../Home/components/MobileMenu";
+import Header from "../../components/Header"; 
+import MobileMenu from "../../components/MobileMenu";
 import Sidebar from "../../components/Sidebar"; 
 import Footer from "../../components/Footer"; 
 import { axiosInstance } from "../../utils/axios";

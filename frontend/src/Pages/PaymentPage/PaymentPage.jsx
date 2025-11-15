@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { axiosInstance } from '../../utils/axios';
 import { CreditCard, Calendar, Lock, ArrowLeft } from 'lucide-react';
-import Header from '../Home/components/Header'; // Using the consistent header
-import Footer from '../../components/Footer'; // Using the consistent footer
+import Header from '../../components/Header';
+import MobileMenu from '../../components/MobileMenu';
+import Footer from '../../components/Footer';
 
 const PaymentPage = () => {
   const [cardData, setCardData] = useState({
@@ -94,7 +95,10 @@ const PaymentPage = () => {
 
   return (
     <div className="bg-[#effe8b] min-h-screen flex flex-col font-outfit">
-      <Header />
+      <Header onMenuToggle={toggleMobileMenu} />
+      {isMobileMenuOpen && (
+        <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+      )}
       
       <div className="grow flex items-center justify-center py-12 px-4">
         <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-md border-4 border-black">
