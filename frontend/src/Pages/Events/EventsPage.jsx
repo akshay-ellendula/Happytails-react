@@ -17,16 +17,12 @@ const EventsPage = () => {
       try {
         const response = await axiosInstance.get('/events/public/upcoming');
         const eventsData = response.data;
-        
-        // Handle case when no events found (empty array)
         if (!eventsData || eventsData.length === 0) {
           setEvents(getStaticEvents());
           setCategories(getStaticCategories());
           setLoading(false);
           return;
         }
-
-        // Transform events data for frontend
         const transformedEvents = eventsData.map(event => ({
           id: event._id,
           img: event.images?.thumbnail || '/images/default-event.jpg',
@@ -39,22 +35,17 @@ const EventsPage = () => {
           category: event.category || 'general'
         }));
         setEvents(transformedEvents);
-        // Extract unique categories from events
         const uniqueCategories = [...new Set(eventsData.map(event => event.category))].filter(Boolean);
         const categoryData = uniqueCategories.map(category => ({
           name: category.toUpperCase(),
           type: category.toLowerCase(),
           emoji: getEmojiForCategory(category)
         }));
-
-        // If no categories from API, use fallback
         setCategories(categoryData.length > 0 ? categoryData : getStaticCategories());
       } catch (error) {
         console.error('Error fetching events:', error);
         
-        // Check if it's a 404 (no events found) vs other errors
         if (error.response?.status === 404) {
-          // No events found - use static data instead of showing error
           setEvents(getStaticEvents());
           setCategories(getStaticCategories());
           setError(null);
