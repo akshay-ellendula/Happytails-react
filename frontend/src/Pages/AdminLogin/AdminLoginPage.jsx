@@ -20,13 +20,18 @@ const AdminLoginPage = () => {
     };
 
     try {
-      const res = await axiosInstance.post('/admin/login',jsonData)
-
+      const res = await axiosInstance.post('/admin/login', jsonData);
       const data = res.data;
 
       if (data.success) {
+
+        // ✅ SAVE TOKEN HERE
+        localStorage.setItem("adminToken", data.token);
+
+
         alert("Login Successful");
-        window.location.href = "/admin-dashboard";
+        window.location.href = "/admin/dashboard";
+
       } else {
         alert("Login Failed: " + data.error);
       }
@@ -54,29 +59,17 @@ const AdminLoginPage = () => {
         <form onSubmit={handleSubmit} className="flex flex-col items-center">
           <h1 className="text-2xl font-bold mb-4">Welcome Back!</h1>
 
-          {/* Social */}
           <div className="flex my-4">
             <a className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center mx-2 cursor-pointer">
-              <img
-                src="/icons/google-logo-search-new-svgrepo-com.svg"
-                alt="google"
-                className="h-7"
-              />
+              <img src="/icons/google-logo-search-new-svgrepo-com.svg" alt="google" className="h-7" />
             </a>
             <a className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center mx-2 cursor-pointer">
-              <img
-                src="/icons/facebook-3-logo-svgrepo-com.svg"
-                alt="facebook"
-                className="h-7"
-              />
+              <img src="/icons/facebook-3-logo-svgrepo-com.svg" alt="facebook" className="h-7" />
             </a>
           </div>
 
-          <span className="text-gray-500 text-xs mb-4">
-            or use your account
-          </span>
+          <span className="text-gray-500 text-xs mb-4">or use your account</span>
 
-          {/* Inputs */}
           <input
             type="email"
             placeholder="Email"

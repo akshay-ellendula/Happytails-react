@@ -9,6 +9,15 @@ import EventsPage from './pages/Events/EventsPage';
 import EventDetailPage from "./pages/EventDeatils/EventDetailPage";
 import BookingPage from "./pages/BookingPage/BookingPage";
 import AdminLoginPage from "./pages/AdminLogin/AdminLoginPage";
+import Dashboard from "./Pages/Admin/Dashboard";
+import Users from "./Pages/Admin/Users";
+import EventManagers from "./Pages/Admin/EventManagers";
+import Events from "./Pages/Admin/Events";
+import Products from "./Pages/Admin/Products";
+import Orders from "./Pages/Admin/Orders";
+import Vendors from "./Pages/Admin/Vendors";
+
+
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -33,7 +42,17 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
-      <Route path="/adminLogin" element={<AdminLoginPage/>}/>
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+     <Route path="/admin/dashboard" element={<Dashboard />} />
+     <Route path="/admin/users" element={<Users />} />
+     <Route path="/admin/event-managers" element={<EventManagers />} />
+     <Route path="/admin/events" element={<Events />} />
+     <Route path="/admin/products" element={<Products />} />
+     <Route path="/admin/orders" element={<Orders />} />
+     <Route path="/admin/vendors" element={<Vendors />} />
+
+
+
     </Routes>
   );
 }
