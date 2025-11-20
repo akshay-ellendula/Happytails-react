@@ -1,50 +1,84 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
+  LineChart, Line, PieChart, Pie, Cell, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
 } from "recharts";
+import { axiosInstance } from '../../utils/axios.js'; // Adjust path
+import { Loader2 } from "lucide-react";
 
 const Analytics = () => {
-  // Dynamic data
-  const monthlyData = [
-    { month: "Jan", revenue: 3200, attendance: 85 },
-    { month: "Feb", revenue: 4500, attendance: 95 },
-    { month: "Mar", revenue: 3800, attendance: 78 },
-    { month: "Apr", revenue: 5200, attendance: 97 },
-    { month: "May", revenue: 4300, attendance: 90 },
-    { month: "Jun", revenue: 6000, attendance: 88 },
-    { month: "Jul", revenue: 4900, attendance: 83 },
-    { month: "Aug", revenue: 6100, attendance: 96 },
-    { month: "Sep", revenue: 5500, attendance: 89 },
-    { month: "Oct", revenue: 8900, attendance: 92 },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [basicStats, setBasicStats] = useState(null);
+  const [revenueData, setRevenueData] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [feeData, setFeeData] = useState([]);
+  const [timeFilter, setTimeFilter] = useState("6months");
 
-  const ticketSales = [
-    { name: "Training", value: 45 },
-    { name: "Competition", value: 25 },
-    { name: "Workshop", value: 20 },
-    { name: "Adoption", value: 10 },
-  ];
+  const COLORS = ["#A78BFA", "#60A5FA", "#34D399", "#FBBF24", "#F87171"];
 
-  const COLORS = ["#A78BFA", "#60A5FA", "#34D399", "#FBBF24"];
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all analytics data in parallel
+        const [dashboardRes, eventTypesRes, attendanceRes, feesRes, revenueTrendsRes] = await Promise.all([
+          axiosInstance.get('/analytics/dashboard'),
+          axiosInstance.get('/analytics/event-types'),
+          axiosInstance.get('/analytics/attendance'),
+          axiosInstance.get('/analytics/platform-fees'),
+          axiosInstance.get(`/analytics/revenue-trends?period=${timeFilter}`)
+        ]);
 
-  // Calculate platform fee (6%) and net revenue
-  const platformFeeData = monthlyData.map((d) => ({
-    month: d.month,
-    totalRevenue: d.revenue,
-    platformFee: d.revenue * 0.06,
-  }));
+        // 1. Basic Stats & Performance
+        setBasicStats(dashboardRes.data.basicStats);
+
+        // 2. Revenue Trends (Map backend structure to Recharts)
+        // Backend returns { labels: [], datasets: [{ data: [] }] }
+        const revLabels = revenueTrendsRes.data.labels;
+        const revValues = revenueTrendsRes.data.datasets[0].data;
+        const formattedRevenue = revLabels.map((label, index) => ({
+            name: label,
+            revenue: revValues[index]
+        }));
+        setRevenueData(formattedRevenue);
+
+        // 3. Event Types (Pie Chart)
+        // Backend returns { chartData: { labels, datasets } }
+        const catLabels = eventTypesRes.data.chartData.labels;
+        const catValues = eventTypesRes.data.chartData.datasets[0].data;
+        const formattedCategory = catLabels.map((label, index) => ({
+            name: label,
+            value: catValues[index]
+        }));
+        setCategoryData(formattedCategory);
+
+        // 4. Attendance (Bar Chart)
+        // Backend returns { chartData: { labels, attendanceRates } }
+        const attLabels = attendanceRes.data.chartData.labels;
+        const attValues = attendanceRes.data.chartData.attendanceRates;
+        const formattedAttendance = attLabels.map((label, index) => ({
+            month: label,
+            attendance: attValues[index]
+        }));
+        setAttendanceData(formattedAttendance);
+
+        // 5. Platform Fees
+        // Backend returns array of objects directly
+        setFeeData(feesRes.data);
+
+      } catch (error) {
+        console.error("Error fetching analytics:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, [timeFilter]);
+
+  if (loading) return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin w-10 h-10 text-gray-500" /></div>;
 
   return (
     <>
@@ -52,16 +86,17 @@ const Analytics = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-[#1a1a1a]">Event Analytics</h1>
-            <p className="text-gray-600">
-              Detailed insights and performance metrics
-            </p>
+            <p className="text-gray-600">Detailed insights and performance metrics</p>
           </div>
           <div className="flex items-center space-x-4">
-            <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#effe8b]">
-              <option>Last 30 days</option>
-              <option>Last 3 months</option>
-              <option>Last 6 months</option>
-              <option>Last year</option>
+            <select 
+                value={timeFilter}
+                onChange={(e) => setTimeFilter(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#effe8b]"
+            >
+              <option value="30days">Last 30 days</option>
+              <option value="3months">Last 3 months</option>
+              <option value="6months">Last 6 months</option>
             </select>
           </div>
         </div>
@@ -70,25 +105,23 @@ const Analytics = () => {
       <div className="p-6">
         {/* Summary Section */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h2 className="text-xl font-bold text-[#1a1a1a] mb-6">
-            Event Performance Overview
-          </h2>
+          <h2 className="text-xl font-bold text-[#1a1a1a] mb-6">Event Performance Overview</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="p-4 border border-gray-100 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Total Events</p>
-              <p className="text-2xl font-bold text-[#1a1a1a]">24</p>
+              <p className="text-2xl font-bold text-[#1a1a1a]">{basicStats?.totalEvents || 0}</p>
             </div>
             <div className="p-4 border border-gray-100 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
-              <p className="text-2xl font-bold text-[#1a1a1a]">$42,580</p>
+              <p className="text-2xl font-bold text-[#1a1a1a]">${basicStats?.totalRevenue?.toLocaleString() || 0}</p>
             </div>
             <div className="p-4 border border-gray-100 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Platform Fee (6%)</p>
-              <p className="text-2xl font-bold text-[#1a1a1a]">$2,555</p>
+              <p className="text-2xl font-bold text-[#1a1a1a]">${basicStats?.platformFee?.toLocaleString() || 0}</p>
             </div>
             <div className="p-4 border border-gray-100 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Net Revenue</p>
-              <p className="text-2xl font-bold text-[#1a1a1a]">$40,025</p>
+              <p className="text-2xl font-bold text-[#1a1a1a]">${basicStats?.netRevenue?.toLocaleString() || 0}</p>
             </div>
           </div>
         </div>
@@ -97,36 +130,25 @@ const Analytics = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Revenue Trends */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">
-              Revenue Trends
-            </h2>
+            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">Revenue Trends</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={monthlyData}>
+              <LineChart data={revenueData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="month" />
+                <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#000"
-                  strokeWidth={2}
-                  dot={{ fill: "#000" }}
-                  fillOpacity={0.3}
-                />
+                <Line type="monotone" dataKey="revenue" stroke="#000" strokeWidth={2} dot={{ fill: "#000" }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
           {/* Ticket Sales by Type */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">
-              Ticket Sales by Event Type
-            </h2>
+            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">Ticket Sales by Event Type</h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={ticketSales}
+                  data={categoryData}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
@@ -135,7 +157,7 @@ const Analytics = () => {
                   innerRadius={60}
                   label
                 >
-                  {ticketSales.map((entry, index) => (
+                  {categoryData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -147,11 +169,9 @@ const Analytics = () => {
 
           {/* Attendance Rate */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">
-              Attendance Rate
-            </h2>
+            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">Attendance Rate (%)</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyData}>
+              <BarChart data={attendanceData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -163,11 +183,9 @@ const Analytics = () => {
 
           {/* Platform Fee Breakdown */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">
-              Platform Fee Breakdown
-            </h2>
+            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">Platform Fee Breakdown</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={platformFeeData}>
+              <BarChart data={feeData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="month" />
                 <YAxis />
