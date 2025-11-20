@@ -1,6 +1,6 @@
-// context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { axiosInstance } from '../utils/axios';
+import { useNavigate } from 'react-router';
 
 const AuthContext = createContext();
 
@@ -13,20 +13,49 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null); // Stores { role: '...', ... }
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  // We use navigate inside context for auto-redirects if needed, 
+  // but usually better to handle redirects in the component calling login.
+  // However, App.jsx handles the routing protection.
+
+  // Map roles to their specific endpoints
+  const apiEndpoints = {
+    customer: {
+      signin: '/auth/signin',
+      signup: '/auth/signup',
+    },
+    eventManager: {
+      signin: '/auth/eventManagerSignin',
+      signup: '/auth/eventManagerSignup',
+    },
+    admin: {
+      signin: '/auth/adminSignin',
+      signup: '/auth/adminSignup',
+    },
+    storePartner: {
+      signin: '/auth/storeSignin',
+      signup: '/auth/storeSignup',
+    }
+  };
 
   // Check authentication status on app start
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        // Since JWT is in httpOnly cookie, we need an endpoint to verify auth
-        // Add this endpoint to your backend: /api/auth/verify
         const response = await axiosInstance.get('/auth/verify');
-        setIsAuthenticated(response.data.authenticated);
+        if (response.data.authenticated) {
+          setIsAuthenticated(true);
+          setUser({ role: response.data.role });
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
+        }
       } catch (error) {
-        console.log('User not authenticated or verification failed');
+        console.log('User not authenticated');
         setIsAuthenticated(false);
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -35,17 +64,20 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus();
   }, []);
 
-  const signin = async (userData) => {
+  const signin = async (userData, role = 'customer') => {
     setLoading(true);
     try {
-      console.log('Making signin request with:', userData);
-      const response = await axiosInstance.post('/auth/signin', userData);
-      console.log('Signin response:', response.data);
+      const endpoint = apiEndpoints[role]?.signin;
+      if (!endpoint) throw new Error('Invalid role specified');
+
+      const response = await axiosInstance.post(endpoint, userData);
       
-      // If we reach here, the request was successful and cookie is set
-      setIsAuthenticated(true);
-      
-      return { success: true };
+      if (response.data.success) {
+        setIsAuthenticated(true);
+        setUser({ role }); // Set the role immediately upon success
+        return { success: true, role };
+      }
+      return { success: false, error: 'Login failed' };
     } catch (error) {
       console.error('Signin error:', error);
       const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
@@ -55,17 +87,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async (userData) => {
+  const signup = async (userData, role = 'customer') => {
     setLoading(true);
     try {
-      console.log('Making signup request with:', userData);
-      const response = await axiosInstance.post('/auth/signup', userData);
-      console.log('Signup response:', response.data);
+      const endpoint = apiEndpoints[role]?.signup;
+      if (!endpoint) throw new Error('Invalid role specified');
+
+      const response = await axiosInstance.post(endpoint, userData);
       
-      // If we reach here, the request was successful and cookie is set
-      setIsAuthenticated(true);
-      
-      return { success: true };
+      if (response.data.success) {
+        setIsAuthenticated(true);
+        setUser({ role });
+        return { success: true, role };
+      }
+      return { success: false, error: 'Registration failed' };
     } catch (error) {
       console.error('Signup error:', error);
       const errorMessage = error.response?.data?.message || 'Signup failed. Please try again.';
@@ -78,15 +113,15 @@ export const AuthProvider = ({ children }) => {
   const signout = async () => {
     try {
       await axiosInstance.post("/auth/logout");
+      setIsAuthenticated(false);
+      setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      // Always set authenticated to false on logout
-      setIsAuthenticated(false);
     }
   };
 
   const value = {
+    user,
     isAuthenticated,
     loading,
     signin,
