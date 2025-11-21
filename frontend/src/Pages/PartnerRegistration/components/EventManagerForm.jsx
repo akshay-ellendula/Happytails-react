@@ -21,10 +21,25 @@ const EventManagerForm = ({ loading, setLoading, navigate }) => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+
+    // Special handling for contact number to restrict input
+    if (name === 'contactnumber') {
+      // Remove any non-numeric characters
+      const numericValue = value.replace(/\D/g, '');
+      
+      // Limit to 10 digits
+      if (numericValue.length <= 10) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: numericValue
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
     
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -34,14 +49,15 @@ const EventManagerForm = ({ loading, setLoading, navigate }) => {
   const validateForm = () => {
     const newErrors = {};
     const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-    const contactRegex = /^\d{10}$/;
+    // Updated regex for Indian phone numbers: 10 digits starting with 6-9
+    const contactRegex = /^[6-9]\d{9}$/;
 
     if (!formData.userName.trim() || formData.userName.trim().length < 2) {
       newErrors.userName = 'Name must be at least 2 characters';
     }
 
     if (!contactRegex.test(formData.contactnumber)) {
-      newErrors.contactnumber = 'Contact number must be 10 digits';
+      newErrors.contactnumber = 'Contact number must be 10 digits and start with 6, 7, 8, or 9';
     }
 
     if (!emailRegex.test(formData.email)) {

@@ -136,11 +136,6 @@ export const getEvent = async (req, res) => {
         if (!event) {
             return res.status(404).json({ message: "Event not found" });
         }
-
-        if (req.user.role === 'eventManager' && event.eventManagerId.toString() !== req.user.eventManagerId) {
-            return res.status(403).json({ message: "Access denied" });
-        }
-
         res.status(200).json(event);
 
     } catch (error) {
@@ -238,7 +233,7 @@ export const deleteEvent = async (req, res) => {
 };
 
 //@desc Get event analytics
-//@route GET /api/events/:id/analytics
+//@route GET /api/events/:id/eventAnalytics
 //@access Event Manager
 export const getEventAnalytics = async (req, res) => {
     try {

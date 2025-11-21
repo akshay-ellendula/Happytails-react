@@ -83,10 +83,10 @@ const CheckoutModal = ({ isOpen, onClose, onPaymentSuccess, grandTotal }) => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Simulate payment processing
-      const isSuccess = Math.random() > 0.1; // 90% success rate
+      const isSuccess = Math.random() > 0; 
       
       if (isSuccess) {
-        toast.success('Payment successful! /n🎉 Booking confirmed! ');
+        toast.success('Payment successfull !');
         onPaymentSuccess();
       } else {
         toast.error('Payment failed. Please try again.');

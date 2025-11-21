@@ -3,7 +3,7 @@ import {
   LineChart, Line, PieChart, Pie, Cell, Tooltip, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
 } from "recharts";
-import { axiosInstance } from '../../utils/axios.js'; // Adjust path
+import { axiosInstance } from '../../utils/axios.js';
 import { Loader2 } from "lucide-react";
 
 const Analytics = () => {
@@ -11,7 +11,6 @@ const Analytics = () => {
   const [basicStats, setBasicStats] = useState(null);
   const [revenueData, setRevenueData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
-  const [attendanceData, setAttendanceData] = useState([]);
   const [feeData, setFeeData] = useState([]);
   const [timeFilter, setTimeFilter] = useState("6months");
 
@@ -22,51 +21,32 @@ const Analytics = () => {
       try {
         setLoading(true);
         
-        // Fetch all analytics data in parallel
-        const [dashboardRes, eventTypesRes, attendanceRes, feesRes, revenueTrendsRes] = await Promise.all([
-          axiosInstance.get('/analytics/dashboard'),
-          axiosInstance.get('/analytics/event-types'),
-          axiosInstance.get('/analytics/attendance'),
-          axiosInstance.get('/analytics/platform-fees'),
-          axiosInstance.get(`/analytics/revenue-trends?period=${timeFilter}`)
+        // Fetch analytics data (Removed Attendance API call)
+        const [dashboardRes, eventTypesRes, feesRes, revenueTrendsRes] = await Promise.all([
+          axiosInstance.get('/eventAnalytics/dashboard'),
+          axiosInstance.get('/eventAnalytics/event-types'),
+          axiosInstance.get('/eventAnalytics/platform-fees'),
+          axiosInstance.get(`/eventAnalytics/revenue-trends?period=${timeFilter}`)
         ]);
 
-        // 1. Basic Stats & Performance
+        // 1. Basic Stats
         setBasicStats(dashboardRes.data.basicStats);
 
-        // 2. Revenue Trends (Map backend structure to Recharts)
-        // Backend returns { labels: [], datasets: [{ data: [] }] }
-        const revLabels = revenueTrendsRes.data.labels;
-        const revValues = revenueTrendsRes.data.datasets[0].data;
-        const formattedRevenue = revLabels.map((label, index) => ({
-            name: label,
-            revenue: revValues[index]
-        }));
-        setRevenueData(formattedRevenue);
+        // 2. Revenue Trends
+        // FIX: Controller now returns an array directly, so we set it directly
+        setRevenueData(revenueTrendsRes.data || []);
 
         // 3. Event Types (Pie Chart)
-        // Backend returns { chartData: { labels, datasets } }
-        const catLabels = eventTypesRes.data.chartData.labels;
-        const catValues = eventTypesRes.data.chartData.datasets[0].data;
-        const formattedCategory = catLabels.map((label, index) => ({
-            name: label,
-            value: catValues[index]
+        // FIX: Controller returns an array of objects { event: 'Name', sold: 10, ... }
+        // We map 'event' to 'name' and 'sold' to 'value' for the Pie Chart
+        const formattedCategory = (eventTypesRes.data || []).map((item) => ({
+            name: item.event,
+            value: item.sold
         }));
         setCategoryData(formattedCategory);
 
-        // 4. Attendance (Bar Chart)
-        // Backend returns { chartData: { labels, attendanceRates } }
-        const attLabels = attendanceRes.data.chartData.labels;
-        const attValues = attendanceRes.data.chartData.attendanceRates;
-        const formattedAttendance = attLabels.map((label, index) => ({
-            month: label,
-            attendance: attValues[index]
-        }));
-        setAttendanceData(formattedAttendance);
-
-        // 5. Platform Fees
-        // Backend returns array of objects directly
-        setFeeData(feesRes.data);
+        // 4. Platform Fees
+        setFeeData(feesRes.data || []);
 
       } catch (error) {
         console.error("Error fetching analytics:", error);
@@ -113,15 +93,15 @@ const Analytics = () => {
             </div>
             <div className="p-4 border border-gray-100 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
-              <p className="text-2xl font-bold text-[#1a1a1a]">${basicStats?.totalRevenue?.toLocaleString() || 0}</p>
+              <p className="text-2xl font-bold text-[#1a1a1a]">₹{basicStats?.totalRevenue?.toLocaleString() || 0}</p>
             </div>
             <div className="p-4 border border-gray-100 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Platform Fee (6%)</p>
-              <p className="text-2xl font-bold text-[#1a1a1a]">${basicStats?.platformFee?.toLocaleString() || 0}</p>
+              <p className="text-2xl font-bold text-[#1a1a1a]">₹{basicStats?.platformFee?.toLocaleString() || 0}</p>
             </div>
             <div className="p-4 border border-gray-100 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">Net Revenue</p>
-              <p className="text-2xl font-bold text-[#1a1a1a]">${basicStats?.netRevenue?.toLocaleString() || 0}</p>
+              <p className="text-2xl font-bold text-[#1a1a1a]">₹{basicStats?.netRevenue?.toLocaleString() || 0}</p>
             </div>
           </div>
         </div>
@@ -134,7 +114,7 @@ const Analytics = () => {
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={revenueData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
+                <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
                 <Line type="monotone" dataKey="revenue" stroke="#000" strokeWidth={2} dot={{ fill: "#000" }} />
@@ -164,20 +144,6 @@ const Analytics = () => {
                 <Legend />
                 <Tooltip />
               </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Attendance Rate */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">Attendance Rate (%)</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={attendanceData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="attendance" fill="#34D399" radius={[10, 10, 0, 0]} />
-              </BarChart>
             </ResponsiveContainer>
           </div>
 

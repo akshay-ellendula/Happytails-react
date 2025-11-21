@@ -3,10 +3,10 @@ import { useNavigate } from "react-router";
 import { axiosInstance } from "../../utils/axios";
 import { useAuth } from "../../context/AuthContext";
 
-// Page Components
+// Page Components - Static imports for main pages prevent flickering
 import Dashboard from "./Dashboard"; 
 import Events from "./Events";
-import Analytics from "./Analytics";
+import Analytics from "./Analytics.jsx";
 import Settings from "./Settings";
 import CreateEvent from './CreateEvent.jsx';
 import EditEvent from './EditEvent.jsx';
@@ -22,7 +22,8 @@ import {
   LogOut,
 } from "lucide-react";
 
-// Lazy load components
+// Lazy load components - MUST BE DEFINED OUTSIDE THE COMPONENT
+// If defined inside, they trigger unmount/remount on every parent render, causing infinite API loops.
 const Tickets = React.lazy(() => import("./Tickets"));
 const TicketDetails = React.lazy(() => import("./TicketDetails.jsx"));
 const EditTicket = React.lazy(() => import("./EditTicket"));
@@ -34,16 +35,17 @@ const EventManagerPages = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [currentEvent, setCurrentEvent] = useState(null);
   const [currentTicket, setCurrentTicket] = useState(null);
+  // Keeping track of history for back navigation
   const [pageHistory, setPageHistory] = useState([]);
   
-  // Profile State
+  // Profile State for Sidebar
   const [profile, setProfile] = useState({
     name: "Event Manager",
     email: "loading...",
     profilePic: null
   });
 
-  // Fetch Profile Data for Sidebar
+  // Fetch Profile Data for Sidebar - Runs once on mount
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -55,6 +57,7 @@ const EventManagerPages = () => {
         });
       } catch (error) {
         console.error("Failed to fetch sidebar profile:", error);
+        setProfile(prev => ({ ...prev, email: "Error loading profile" }));
       }
     };
     fetchProfile();
@@ -62,7 +65,7 @@ const EventManagerPages = () => {
 
   // Handle Logout
   const handleLogout = async () => {
-    await signout();
+    await signout(); // Calls auth context logout
     navigate('/service-login'); // Redirect to the service provider login
   };
 
@@ -101,6 +104,7 @@ const EventManagerPages = () => {
 
   // Enhanced navigation with history tracking
   const handlePageChange = (page, data = null, type = null) => {
+    // Push current state to history before moving
     setPageHistory(prev => [...prev, { page: currentPage, data: currentEvent || currentTicket }]);
     
     if (type === 'event' && data) {

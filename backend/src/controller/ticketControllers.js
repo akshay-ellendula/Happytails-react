@@ -61,7 +61,10 @@ export const deleteTicket = async (req, res) => {
 export const postTicket = async (req, res) => {
     const { id: eventId } = req.params
     const customerId = req.user.customerId;
-    const { numberOfTickets, petName, petBreed, petAge } = req.body; // Added pet fields
+    
+    // UPDATED: Destructure contact fields from req.body
+    const { numberOfTickets, name, phone, email, petName, petBreed, petAge } = req.body; 
+
     try {
         const event = await Event.findById(eventId);
         if (!event) {
@@ -80,8 +83,13 @@ export const postTicket = async (req, res) => {
             eventId,
             customerId,
             numberOfTickets,
-            price: totalPrice, // Add the required price field
-            petName: petName || '', // Optional pet fields
+            price: totalPrice,
+            // UPDATED: Map request fields to schema fields
+            contactName: name,
+            contactPhone: phone,
+            contactEmail: email,
+            // Optional pet fields
+            petName: petName || '', 
             petBreed: petBreed || '',
             petAge: petAge || null,
         });

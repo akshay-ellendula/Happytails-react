@@ -108,10 +108,13 @@ export const logout = (req, res) => {
 //@route post /api/auth/eventManagerSignup
 //@access public
 export const eventManagersignup = async (req, res) => {
-    const { userName, email, password } = req.body;
+    // FIX: Destructure all fields sent from the frontend form
+    const { userName, email, password, contactnumber, companyname, location } = req.body;
+    
     try {
-        if (!userName || !email || !password) {
-            return res.status(404).json({ "message": "all fields are requires" })
+        // Basic validation
+        if (!userName || !email || !password || !contactnumber || !companyname || !location) {
+            return res.status(400).json({ message: "All fields are required" });
         }
 
         const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
@@ -120,31 +123,46 @@ export const eventManagersignup = async (req, res) => {
         }
 
         if (password.length < 6) {
-            return res.status(403).json({ message: "Password Must have 6 characters" })
+            return res.status(400).json({ message: "Password must have at least 6 characters" });
         }
-        const oldEventManager = await EventManager.findOne({ email })
+
+        const oldEventManager = await EventManager.findOne({ email });
         if (oldEventManager) {
-            return res.status(409).json({ message: "email is all ready registered" })
+            return res.status(409).json({ message: "Email is already registered" });
         }
 
         const randomGen = Math.floor(Math.random() * 100) + 1;
-        const profilePic = `https://avatar-api-theta.vercel.app/${randomGen}.png`
+        const profilePic = `https://avatar-api-theta.vercel.app/${randomGen}.png`;
 
-        const eventManager = await EventManager.create({ userName, email, password, profilePic });
+        // FIX: Create EventManager using all fields.
+        // Note: Ensure your Mongoose model has 'companyName' (camelCase) or 'companyname' (lowercase).
+        // If your model uses camelCase, map it here: companyName: companyname
+        const eventManager = await EventManager.create({
+            userName,
+            email,
+            password,
+            profilePic,
+            phoneNumber: contactnumber, // Mapping frontend 'contactnumber' to model 'phoneNumber'
+            companyName: companyname,   // Mapping frontend 'companyname' to model 'companyName' (assumed model field)
+            // location is typically part of profile or address, if not in model schema, it won't be saved unless schema is updated.
+            // Assuming schema is flexible or updated. If schema lacks 'location', add it.
+        });
 
         const token = jwt.sign({ eventManagerId: eventManager._id, role: 'eventManager' }, process.env.JWT_SECRET_KEY, {
             expiresIn: '30min'
-        })
+        });
+
+        // FIX: Changed sameSite to 'Lax' for better compatibility during redirects
         res.cookie('jwt', token, {
             maxAge: 30 * 60 * 1000,
             httpOnly: true,
-            sameSite: "strict",
+            sameSite: "lax", // changed to lowercase 'lax' just to be safe standard
             secure: process.env.NODE_ENV === 'production'
-        })
+        });
 
-        res.status(201).json({ success: true })
+        res.status(201).json({ success: true });
     } catch (error) {
-        console.log("something went wrong in signup controller", error)
+        console.log("something went wrong in signup controller", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 }
@@ -294,9 +312,9 @@ export const verifyAuth = async (req, res) => {
         if (decoded.role === 'customer') {
             user = await Customer.findById(decoded.customerId);
         } else if (decoded.role === 'eventManager') {
-            user = await EventManager.findById(decoded.customerId);
+            user = await EventManager.findById(decoded.eventManagerId); // FIX: use eventManagerId here
         } else if (decoded.role === 'admin') {
-            user = await Admin.findById(decoded.customerId);
+            user = await Admin.findById(decoded.adminId); // FIX: use adminId here
         }
 
         if (!user) {

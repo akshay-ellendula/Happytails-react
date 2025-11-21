@@ -17,19 +17,19 @@ const Footer = () => {
           <div>
             <h4 className="text-white font-bold mb-3 sm:mb-4 text-sm sm:text-base">Quick Links</h4>
             <ul className="space-y-2 text-white text-xs sm:text-sm">
-              <li><Link to="/about" className="hover:text-[#effe8b] transition">About Us</Link></li>
+              <li><Link to="/" className="hover:text-[#effe8b] transition">About Us</Link></li>
               <li><Link to="/events" className="hover:text-[#effe8b] transition">Pet Events</Link></li>
-              <li><Link to="/adoption" className="hover:text-[#effe8b] transition">Adoption</Link></li>
-              <li><Link to="/blog" className="hover:text-[#effe8b] transition">Blog</Link></li>
+              <li><Link to="/pet_accessory" className="hover:text-[#effe8b] transition">Adoption</Link></li>
+              <li><Link to="/" className="hover:text-[#effe8b] transition">Blog</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="text-white font-bold mb-3 sm:mb-4 text-sm sm:text-base">Support</h4>
             <ul className="space-y-2 text-white text-xs sm:text-sm">
-              <li><Link to="/terms-and-conditions" className="hover:text-[#effe8b] transition">Terms & Conditions</Link></li>
-              <li><Link to="/privacy-policy" className="hover:text-[#effe8b] transition">Privacy Policy</Link></li>
-              <li><Link to="/contact" className="hover:text-[#effe8b] transition">Contact Us</Link></li>
-              <li><Link to="/faq" className="hover:text-[#effe8b] transition">FAQ</Link></li>
+              <li><Link to="/" className="hover:text-[#effe8b] transition">Terms & Conditions</Link></li>
+              <li><Link to="/" className="hover:text-[#effe8b] transition">Privacy Policy</Link></li>
+              <li><Link to="/" className="hover:text-[#effe8b] transition">Contact Us</Link></li>
+              <li><Link to="/" className="hover:text-[#effe8b] transition">FAQ</Link></li>
             </ul>
           </div>
           <div>
@@ -37,9 +37,11 @@ const Footer = () => {
             <p className="text-white text-xs sm:text-sm mb-3 sm:mb-4">
               Organize a pet event? List it on HappyTails!
             </p>
-            <button className="bg-white text-[#1a1a1a] font-bold px-4 sm:px-6 py-2 rounded-full hover:bg-[#effe8b] transition text-xs sm:text-sm border border-white">
-              Get Started
-            </button>
+            <Link to="/partnerRegistrataion">
+              <button className="bg-white text-[#1a1a1a] font-bold px-4 sm:px-6 py-2 rounded-full hover:bg-[#effe8b] transition text-xs sm:text-sm border border-white">
+                Get Started
+              </button>
+            </Link>
           </div>
         </div>
 

@@ -15,18 +15,24 @@ const EventsPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axiosInstance.get('/events/public/upcoming');
-        const eventsData = response.data;
+        setLoading(true);
+        const response = await axiosInstance.get('/events/public');
         
-        // Handle case when no events found (empty array)
-        if (!eventsData || eventsData.length === 0) {
-          setEvents(getStaticEvents());
-          setCategories(getStaticCategories());
-          setLoading(false);
-          return;
-        }
+        console.log("API Response:", response.data); // Check console to see structure
 
-        // Transform events data for frontend
+        // --- FIX START ---
+        // Handle if API returns direct array OR nested object
+        let eventsData = [];
+        if (Array.isArray(response.data)) {
+            eventsData = response.data;
+        } else if (response.data && Array.isArray(response.data.events)) {
+            eventsData = response.data.events; // Handle { events: [...] }
+        } else if (response.data && Array.isArray(response.data.data)) {
+            eventsData = response.data.data;   // Handle { data: [...] }
+        }
+        // --- FIX END ---
+
+        // 1. Transform events data for frontend
         const transformedEvents = eventsData.map(event => ({
           id: event._id,
           img: event.images?.thumbnail || '/images/default-event.jpg',
@@ -34,12 +40,14 @@ const EventsPage = () => {
           date: formatDate(event.date_time),
           title: event.title,
           venue: event.venue,
-          price: event.ticketPrice === 0 || !event.ticketPrice ? 'Free Entry' : `${event.ticketPrice}`,
+          price: event.ticketPrice === 0 || !event.ticketPrice ? 'Free Entry' : `₹${event.ticketPrice}`,
           buttonText: event.ticketPrice === 0 ? 'Free Register' : 'Book tickets',
           category: event.category || 'general'
         }));
+        
         setEvents(transformedEvents);
-        // Extract unique categories from events
+
+        // 2. Extract unique categories dynamically
         const uniqueCategories = [...new Set(eventsData.map(event => event.category))].filter(Boolean);
         const categoryData = uniqueCategories.map(category => ({
           name: category.toUpperCase(),
@@ -47,22 +55,12 @@ const EventsPage = () => {
           emoji: getEmojiForCategory(category)
         }));
 
-        // If no categories from API, use fallback
-        setCategories(categoryData.length > 0 ? categoryData : getStaticCategories());
+        setCategories(categoryData);
+        setError(null);
+
       } catch (error) {
         console.error('Error fetching events:', error);
-        
-        // Check if it's a 404 (no events found) vs other errors
-        if (error.response?.status === 404) {
-          // No events found - use static data instead of showing error
-          setEvents(getStaticEvents());
-          setCategories(getStaticCategories());
-          setError(null);
-        } else {
-          setError('Failed to load events');
-          setEvents(getStaticEvents());
-          setCategories(getStaticCategories());
-        }
+        setError('Failed to load upcoming events.');
       } finally {
         setLoading(false);
       }
@@ -70,6 +68,8 @@ const EventsPage = () => {
 
     fetchData();
   }, []);
+
+  // --- Helper Functions ---
 
   const formatDate = (dateString) => {
     try {
@@ -115,35 +115,26 @@ const EventsPage = () => {
     return emojiMap[category.toLowerCase()] || '🎉';
   };
 
-  const getStaticCategories = () => [
-    { emoji: '🐶', name: 'DOG SHOWS', type: 'dog' },
-    { emoji: '🐱', name: 'CAT EVENTS', type: 'cat' },
-    { emoji: '🎪', name: 'CARNIVALS', type: 'carnival' },
-    { emoji: '🏃', name: 'SPORTS', type: 'sports' },
-    { emoji: '📚', name: 'WORKSHOPS', type: 'workshop' },
-    { emoji: '🏥', name: 'HEALTH', type: 'health' },
-    { emoji: '🎃', name: 'FESTIVALS', type: 'festival' },
-    { emoji: '👥', name: 'MEETUPS', type: 'meetup' },
-  ];
+  // --- Render Logic ---
 
   if (loading) {
     return (
       <div className="bg-[#effe8b] min-h-screen">
         <Header />
-        <div className="flex justify-center items-center h-200">
-          <div className="text-xl">Loading events...</div>
+        <div className="flex justify-center items-center h-96">
+          <div className="text-xl font-medium text-gray-600">Loading events...</div>
         </div>
         <Footer />
       </div>
     );
   }
 
-  if (error && events.length === 0) {
+  if (error) {
     return (
       <div className="bg-[#effe8b] min-h-screen">
         <Header />
-        <div className="flex justify-center items-center h-64">
-          <div className="text-xl text-red-500">{error}</div>
+        <div className="flex justify-center items-center h-96">
+          <div className="text-xl text-red-500 font-semibold">{error}</div>
         </div>
         <Footer />
       </div>
@@ -153,9 +144,20 @@ const EventsPage = () => {
   return (
     <div className="bg-[#effe8b] min-h-screen">
       <Header />
-      <HeroBanner events={events} />
-      <CategoriesSection categories={categories} />
-      <EventsSection events={events} />
+      
+      {events.length > 0 ? (
+        <>
+          <HeroBanner events={events} />
+          {categories.length > 0 && <CategoriesSection categories={categories} />}
+          <EventsSection events={events} />
+        </>
+      ) : (
+        <div className="flex flex-col justify-center items-center h-96 text-center p-4">
+          <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">No Upcoming Events</h2>
+          <p className="text-gray-600">Check back later for new events!</p>
+        </div>
+      )}
+
       <Footer />
     </div>
   );

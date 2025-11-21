@@ -24,6 +24,7 @@ const Dashboard = ({ setCurrentPage }) => {
 
   // --- Helper Functions for Formatting ---
   const formatDate = (dateString) => {
+    if (!dateString) return "Date TBA";
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
@@ -40,32 +41,27 @@ const Dashboard = ({ setCurrentPage }) => {
     return new Date(date) > new Date() ? "Upcoming" : "Completed";
   };
 
-  // --- Data Fetching ---
+ // --- Data Fetching ---
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
         // 1. Fetch Events
-        // URL is now relative to axiosInstance baseURL (/api)
-        // Matches route: router.get('/events/my-events', ...) in eventManagerRoutes.js
         const eventsRes = await axiosInstance.get('/eventManagers/events/my-events');
-        const events = eventsRes.data;
+        const events = Array.isArray(eventsRes.data) ? eventsRes.data : []; 
 
         // 2. Fetch Revenue
-        // Matches route: router.get('/revenue/my-revenue', ...) in eventManagerRoutes.js
         const revenueRes = await axiosInstance.get('/eventManagers/revenue/my-revenue');
-        const totalRevenue = revenueRes.data;
+        const totalRevenue = revenueRes.data?.totalRevenue || revenueRes.data || 0; 
 
         // 3. Fetch Attendees/Tickets
-        // Matches route: router.get('/events/attendees', ...) in eventManagerRoutes.js
         const attendeesRes = await axiosInstance.get('/eventManagers/events/attendees');
-        const tickets = attendeesRes.data;
+        const tickets = Array.isArray(attendeesRes.data) ? attendeesRes.data : [];
 
         // 4. Fetch Analytics for Charts
-        // Assuming these routes exist in your analytics controller
-        const trendRes = await axiosInstance.get('/analytics/revenue-trends');
-        const typeRes = await axiosInstance.get('/analytics/event-types');
+        const trendRes = await axiosInstance.get('/eventAnalytics/revenue-trends');
+        const typeRes = await axiosInstance.get('/eventAnalytics/event-types');
 
         // --- Process & Set State ---
 
@@ -73,31 +69,37 @@ const Dashboard = ({ setCurrentPage }) => {
         setMetrics({
           totalEvents: events.length,
           ticketsSold: tickets.length, 
-          totalRevenue: totalRevenue || 0,
+          totalRevenue: typeof totalRevenue === 'number' ? totalRevenue : 0,
           totalAttendees: tickets.length,
         });
 
         // Process Events (Split into Upcoming vs Recent)
         const now = new Date();
-        const sortedEvents = events.sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        setUpcomingEvents(sortedEvents.filter(e => new Date(e.date) > now).slice(0, 5).map(e => ({
+        // FIX: Used 'date_time' instead of 'date' for sorting
+        const sortedEvents = events.sort((a, b) => new Date(b.date_time) - new Date(a.date_time));
+        
+        // FIX: Used 'date_time' for filtering and mapping
+        setUpcomingEvents(sortedEvents.filter(e => new Date(e.date_time) > now).slice(0, 5).map(e => ({
           id: e._id,
           title: e.title,
-          date: formatDate(e.date),
+          date: formatDate(e.date_time), // Updated field name
           icon: "📅", 
-          tickets: { sold: 0, total: e.capacity || 100 },
+          // Mapped actual ticket stats
+          tickets: { sold: e.tickets_sold || 0, total: e.total_tickets || 100 },
           status: "upcoming",
           color: "from-blue-400 to-blue-600"
         })));
 
-        setRecentEvents(sortedEvents.filter(e => new Date(e.date) <= now).slice(0, 5).map(e => ({
+        // FIX: Used 'date_time' for filtering and mapping
+        setRecentEvents(sortedEvents.filter(e => new Date(e.date_time) <= now).slice(0, 5).map(e => ({
           id: e._id,
           title: e.title,
           location: e.location || "Online",
-          date: formatDate(e.date),
+          date: formatDate(e.date_time), // Updated field name
           icon: "✅",
-          tickets: { sold: 0, total: e.capacity || 100 },
+          // Mapped actual ticket stats
+          tickets: { sold: e.tickets_sold || 0, total: e.total_tickets || 100 },
           status: "completed",
           color: "from-green-400 to-green-600"
         })));
@@ -112,9 +114,11 @@ const Dashboard = ({ setCurrentPage }) => {
           status: "active"
         })));
 
-        // Set Chart Data
-        setRevenueTrend(trendRes.data || []); 
-        setTicketBreakdown(typeRes.data || []);
+        const trendData = trendRes.data;
+        const typeData = typeRes.data;
+
+        setRevenueTrend(Array.isArray(trendData) ? trendData : []); 
+        setTicketBreakdown(Array.isArray(typeData) ? typeData : []);
 
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -243,22 +247,26 @@ const Dashboard = ({ setCurrentPage }) => {
                     </tr>
                     </thead>
                     <tbody>
-                    {recentEvents.map((event) => (
-                        <tr key={event.id} className="border-b border-gray-100">
-                        <td className="py-3">
-                            <div className="flex items-center space-x-3">
-                                <div>
-                                    <p className="font-medium text-[#1a1a1a]">{event.title}</p>
-                                    <p className="text-xs text-gray-500">{event.location}</p>
+                    {recentEvents.length === 0 ? (
+                        <tr><td colSpan="3" className="text-center py-4 text-gray-500">No recent events</td></tr>
+                    ) : (
+                        recentEvents.map((event) => (
+                            <tr key={event.id} className="border-b border-gray-100">
+                            <td className="py-3">
+                                <div className="flex items-center space-x-3">
+                                    <div>
+                                        <p className="font-medium text-[#1a1a1a]">{event.title}</p>
+                                        <p className="text-xs text-gray-500">{event.location}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td className="py-3 text-sm">{event.date}</td>
-                        <td className="py-3">
-                            <span className={getStatusBadge(event.date)}>{getStatusText(event.date)}</span>
-                        </td>
-                        </tr>
-                    ))}
+                            </td>
+                            <td className="py-3 text-sm">{event.date}</td>
+                            <td className="py-3">
+                                <span className={getStatusBadge(event.date)}>{getStatusText(event.date)}</span>
+                            </td>
+                            </tr>
+                        ))
+                    )}
                     </tbody>
                 </table>
                 </div>
@@ -297,14 +305,18 @@ const Dashboard = ({ setCurrentPage }) => {
                 </tr>
                 </thead>
                 <tbody>
-                {recentTickets.map((ticket, index) => (
-                    <tr key={index} className="border-b border-gray-100">
-                    <td className="py-3 text-sm font-medium text-[#1a1a1a]">{ticket.id}</td>
-                    <td className="py-3 text-sm">{ticket.event}</td>
-                    <td className="py-3 text-sm">{ticket.customer}</td>
-                    <td className="py-3 text-sm">₹{ticket.price.toFixed(2)}</td>
-                    </tr>
-                ))}
+                {recentTickets.length === 0 ? (
+                    <tr><td colSpan="4" className="text-center py-4 text-gray-500">No recent ticket sales</td></tr>
+                ) : (
+                    recentTickets.map((ticket, index) => (
+                        <tr key={index} className="border-b border-gray-100">
+                        <td className="py-3 text-sm font-medium text-[#1a1a1a]">{ticket.id}</td>
+                        <td className="py-3 text-sm">{ticket.event}</td>
+                        <td className="py-3 text-sm">{ticket.customer}</td>
+                        <td className="py-3 text-sm">₹{ticket.price.toFixed(2)}</td>
+                        </tr>
+                    ))
+                )}
                 </tbody>
             </table>
             </div>

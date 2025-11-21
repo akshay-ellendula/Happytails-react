@@ -24,13 +24,13 @@ router.route('/')
     .get(protectRoute(['eventManager']), getEventManagerEvents);
 
 router.route('/:id')
-    .get(protectRoute(['eventManager', 'admin']), getEvent)
+    .get( getEvent)
     .put(protectRoute(['eventManager']), upload.fields([
         { name: 'thumbnail', maxCount: 1 },
         { name: 'banner', maxCount: 1 }
     ]), updateEvent)
     .delete(protectRoute(['eventManager']), deleteEvent);
     
-router.get('/:id/analytics', protectRoute(['eventManager']), getEventAnalytics);
+router.get('/:id/eventAnalytics', protectRoute(['eventManager']), getEventAnalytics);
 
 export default router;

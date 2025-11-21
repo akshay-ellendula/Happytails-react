@@ -19,6 +19,7 @@ const EventDetailPage = () => {
     const fetchEventDetails = async () => {
       try {
         const response = await axiosInstance.get(`/events/${id}`);
+        console.log(response)
         setEvent(response.data);
       } catch (error) {
         console.error('Error fetching event details:', error);

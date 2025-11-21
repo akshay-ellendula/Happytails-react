@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-// This helps to generate a ticket ID automtically when ticket created
+// This helps to generate a ticket ID automatically when ticket created
 function generateTicketId() {
     const now = Date.now(); // current time in ms
     const random = Math.floor(100 + Math.random() * 900); // random 3-digit number
@@ -24,6 +24,20 @@ const ticketSchema = new mongoose.Schema({
         ref: 'Customer',
         required: true,
     },
+    // --- NEW FIELDS TO STORE BILLING DETAILS ---
+    contactName: {
+        type: String,
+        required: true
+    },
+    contactPhone: {
+        type: String,
+        required: true
+    },
+    contactEmail: {
+        type: String,
+        required: true
+    },
+    // -------------------------------------------
     numberOfTickets: {
         type: Number,
         required: true

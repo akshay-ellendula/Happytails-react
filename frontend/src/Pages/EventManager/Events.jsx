@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, BarChart3, Trash2, Search, Plus, Loader2 } from 'lucide-react';
-import { axiosInstance } from '../../utils/axios.js'; // Adjust path as needed
+import { Edit, Trash2, Search, Plus, Loader2 } from 'lucide-react'; // Removed BarChart3
+import { axiosInstance } from '../../utils/axios.js';
 
 const Events = ({ setCurrentPage }) => {
   const [events, setEvents] = useState([]);
@@ -12,7 +12,7 @@ const Events = ({ setCurrentPage }) => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        // Matches router.get('/events/my-events', ...) in eventManagerRoutes.js
+        // Matches router.get('/events/my-events', ...)
         const res = await axiosInstance.get('/eventManagers/events/my-events');
         setEvents(res.data);
         setLoading(false);
@@ -29,7 +29,6 @@ const Events = ({ setCurrentPage }) => {
   const handleDelete = async (eventId) => {
     if (window.confirm("Are you sure you want to delete this event?")) {
       try {
-        // Assumes a standard delete route exists
         await axiosInstance.delete(`/events/${eventId}`);
         setEvents(events.filter((event) => event._id !== eventId));
         alert("Event deleted successfully");
@@ -41,7 +40,8 @@ const Events = ({ setCurrentPage }) => {
   };
 
   const handleEdit = (event) => {
-    setCurrentPage("edit-event", event);
+    // Passes "event" as the 3rd argument to ensure state is saved in EventManagerPage
+    setCurrentPage("edit-event", event, "event");
   };
 
   const handleCreateEvent = () => {
@@ -134,7 +134,6 @@ const Events = ({ setCurrentPage }) => {
                       <td className="py-4">
                         <div className="flex items-center space-x-3">
                           <div className={`w-12 h-12 bg-gray-100 rounded-lg overflow-hidden`}>
-                             {/* Display image if available, else fallback */}
                              {event.thumbnail ? (
                                <img src={event.thumbnail} alt={event.title} className="w-full h-full object-cover" />
                              ) : (
@@ -153,7 +152,6 @@ const Events = ({ setCurrentPage }) => {
                       </td>
                       <td className="py-4 text-sm">{event.location}</td>
                       <td className="py-4 text-sm">
-                        {/* Note: tickets_sold might not be in the standard list response unless aggregated */}
                         {event.tickets_sold || 0}/{event.total_tickets} Sold<br/>
                         <span className="font-medium text-gray-600">${event.ticketPrice}</span>
                       </td>
@@ -170,10 +168,6 @@ const Events = ({ setCurrentPage }) => {
                             title="Edit"
                           >
                             <Edit className="w-4 h-4" />
-                          </button>
-                          {/* Link to analytics page if you have one */}
-                          <button className="text-green-600 hover:text-green-800 p-1" title="Analytics">
-                            <BarChart3 className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => handleDelete(event._id)}

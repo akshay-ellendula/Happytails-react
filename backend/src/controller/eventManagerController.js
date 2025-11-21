@@ -1,6 +1,7 @@
 import EventManager from '../models/eventManagerModel.js';
 import Ticket from '../models/ticketModel.js';
 import Event from '../models/eventModel.js';
+import uploadToCloudinary from '../utils/cloudinaryUploader.js';
 //@desc  Fetch all eventManagers from the database
 //@route   GET /api/eventManagers
 //@access admin
@@ -171,6 +172,7 @@ export const getEventManagerEvents = async (req, res) => {
     const eventManagerId = req.user.eventManagerId;
     try {
         const events = await Event.find({ eventManagerId });
+        console.log(events)
         res.status(200).json(events);
     } catch (error) {
         console.error("Error in getEventManagerEvents controller:", error);
@@ -263,7 +265,10 @@ export const getMyProfile = async (req, res) => {
 export const updateMyProfile = async (req, res) => {
     try {
         const eventManagerId = req.user.eventManagerId;
-        const { userName, email, profilePic, companyName, phoneNumber } = req.body;
+        
+        // req.body contains text fields
+        console.log(req.body)
+        const { userName, email, companyName, phoneNumber } = req.body;
 
         const eventManager = await EventManager.findById(eventManagerId);
         if (!eventManager) {
@@ -272,6 +277,7 @@ export const updateMyProfile = async (req, res) => {
 
         // Update fields if provided
         if (userName) eventManager.userName = userName;
+        
         if (email) {
             const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
             if (!emailRegex.test(email)) {
@@ -279,13 +285,24 @@ export const updateMyProfile = async (req, res) => {
             }
             eventManager.email = email;
         }
-        if (profilePic) eventManager.profilePic = profilePic;
+
         if (companyName) eventManager.companyName = companyName;
+        
         if (phoneNumber) {
             if (phoneNumber.length !== 10) {
                 return res.status(400).json({ message: "Invalid phone number format" });
             }
             eventManager.phoneNumber = phoneNumber;
+        }
+
+        // FIX: Handle Image Upload
+        if (req.file) {
+            try {
+                const imageUrl = await uploadToCloudinary(req.file, 'event-managers');
+                eventManager.profilePic = imageUrl;
+            } catch (uploadError) {
+                return res.status(500).json({ message: "Error uploading image" });
+            }
         }
 
         await eventManager.save();

@@ -4,15 +4,15 @@ import { AuthProvider } from "./context/AuthContext";
 
 // Pages
 import HomePage from "./Pages/Home/HomePage";
-import AuthPage from "./Pages/Auth/Authpage";
+import AuthPage from "./Pages/Auth/Authpage"; // Customer Login
+import ServiceProviderLogin from "./Pages/Auth/ServiceProviderLogin"; // Service Provider Login
 import ProductAccessoryPageWrapper from "./Pages/Accessory/ProductAccessoryPageWrapper";
 import EventsPage from "./Pages/Events/EventsPage";
 import EventDetailPage from "./Pages/EventDeatils/EventDetailPage";
 import BookingPage from "./Pages/BookingPage/BookingPage";
 import PartnerRegistration from "./Pages/PartnerRegistration/PartnerRegistrationPage";
 import EventManagerPage from "./Pages/EventManager/EventManagerPage";
-import NotFound from "./pages/NotFoundPage/NotFound.jsx";
-import ServiceProviderLogin from "./pages/Auth/ServiceProviderLogin.jsx";
+import NotFound from "./Pages/NotFoundPage/NotFound"; // Ensure you have a NotFound page
 
 // Components
 import RoleBasedRoute from "./components/RoleBasedRoute";
@@ -26,25 +26,23 @@ function AppRoutes() {
       <Route path="/events" element={<EventsPage />} />
       <Route path="/event/:id" element={<EventDetailPage />} />
       <Route path="/partnerRegistrataion" element={<PartnerRegistration />} />
-      <Route path="/404" element={<NotFound />} />
+      
+      {/* --- Auth Routes --- */}
+      <Route path="/login" element={<AuthPage />} /> {/* Customer Login */}
+      <Route path="/signup" element={<AuthPage />} /> {/* Customer Signup */}
+      <Route path="/service-login" element={<ServiceProviderLogin />} /> {/* Event Manager / Store Login */}
 
-      {/* --- Authentication Routes (Customer) --- */}
-      <Route path="/login" element={<AuthPage />} />
-      <Route path="/signup" element={<AuthPage />} />
-      <Route path="/service-login" element={<ServiceProviderLogin />} />
-
-      {/* --- Customer Protected Routes --- */}
+      {/* --- Protected: Customer --- */}
       <Route 
         path="/booking" 
         element={
-          <RoleBasedRoute allowedRoles={['customer', 'admin']}> 
-             <BookingPage /> 
+          <RoleBasedRoute allowedRoles={['customer', 'admin']}>
+            <BookingPage />
           </RoleBasedRoute>
-        }
+        } 
       />
 
-      {/* --- Event Manager Protected Routes --- */}
-      {/* Note: The EventManagerPage handles its own sub-navigation internally */}
+      {/* --- Protected: Event Manager --- */}
       <Route 
         path="/eventManager/*" 
         element={
@@ -54,27 +52,28 @@ function AppRoutes() {
         } 
       />
 
-      {/* --- Admin Routes (Placeholder for future) --- */}
-      <Route 
-        path="/admin/*" 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-             <div>Admin Dashboard Placeholder</div>
-          </RoleBasedRoute>
-        } 
-      />
-
-      {/* --- Store Partner Routes (Placeholder for future) --- */}
+      {/* --- Protected: Store Partner (Placeholder) --- */}
       <Route 
         path="/store/*" 
         element={
           <RoleBasedRoute allowedRoles={['storePartner', 'admin']}>
-             <div>Store Dashboard Placeholder</div>
+             <div className="p-10">Store Dashboard Coming Soon</div>
           </RoleBasedRoute>
         } 
       />
 
-      {/* Catch all - Redirect to 404 */}
+      {/* --- Protected: Admin (Placeholder) --- */}
+      <Route 
+        path="/admin/*" 
+        element={
+          <RoleBasedRoute allowedRoles={['admin']}>
+             <div className="p-10">Admin Dashboard Coming Soon</div>
+          </RoleBasedRoute>
+        } 
+      />
+
+      {/* --- 404 --- */}
+      <Route path="/404" element={<NotFound />} />
       <Route path="*" element={<Navigate to="/404" replace />} />
     </Routes>
   );
@@ -84,7 +83,7 @@ function App() {
   return (
     <AuthProvider>
       <AppRoutes />
-      <Toaster />
+      <Toaster position="top-center" />
     </AuthProvider>
   );
 }

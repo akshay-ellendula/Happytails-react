@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '../../utils/axios'; // Adjust path
-import { Loader2, Eye, Edit } from 'lucide-react';
+import { Loader2, Eye } from 'lucide-react';
 
 const Tickets = ({ setCurrentPage }) => {
   const [tickets, setTickets] = useState([]);
@@ -46,8 +46,8 @@ const Tickets = ({ setCurrentPage }) => {
   });
 
   const handleViewTicket = (ticket) => {
-    // Use the database ID (ticket.id) to fetch details, pass entire object for immediate rendering
-    setCurrentPage("ticket-details", ticket);
+    // FIX: Added the 3rd argument "ticket" so EventManagerPage saves the data correctly
+    setCurrentPage("ticket-details", ticket, "ticket");
   };
 
   const formatDate = (dateString) => {

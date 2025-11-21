@@ -20,7 +20,7 @@ const BookingPage = () => {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    state: "Telangana",
+    state: "Telangana", // Kept for UI, but won't be sent to backend
     email: "",
     acceptTerms: false,
   });
@@ -105,18 +105,23 @@ const BookingPage = () => {
     setShowModal(true); // Open payment modal
   };
 
+  // UPDATED FUNCTION
   const handlePaymentSuccess = async () => {
     try {
-      // Make API call to create ticket
+      // Make API call to create ticket with ALL details
       await axiosInstance.post(`/tickets/${event.id}`, {
         numberOfTickets: ticketCount,
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        // We intentionally exclude formData.state here
       });
       setTimeout(() => {
         navigate("/");
       }, 3000);
     } catch (error) {
       console.error("Booking failed:", error);
-      toast.error("Booking failed. Please try again.");
+      toast.error(error.response?.data?.message || "Booking failed. Please try again.");
     }
   };
 

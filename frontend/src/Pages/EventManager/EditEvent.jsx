@@ -4,23 +4,25 @@ import { axiosInstance } from '../../utils/axios.js'; // Adjust path
 
 const EditEvent = ({ setCurrentPage, eventData }) => {
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Initialize state with existing data
   const [formData, setFormData] = useState({
     title: eventData?.title || "",
     description: eventData?.description || "",
     category: eventData?.category || "",
     language: eventData?.language || "English",
-    date_time: eventData?.date_time ? new Date(eventData.date_time).toISOString().slice(0, 16) : "", // Format for datetime-local
+    // Format date for datetime-local input (YYYY-MM-DDTHH:MM)
+    date_time: eventData?.date_time ? new Date(eventData.date_time).toISOString().slice(0, 16) : "",
     duration: eventData?.duration || "",
     venue: eventData?.venue || "",
     location: eventData?.location || "",
     total_tickets: eventData?.total_tickets || "",
     ticketPrice: eventData?.ticketPrice || "",
     ageLimit: eventData?.ageLimit || "",
-    thumbnail: null, // Keeps track of NEW file
-    banner: null     // Keeps track of NEW file
+    thumbnail: null, // New file upload state
+    banner: null     // New file upload state
   });
 
-  // Previews for new files
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
 
@@ -47,7 +49,8 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
     setIsLoading(true);
 
     const data = new FormData();
-    // Append text fields
+    
+    // Append all text fields
     Object.keys(formData).forEach(key => {
       if (key !== 'thumbnail' && key !== 'banner') {
         data.append(key, formData[key]);
@@ -59,7 +62,6 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
     if (formData.banner) data.append('banner', formData.banner);
 
     try {
-        // Assumes standard PUT /api/events/:id
         await axiosInstance.put(`/events/${eventData._id}`, data, {
             headers: { "Content-Type": "multipart/form-data" }
         });
@@ -85,7 +87,7 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
             setCurrentPage("events");
         } catch (error) {
             console.error("Delete error:", error);
-            alert("Failed to delete event");
+            alert(error.response?.data?.message || "Failed to delete event");
         }
     }
   };
@@ -111,16 +113,17 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
       <div className="mx-auto py-4 px-4">
         <div className="bg-white rounded-lg shadow-sm p-4">
           
-          {/* Event Status Stats (Static for now, dynamic if props passed) */}
+          {/* Event Status Stats */}
           <div className="bg-blue-50 rounded-lg p-3 mb-4">
              <div className="flex items-center gap-4 text-sm">
-                <span className="font-bold">Current Sales:</span> {eventData.tickets_sold || 0}
+                <span className="font-bold">Tickets Sold:</span> {eventData.tickets_sold || 0} / {eventData.total_tickets}
              </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Basic Information */}
             <div className="border-b border-gray-200 pb-4">
+              <h2 className="text-base font-semibold text-[#1a1a1a] mb-3">Basic Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Event Title</label>
@@ -136,8 +139,7 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
                   ></textarea>
                 </div>
-                {/* ... (Category and Language Selects similar to CreateEvent) ... */}
-                 <div>
+                <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
                   <select name="category" value={formData.category} onChange={handleInputChange} required className="w-full border border-gray-300 rounded px-3 py-2 text-sm">
                     <option value="">Select Category</option>
@@ -148,21 +150,61 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
                     <option value="social">Social Gathering</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Language</label>
+                  <select name="language" value={formData.language} onChange={handleInputChange} required className="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                    <option value="English">English</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="Telugu">Telugu</option>
+                    <option value="Hindi">Hindi</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            {/* Date, Location, Pricing Inputs (Identical structure to CreateEvent, mapped to formData) */}
+            {/* Date & Time */}
             <div className="border-b border-gray-200 pb-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Event Date</label>
-                        <input type="datetime-local" name="date_time" value={formData.date_time} onChange={handleInputChange} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Event Date & Time</label>
+                        <input type="datetime-local" name="date_time" value={formData.date_time} onChange={handleInputChange} required className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
                      </div>
                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1">Price</label>
-                        <input type="number" name="ticketPrice" value={formData.ticketPrice} onChange={handleInputChange} className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Duration</label>
+                        <input type="text" name="duration" value={formData.duration} onChange={handleInputChange} required className="w-full border border-gray-300 rounded px-3 py-2 text-sm" placeholder="e.g., 4 hours" />
                      </div>
-                      {/* Add other fields like Venue, Location, Total Tickets here similarly */}
+                </div>
+            </div>
+
+            {/* Location */}
+            <div className="border-b border-gray-200 pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                     <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Venue Name</label>
+                        <input type="text" name="venue" value={formData.venue} onChange={handleInputChange} required className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                     </div>
+                     <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Location</label>
+                        <input type="text" name="location" value={formData.location} onChange={handleInputChange} required className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                     </div>
+                </div>
+            </div>
+
+            {/* Tickets & Pricing */}
+            <div className="border-b border-gray-200 pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                     <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Total Tickets</label>
+                        <input type="number" name="total_tickets" value={formData.total_tickets} onChange={handleInputChange} required className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                     </div>
+                     <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Ticket Price (₹)</label>
+                        <input type="number" name="ticketPrice" value={formData.ticketPrice} onChange={handleInputChange} required className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                     </div>
+                     <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Age Limit</label>
+                        <input type="text" name="ageLimit" value={formData.ageLimit} onChange={handleInputChange} required className="w-full border border-gray-300 rounded px-3 py-2 text-sm" />
+                     </div>
                 </div>
             </div>
 
@@ -173,12 +215,36 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
                 <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Thumbnail</label>
                     {/* Show Existing Image if no new preview */}
-                    {!thumbnailPreview && eventData.thumbnail && (
-                        <img src={eventData.thumbnail} alt="Current" className="h-20 mb-2 rounded object-cover"/>
+                    {!thumbnailPreview && eventData.images?.thumbnail && (
+                        <img src={eventData.images.thumbnail} alt="Current" className="h-20 mb-2 rounded object-cover"/>
                     )}
                     {/* Show New Preview */}
                     {thumbnailPreview && <img src={thumbnailPreview} alt="New" className="h-20 mb-2 rounded object-cover border-2 border-green-500"/>}
-                    <input type="file" name="thumbnail" onChange={handleFileChange} className="text-sm" />
+                    
+                    <input 
+                      type="file" 
+                      name="thumbnail" 
+                      onChange={handleFileChange} 
+                      accept="image/*"
+                      className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 mt-2" 
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Banner</label>
+                    {/* Show Existing Image if no new preview */}
+                    {!bannerPreview && eventData.images?.banner && (
+                        <img src={eventData.images.banner} alt="Current" className="h-20 mb-2 rounded object-cover"/>
+                    )}
+                    {/* Show New Preview */}
+                    {bannerPreview && <img src={bannerPreview} alt="New" className="h-20 mb-2 rounded object-cover border-2 border-green-500"/>}
+                    
+                    <input 
+                      type="file" 
+                      name="banner" 
+                      onChange={handleFileChange} 
+                      accept="image/*"
+                      className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 mt-2" 
+                    />
                 </div>
               </div>
             </div>
