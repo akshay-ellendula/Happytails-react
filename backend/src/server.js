@@ -9,6 +9,7 @@ import eventRoutes from './router/eventRoutes.js';
 import ticketRoutes from './router/ticketRouter.js';
 import productRoutes from './router/productRoutes.js';
 import eventAnalyticsRoutes from './router/eventAnalyticsRoutes.js';
+import adminRoutes from './router/adminRoutes.js';
 import cors from 'cors';
 
 const app = express();
@@ -31,6 +32,7 @@ app.use("/api/events", eventRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/products', productRoutes);
 app.use("/api/eventAnalytics", eventAnalyticsRoutes);
+app.use('/api/admin',adminRoutes);
 
 const port = process.env.PORT;
 app.listen(port, () => {
