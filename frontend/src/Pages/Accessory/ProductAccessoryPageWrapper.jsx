@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '../../utils/axios'; // Adjust path if needed
 import ProductAccessoryPage from './ProductAccessoryPage';
+import { useAuth } from '../../context/AuthContext'; // UPDATED: Import useAuth
 
 const ProductAccessoryPageWrapper = () => {
+    const { user } = useAuth(); // UPDATED: Get the logged-in user from context
     const [pageData, setPageData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -18,7 +20,8 @@ const ProductAccessoryPageWrapper = () => {
                 console.log("API Response:", response.data); // Debug log
                 if (response.data.success) {
                     setPageData({
-                        user: response.data.user,
+                        // UPDATED: Removed 'user' from here. We get it from useAuth now.
+                        // user: response.data.user, 
                         productsData: response.data.products || [],
                         // Ensure filters has a default structure
                         filters: response.data.filters || { maxPrice: 0, productTypes: [], colors: [], sizes: [] }
@@ -56,7 +59,7 @@ const ProductAccessoryPageWrapper = () => {
     // --- Render the main page component with fetched data ---
     return (
         <ProductAccessoryPage
-            user={pageData.user}
+            user={user} // UPDATED: Pass the correct user from useAuth
             productsData={pageData.productsData}
             filters={pageData.filters}
         />

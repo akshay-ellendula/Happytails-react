@@ -47,8 +47,18 @@ export const signup = async (req, res) => {
             sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
         })
-        req.user = customer;
-        res.status(201).json({ success: true });
+        
+        // UPDATED: Return user info
+        res.status(201).json({ 
+            success: true,
+            user: {
+                customerId: customer._id,
+                email: customer.email,
+                userName: customer.userName,
+                profilePic: customer.profilePic,
+                role: 'customer'
+            }
+        });
     } catch (error) {
         console.log("something went wrong in signup controller", error)
         res.status(500).json({ message: "Internal Server Error" });
@@ -90,8 +100,17 @@ export const signin = async (req, res) => {
             secure: process.env.NODE_ENV === 'production'
         })
 
-        req.user = customer;
-        res.status(200).json({ success: true })
+        // UPDATED: Return user info
+        res.status(200).json({ 
+            success: true,
+            user: {
+                customerId: customer._id,
+                email: customer.email,
+                userName: customer.userName,
+                profilePic: customer.profilePic,
+                role: 'customer'
+            }
+        })
     } catch (error) {
         console.log("something went wrong in signin controller", error)
         res.status(500).json({ message: "Internal Server Error" });
@@ -203,7 +222,17 @@ export const eventManagersignin = async (req, res) => {
             secure: process.env.NODE_ENV === 'production'
         })
 
-        res.status(200).json({ success: true })
+        // UPDATED: Return user info
+        res.status(200).json({ 
+            success: true,
+            user: {
+                eventManagerId: eventManager._id,
+                email: eventManager.email,
+                userName: eventManager.userName,
+                profilePic: eventManager.profilePic,
+                role: 'eventManager'
+            }
+        })
     } catch (error) {
         console.log("something went wrong in eventManager signin controller", error)
         res.status(500).json({ message: "Internal Server Error" });
@@ -247,7 +276,7 @@ export const adminSignup = async (req, res) => {
             secure: process.env.NODE_ENV === 'production'
         });
 
-        res.status(201).json({ success: true });
+        res.status(201).json({ success: true }); // Admin signup probably doesn't need to return user data
 
     } catch (error) {
         console.error("Error in adminSignup controller:", error);
@@ -307,10 +336,19 @@ export const verifyAuth = async (req, res) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-        // Check if user still exists (optional but recommended)
         let user;
+        let userData = { role: decoded.role };
+
         if (decoded.role === 'customer') {
-            user = await Customer.findById(decoded.customerId);
+            user = await Customer.findById(decoded.customerId).select('-password');
+            if (user) {
+                userData.customerId = user._id;
+                userData.email = user.email;
+                userData.userName = user.userName;
+                userData.profilePic = user.profilePic;
+                userData.phoneNumber = user.phoneNumber; // <-- MODIFICATION
+                userData.address = user.address;       // <-- MODIFICATION
+            }
         } else if (decoded.role === 'eventManager') {
             user = await EventManager.findById(decoded.eventManagerId); // FIX: use eventManagerId here
         } else if (decoded.role === 'admin') {
@@ -324,7 +362,7 @@ export const verifyAuth = async (req, res) => {
 
         res.status(200).json({
             authenticated: true,
-            role: decoded.role
+            user: userData // UPDATED: Send user data
         });
     } catch (error) {
         console.log("JWT verification failed:", error);
@@ -395,7 +433,17 @@ export const storePartnerSignup = async (req, res) => {
             secure: process.env.NODE_ENV === 'production'
         });
 
-        res.status(201).json({ success: true, });
+        // UPDATED: Return user data
+        res.status(201).json({ 
+            success: true,
+            user: {
+                storePartnerId: storePartner._id,
+                email: storePartner.email,
+                userName: storePartner.userName,
+                storename: storePartner.storename,
+                role: 'storePartner'
+            }
+        });
 
     }
     catch (error) {
@@ -448,7 +496,6 @@ export const storePartnerSignin = async (req, res) => {
             {
                 storePartnerId: storePartner._id,
                 role: 'storePartner',
-                email: storePartner.email
             },
             process.env.JWT_SECRET_KEY,
             { expiresIn: '30min' }
@@ -462,11 +509,12 @@ export const storePartnerSignin = async (req, res) => {
             secure: process.env.NODE_ENV === 'production'
         });
 
+        // UPDATED: Renamed 'data' to 'user' for consistency
         res.status(200).json({
             success: true,
             message: "Login successful",
-            data: {
-                id: storePartner._id,
+            user: {
+                storePartnerId: storePartner._id,
                 userName: storePartner.userName,
                 email: storePartner.email,
                 storename: storePartner.storename,

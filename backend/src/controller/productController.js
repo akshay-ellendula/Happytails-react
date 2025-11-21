@@ -1,19 +1,22 @@
+// backend/src/controller/productController.js
 
 import { Product, ProductVariant, ProductImage } from '../models/productsModel.js';
 import Customer from '../models/customerModel.js';
 import { Order, OrderItem } from '../models/orderModel.js';       // Added .js
-import multer from 'multer';                                    // Convert to import
-import path from 'path';                                        // Convert to import
-import mongoose from 'mongoose';                                // Convert to import
+import jwt from 'jsonwebtoken'; // UPDATED: Import jwt
+import mongoose from 'mongoose';                                
 import uploadToCloudinary from '../utils/cloudinaryUploader.js';
-const JWT_SECRET = process.env.JWT_SECRET;
+// REMOVED: const JWT_SECRET = process.env.JWT_SECRET_KEY; 
 
+// --- getPetAccessories (UPDATED) ---
 const getPetAccessories = async (req, res) => {
     try {
+        console.log("Fetching pet accessories..."); 
+
         const products = await Product.aggregate([
             {
                 $lookup: {
-                    from: 'productvariants',
+                    from: 'productvariants', 
                     localField: '_id',
                     foreignField: 'product_id',
                     as: 'variants'
@@ -21,78 +24,76 @@ const getPetAccessories = async (req, res) => {
             },
             {
                 $lookup: {
-                    from: 'productimages',
+                    from: 'productimages', 
                     localField: '_id',
                     foreignField: 'product_id',
                     as: 'images'
                 }
             },
             {
-                $unwind: {
-                    path: '$images',
-                    preserveNullAndEmptyArrays: true
+                $addFields: {
+                    primaryImage: {
+                        $filter: {
+                            input: "$images",
+                            as: "image",
+                            cond: { $eq: [ "$$image.is_primary", true ] }
+                        }
+                    }
                 }
             },
-            { $match: { 'images.is_primary': true } },
+            {
+                $unwind: {
+                    path: '$primaryImage',
+                    preserveNullAndEmptyArrays: true 
+                }
+            },
             {
                 $project: {
                     id: { $toString: '$_id' },
                     product_name: 1,
-                    product_type: { $toLower: { $trim: { input: '$product_type' } } }, // Normalize product_type
-                    product_category: 1,
+                    product_type: { $ifNull: [ { $toLower: { $trim: { input: '$product_type' } } }, "unknown" ] },
+                    product_category: 1, 
                     variants: {
                         $map: {
                             input: '$variants',
                             as: 'variant',
                             in: {
-                                size: { $toLower: { $trim: { input: '$$variant.size' } } },
-                                color: { $toLower: { $trim: { input: '$$variant.color' } } },
+                                variant_id: { $toString: '$$variant._id'}, 
+                                size: { $ifNull: [ { $toLower: { $trim: { input: '$$variant.size' } } }, null ] },
+                                color: { $ifNull: [ { $toLower: { $trim: { input: '$$variant.color' } } }, null ] },
                                 regular_price: '$$variant.regular_price',
-                                sale_price: '$$variant.sale_price'
+                                sale_price: '$$variant.sale_price',
+                                stock_quantity: '$$variant.stock_quantity' 
                             }
                         }
                     },
-                    image_data: '$images.image_data',
-                    _id: 0
+                    image_data: '$primaryImage.image_data', 
+                    created_at: 1, 
+                    _id: 0 
                 }
             },
-            { $sort: { created_at: -1 } }
+            { $sort: { created_at: -1 } } 
         ]);
-        // Normalize product types, colors, and sizes as before
-        const productTypesRaw = await Product.aggregate([
-            { $match: { product_type: { $ne: null } } },
-            {
-                $group: {
-                    _id: { $toLower: { $trim: { input: '$product_type' } } }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    product_type: '$_id'
-                }
-            }
+        console.log(`Found ${products.length} products after aggregation.`); 
+
+        // --- Fetch Filters (Ensure these are awaited) ---
+        console.log("Fetching filters..."); 
+        const productTypesRaw = await Product.aggregate([ 
+            { $match: { product_type: { $ne: null, $ne: "" } } }, 
+            { $group: { _id: { $toLower: { $trim: { input: '$product_type' } } } } },
+            { $project: { _id: 0, product_type: '$_id' } }
         ]);
         const productTypes = productTypesRaw.map(item => item.product_type).sort();
 
-        const colorsRaw = await ProductVariant.aggregate([
-            { $match: { color: { $ne: null } } },
-            {
-                $group: {
-                    _id: { $toLower: { $trim: { input: '$color' } } }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    color: '$_id'
-                }
-            }
+        const colorsRaw = await ProductVariant.aggregate([ 
+            { $match: { color: { $ne: null, $ne: "" } } }, 
+            { $group: { _id: { $toLower: { $trim: { input: '$color' } } } } },
+            { $project: { _id: 0, color: '$_id' } }
         ]);
         const colors = colorsRaw.map(item => item.color).sort();
 
         const sizesRaw = await ProductVariant.aggregate([
-            { $match: { size: { $ne: null } } },
+            { $match: { size: { $ne: null, $ne: "" } } }, // Added not empty check
             {
                 $group: {
                     _id: { $toLower: { $trim: { input: '$size' } } }
@@ -107,33 +108,45 @@ const getPetAccessories = async (req, res) => {
         ]);
         const sizes = sizesRaw.map(item => item.size).sort();
 
-        const maxPriceResult = await ProductVariant.find().sort({ regular_price: -1 }).limit(1);
+        const maxPriceResult = await ProductVariant.aggregate([ 
+             { $match: { regular_price: { $ne: null } } }, 
+             { $sort: { regular_price: -1 } },
+             { $limit: 1 },
+             { $project: { _id: 0, regular_price: 1 } }
+        ]);
         const maxPrice = maxPriceResult.length > 0 ? maxPriceResult[0].regular_price : 15000;
+        console.log("Filters fetched:", { productTypes, colors, sizes, maxPrice }); 
 
-        const filters = {
-            productTypes,
-            colors,
-            sizes,
-            maxPrice
-        };
+        const filters = { productTypes, colors, sizes, maxPrice };
 
         return res.json({
             success: true,
-            products: products || [],
+            products: products || [], 
             filters,
         });
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ success: false, message: 'Server error fetching pet accessories.' });
+        console.error("!!! Error in getPetAccessories:", err);
+        return res.status(500).json({
+             success: false,
+             message: 'Server error fetching pet accessories.',
+             error: err.message 
+        });
     }
 };
 
+// --- getProduct (UPDATED) ---
 const getProduct = async (req, res) => {
     try {
         const productId = req.params.id;
+        
+        // Validate if productId is a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+             return res.status(400).json({ success: false, message: 'Invalid product ID format' });
+        }
+
         const product = await Product.findById(productId)
             .select('id product_name product_type product_category product_description');
-        if (!product) return res.status(404).json({ success: false, message: 'Product not found' }); // Changed response from send to json
+        if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
 
         const variants = await ProductVariant.find({ product_id: productId })
             .select('id size color regular_price sale_price stock_quantity');
@@ -147,7 +160,7 @@ const getProduct = async (req, res) => {
             product_category: product.product_category,
             product_description: product.product_description,
             variants: variants.map(v => ({
-                variant_id: v._id,
+                variant_id: v._id, 
                 size: v.size,
                 color: v.color,
                 regular_price: v.regular_price,
@@ -161,26 +174,28 @@ const getProduct = async (req, res) => {
             success: true,
             product: productData,
         });
+
     } catch (err) {
-        console.error(err);
+        console.error("Error fetching product:", err); 
         return res.status(500).json({ success: false, message: 'Server error fetching product details.' });
     }
 };
 
-
+// --- checkout (UPDATED) ---
 const checkout = async (req, res) => {
     try {
-        // Check for required user profile fields
         const customerID = req.user.customerId;
 
         const customer = await Customer.findById(customerID);
         if (!customer) {
             return res.status(404).json({ message: "User not found" })
         }
-        if (!customer.userName || !customer.ema || !customer.phoneNumber || !customer.address) {
+        
+        // UPDATED: Check for address object and city
+        if (!customer.userName || !customer.email || !customer.phoneNumber || !customer.address || !customer.address.city) {
             return res.status(400).json({
                 success: false,
-                message: 'Please complete your profile information before proceeding to checkout.'
+                message: 'Please complete your profile information (including address) before proceeding to checkout.'
             });
         }
 
@@ -193,10 +208,9 @@ const checkout = async (req, res) => {
             });
         }
 
-        // Clean cart data - remove image_data and ensure proper structure
         const cleanCart = cart.map(item => ({
             product_id: item.product_id || null,
-            variant_id: item.variant_id || null,
+            variant_id: item.variant_id || null, 
             product_name: item.product_name,
             quantity: parseInt(item.quantity) || 1,
             price: parseFloat(item.price) || 0,
@@ -204,21 +218,20 @@ const checkout = async (req, res) => {
             color: item.color || null
         }));
 
-        // Validate cart items have required fields
         const invalidItems = cleanCart.filter(item =>
-            !item.product_id || !item.product_name || item.quantity <= 0 || item.price <= 0
+            !item.product_id || !item.variant_id || !item.product_name || item.quantity <= 0 || item.price < 0 // Price can be 0 for free items
         );
 
         if (invalidItems.length > 0) {
+            console.warn("Invalid cart items detected:", invalidItems);
             return res.status(400).json({
                 success: false,
                 message: 'Invalid cart items detected'
             });
         }
 
-        // Calculate totals
         const subtotal = cleanCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const charge = subtotal * 0.04;
+        const charge = subtotal * 0.04; 
         const total = subtotal + charge;
 
         const orderTotals = {
@@ -226,27 +239,26 @@ const checkout = async (req, res) => {
         }
 
         const payload = {
-            customerId: customerId,
+            customerId: customerID,
             orderTotals: orderTotals,
             cleanCart: cleanCart
         };
 
-        const checkoutToken = jwt.sign(payload, JWT_SECRET, {
+        // FIXED: Use process.env.JWT_SECRET_KEY directly
+        const checkoutToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
             expiresIn: '15m'
         });
 
-        // 2. 🍪 Set the JWT in an HTTP-only Cookie
-        // The maxAge should match the token expiry (15 minutes * 60 seconds * 1000 ms)
         res.cookie('checkout_session', checkoutToken, {
-            httpOnly: true, // Crucial for security (prevents client-side JS access)
-            secure: process.env.NODE_ENV === 'production', // Use 'secure: true' in production (requires HTTPS)
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === 'production', 
             maxAge: 15 * 60 * 1000,
-            sameSite: 'Lax' // Recommended setting for CSRF mitigation
+            sameSite: 'strict' 
         });
 
         return res.json({
             success: true,
-            redirectUrl: '/payment',
+            redirectUrl: '/payment', // You need to create this frontend route
         });
     } catch (err) {
         console.error('Checkout error:', err);
@@ -257,13 +269,16 @@ const checkout = async (req, res) => {
     }
 };
 
+
+// --- processPayment (UPDATED) ---
 const processPayment = async (req, res) => {
     try {
-
-        const { cardNumber, expiryDate, cvv } = req.body;
+        // UPDATED: Read token from cookie
+        const checkoutToken = req.cookies.checkout_session;
+        const { cardNumber, expiryDate, cvv } = req.body; // You would use these to call a real payment gateway
 
         if (!checkoutToken) {
-            return res.status(401).json({ message: 'Checkout session expired or missing token.' });
+            return res.status(401).json({ success: false, message: 'Checkout session expired or missing token.' });
         }
 
         let orderTotals;
@@ -271,16 +286,15 @@ const processPayment = async (req, res) => {
         let customerID;
 
         try {
-            // 2. JWT Verification and extraction
-            const decoded = jwt.verify(checkoutToken, JWT_SECRET);
+            // FIXED: Use process.env.JWT_SECRET_KEY directly
+            const decoded = jwt.verify(checkoutToken, process.env.JWT_SECRET_KEY);
 
             orderTotals = decoded.orderTotals;
-            cleanCart = decoded.cleanCart;
+            cleanCart = decoded.cleanCart; // UPDATED: Use 'cleanCart'
             customerID = decoded.customerId;
 
         } catch (err) {
             console.error('JWT validation failed:', err.message);
-            // Clear the invalid cookie
             res.clearCookie('checkout_session');
             return res.status(401).json({
                 success: false,
@@ -288,16 +302,16 @@ const processPayment = async (req, res) => {
             });
         }
 
-        // Validate all required data
-        if (!cart || !orderTotals || !cardNumber) {
-            console.error('Missing values');
+        // UPDATED: Validate 'cleanCart'
+        if (!cleanCart || !orderTotals || !cardNumber) {
+            console.error('Missing values for payment processing');
             return res.status(400).json({
                 success: false,
-                message: 'Unable to fetch Cart'
+                message: 'Unable to fetch Cart or payment details'
             });
         }
 
-        // Validate card number (basic validation)
+        // Basic card validation (SIMULATION)
         const cleanCardNumber = cardNumber.replace(/\s/g, '');
         if (cleanCardNumber.length !== 16 || isNaN(cleanCardNumber)) {
             return res.status(400).json({
@@ -305,49 +319,70 @@ const processPayment = async (req, res) => {
                 message: 'Invalid card number'
             });
         }
+        // Add expiry (MM/YY format, future date) and CVC (3-4 digits) validation here
 
         const paymentLastFour = cleanCardNumber.slice(-4);
 
-        // Create order with transaction
+        // --- Database Transaction ---
         const session = await mongoose.startSession();
         session.startTransaction();
-
         try {
+            // Create Order document
             const order = await Order.create([{
-                customer_id: req.user.customerId,
+                customer_id: customerID, // Use customerID from token
                 order_date: new Date(),
-                status: 'Pending',
+                status: 'Pending', 
                 subtotal: orderTotals.subtotal,
                 total_amount: orderTotals.total,
                 payment_last_four: paymentLastFour
             }], { session });
 
-            // Create order items
-            const orderItems = cart.map(item => ({
+            // Create OrderItem documents
+            // UPDATED: Use 'cleanCart'
+            const orderItems = cleanCart.map(item => ({
                 order_id: order[0]._id,
-                product_id: item.product_id || null,
-                variant_id: item.variant_id || null,
+                product_id: item.product_id, 
+                variant_id: item.variant_id, 
                 product_name: item.product_name,
                 quantity: item.quantity,
-                price: item.price,
-                size: item.size || null,
-                color: item.color || null
+                price: item.price, 
+                size: item.size,
+                color: item.color
             }));
-
             await OrderItem.insertMany(orderItems, { session });
+
+            // UPDATED: Update product variant stock quantity
+            for (const item of cleanCart) {
+                const updateResult = await ProductVariant.updateOne(
+                    { _id: item.variant_id, stock_quantity: { $gte: item.quantity } }, 
+                    { $inc: { stock_quantity: -item.quantity } },
+                    { session }
+                );
+                if (updateResult.matchedCount === 0 || updateResult.modifiedCount === 0) {
+                     throw new Error(`Insufficient stock for ${item.product_name} (${item.size || ''} ${item.color || ''})`);
+                }
+            }
 
             // Commit transaction
             await session.commitTransaction();
+            
+            res.clearCookie('checkout_session'); // Clear cookie on success
+            
             return res.json({
                 success: true,
                 redirectUrl: '/my_orders'
             });
         } catch (transactionError) {
             await session.abortTransaction();
-            throw transactionError;
+            console.error('Transaction Error during payment:', transactionError); 
+            const errorMessage = transactionError.message.includes('Insufficient stock')
+                ? transactionError.message
+                : 'Failed to process payment due to a server error.';
+            return res.status(400).json({ success: false, message: errorMessage }); 
         } finally {
             session.endSession();
         }
+        // --- End Transaction ---
 
     } catch (err) {
         console.error('Payment processing error:', err);
@@ -358,64 +393,88 @@ const processPayment = async (req, res) => {
     }
 };
 
+// --- getUserOrders (UPDATED) ---
 const getUserOrders = async (req, res) => {
     
     try {
         const orders = await Order.find({ customer_id: req.user.customerId})
             .sort({ order_date: -1 })
-            .lean();
+            .lean(); 
+
+        if (!orders || orders.length === 0) {
+            return res.json({ success: true, orders: [] }); 
+        }
 
         const populatedOrders = await Promise.all(orders.map(async order => {
             const items = await OrderItem.find({ order_id: order._id }).lean();
-
             const detailedItems = await Promise.all(items.map(async item => {
-                const imageDoc = await ProductImage.findOne({ product_id: item.product_id, is_primary: true });
+                let imageData = null; // Use null instead of path
+                if (item.product_id) {
+                    const imageDoc = await ProductImage.findOne({
+                        product_id: item.product_id,
+                        is_primary: true
+                    }).select('image_data').lean(); 
+                    imageData = imageDoc?.image_data || null; // Use null if no image
+                }
                 return {
                     ...item,
-                    image_data: imageDoc?.image_data
+                    image_data: imageData
                 };
             }));
-
             return {
                 ...order,
-                id: order._id.toString(),
+                id: order._id.toString(), 
                 items: detailedItems
             };
         }));
 
         res.json({ success: true, orders: populatedOrders });
     } catch (error) {
-        console.error(error);
+        console.error("Error fetching user orders:", error); 
         res.status(500).json({ success: false, message: 'Failed to fetch orders' });
     }
 };
 
+// --- reorder (UPDATED) ---
 const reorder = async (req, res) => {
     try {
         const orderId = req.params.orderId;
+
+        // UPDATED: Use 'customer_id' to match schema
+        const order = await Order.findOne({ _id: orderId, customer_id: req.user.customerId }).lean(); 
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found or access denied' });
+        }
+
         const items = await OrderItem.find({ order_id: orderId }).lean();
-        if (items.length === 0) return res.status(404).json({ success: false, message: 'Order not found' });
-        // Get product images for each item
+        if (items.length === 0) return res.status(404).json({ success: false, message: 'Order items not found' });
+        
         const cartItems = await Promise.all(items.map(async (item) => {
-            const imageDoc = await ProductImage.findOne({
-                product_id: item.product_id,
-                is_primary: true
-            });
+            // UPDATED: Fetch image data
+            let imageData = null;
+            if (item.product_id) {
+                 const imageDoc = await ProductImage.findOne({
+                    product_id: item.product_id,
+                    is_primary: true
+                }).select('image_data').lean();
+                imageData = imageDoc ? imageDoc.image_data : null;
+            }
+           
             return {
                 product_id: item.product_id ? item.product_id.toString() : null,
                 variant_id: item.variant_id ? item.variant_id.toString() : null,
                 product_name: item.product_name,
                 quantity: item.quantity,
-                price: item.price,
+                price: item.price, 
                 size: item.size || null,
                 color: item.color || null,
-                image_data: imageDoc ? imageDoc.image_data : null
+                image_data: imageData // UPDATED: Include image data
             };
         }));
         res.json({ success: true, cart: cartItems });
     } catch (err) {
         console.error('Reorder error:', err);
-        res.status(500).json({ success: false, message: 'Failed to fetch order items' });
+        res.status(500).json({ success: false, message: 'Failed to fetch order items for reorder' });
     }
 };
 export {

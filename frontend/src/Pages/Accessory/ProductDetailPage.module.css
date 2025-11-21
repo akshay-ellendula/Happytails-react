@@ -1,0 +1,205 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+/* --- Global Reset for this Module --- */
+.container {
+    all: unset;
+    font-family: 'Outfit', sans-serif;
+    box-sizing: border-box;
+    display: block; /* Make divs behave like divs */
+}
+
+body {
+    background-color: #effe8b; 
+}
+
+/* --- Navbar Styles --- */
+/* These styles are now only for the *wrapper* Your actual navbar component has its own styles */
+
+
+/* --- Product Detail Styles --- */
+
+.mini_nav {
+    font-size: 18px;
+    font-weight: 600;
+    font-family: Arial, sans-serif;
+    color: black;
+    background-color: #effe8b; 
+    padding: 10px;
+}
+
+.mini_nav a {
+    text-decoration: none;
+    color: black;
+}
+
+.mini_nav a:hover {
+    text-decoration: underline;
+}
+
+.mini_nav span {
+    margin: 0 5px;
+    color: black;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.product_container {
+    width: auto;
+    display: flex;
+    gap: 30px;
+    flex: 1;
+}
+
+.image_container {
+    width: 600px;
+    height: 600px;
+}
+
+.image_container img {
+    width: 100%;
+    aspect-ratio: 1/1;
+    object-fit: cover;
+}
+
+.product_details {
+    width: 50%;
+}
+
+.h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    font-weight: bold; /* Added */
+}
+
+.h4 {
+    font-weight: bold;
+}
+
+.p {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+/* Price strike-through */
+.strikethrough {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* Cart message styles */
+.success {
+    color: green !important;
+    font-size: 1rem !important;
+}
+.error {
+    color: red !important;
+    font-size: 1rem !important;
+}
+
+.button {
+    margin-top: 10px;
+    margin-bottom: 30px;
+    width: 100%;
+    padding: 10px 20px;
+    background-color: #1a1a1a;
+    color: #effe8b;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    font-size: 1rem; /* Added */
+}
+
+.button:hover {
+    background-color: #effe8b;
+    color: #1a1a1a;
+}
+
+.product_details label{
+    display: block;
+    margin-bottom: 10px;
+}
+
+.select, .input {
+    display: block;
+    margin-bottom: 10px;
+    padding: 10px;
+    box-sizing: border-box; /* Added */
+}
+
+.select {
+    width: 80%;
+    margin-bottom: 40px;
+}
+
+.input {
+    width: 40%;
+    margin-bottom: 20px;
+}
+
+
+.socials {
+    margin-top: 20px;
+    display: flex;
+    gap: 40px;
+}
+
+.socials img {
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+}
+
+/* --- Footer Styles --- */
+
+
+/* --- Mobile Styles --- */
+@media (max-width: 768px) {
+    body, html {
+        overflow-x: hidden;
+    }
+
+    .navbar {
+        margin: 5px 20px;
+    }
+
+    .product_container {
+        flex-direction: column;
+    }
+
+    .product_details {
+        width: 100%; 
+        margin-bottom: 50px; 
+    }
+
+    .h1 {
+        font-size: 1.2rem;
+    }
+
+    .image_container {
+        width: 400px;
+        height: 400px;
+    }
+
+    .select {
+        width: 100%;
+        margin-bottom: 40px;
+    }
+    
+    .input {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 390px) {
+    .image_container {
+        width: 300px;
+        height: 300px;
+    }
+}

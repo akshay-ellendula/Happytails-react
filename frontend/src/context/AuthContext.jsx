@@ -12,10 +12,11 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // { role: 'customer' | 'eventManager' | 'admin' | 'storePartner', ... }
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Endpoints configuration
+  // Role-based endpoint configuration
   const authConfig = {
     customer: {
       signin: '/auth/signin',
@@ -35,87 +36,126 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 1. Verify Auth on Mount
+  // 1. Check Auth Status on Mount
   useEffect(() => {
-    const verifyAuth = async () => {
+    const checkAuthStatus = async () => {
       try {
-        const res = await axiosInstance.get('/auth/verify');
-        if (res.data.authenticated) {
-          setUser({ role: res.data.role });
-        } else {
-          setUser(null);
+        const response = await axiosInstance.get('/auth/verify');
+        
+        setIsAuthenticated(response.data.authenticated);
+        
+        if (response.data.authenticated && response.data.user) {
+            setUser(response.data.user);
         }
       } catch (error) {
-        console.error("Auth verification failed", error);
+        console.log('User not authenticated or verification failed');
+        setIsAuthenticated(false);
         setUser(null);
       } finally {
         setLoading(false);
       }
     };
-    verifyAuth();
+
+    checkAuthStatus();
   }, []);
 
-  // 2. Unified Sign In
-  const signin = async (credentials, role = 'customer') => {
+  // 2. Update Local User State (for Profile updates)
+  const updateUser = (newUserData) => {
+    setUser(prevUser => ({
+      ...prevUser,
+      ...newUserData
+    }));
+  };
+
+  // 3. Unified Sign In
+  const signin = async (userData, role = 'customer') => {
     setLoading(true);
     try {
-      const endpoint = authConfig[role]?.signin;
-      if (!endpoint) throw new Error('Invalid role');
-
-      const res = await axiosInstance.post(endpoint, credentials);
+      // Get the correct endpoint based on role
+      const endpoint = authConfig[role]?.signin || authConfig.customer.signin;
       
-      if (res.data.success) {
-        setUser({ role }); // Update global state immediately
-        return { success: true, role };
+      const response = await axiosInstance.post(endpoint, userData);
+
+      // Special logic for Customers: Fetch full profile details
+      if (role === 'customer' && response.data.user?.customerId) {
+        const id = response.data.user.customerId;
+        try {
+           const fullUserResponse = await axiosInstance.get(`/public/${id}`);
+           setUser(fullUserResponse.data);
+        } catch (fetchError) {
+           console.error("Could not fetch full user details, using basic info", fetchError);
+           setUser(response.data.user);
+        }
+      } else {
+        // For Admin, Event Managers, etc., use the data returned from login
+        setUser(response.data.user);
       }
-      return { success: false, error: res.data.message };
+
+      setIsAuthenticated(true);
+      return { success: true };
+
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || "Login failed" 
-      };
+      console.error('Signin error:', error);
+      const errorMessage = error.response?.data?.message || 'Login failed. Please try again.';
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
   };
 
-  // 3. Unified Sign Up
-  const signup = async (data, role = 'customer') => {
+  // 4. Unified Sign Up
+  const signup = async (userData, role = 'customer') => {
     setLoading(true);
     try {
-      const endpoint = authConfig[role]?.signup;
-      if (!endpoint) throw new Error('Invalid role');
-
-      const res = await axiosInstance.post(endpoint, data);
+      const endpoint = authConfig[role]?.signup || authConfig.customer.signup;
       
-      if (res.data.success) {
-        setUser({ role });
-        return { success: true, role };
+      const response = await axiosInstance.post(endpoint, userData);
+
+      // Similar fetch logic for signup if backend returns ID immediately
+      if (role === 'customer' && response.data.user?.customerId) {
+         const id = response.data.user.customerId;
+         const fullUserResponse = await axiosInstance.get(`/public/${id}`);
+         setUser(fullUserResponse.data);
+      } else {
+         setUser(response.data.user);
       }
-      return { success: false, error: res.data.message };
+
+      setIsAuthenticated(true);
+      return { success: true };
+
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || "Registration failed" 
-      };
+      console.error('Signup error:', error);
+      const errorMessage = error.response?.data?.message || 'Signup failed. Please try again.';
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
-  };
+  };  
 
-  // 4. Sign Out
+  // 5. Sign Out
   const signout = async () => {
     try {
-      await axiosInstance.post('/auth/logout');
-      setUser(null);
-      // Optional: Redirect logic is usually handled in the component calling signout
+      await axiosInstance.post("/auth/logout");
     } catch (error) {
-      console.error("Logout failed", error);
+      console.error('Logout error:', error);
+    } finally {
+      setIsAuthenticated(false);
+      setUser(null);
     }
+  };
+
+  const value = {
+    isAuthenticated,
+    loading,
+    user,
+    signin,
+    signup,
+    signout,
+    updateUser,
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signin, signup, signout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

@@ -39,6 +39,7 @@
 
 .navbar {
     margin: 5px 75px 5px 75px;
+    background-color: #effe8b;
 }
 
 .header {
@@ -46,12 +47,12 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem 3rem;
+    background-color: #effe8b;
 }
 
 .header a {
     text-decoration: none;
     color: #1a1a1a;
-    font-size: 1.2rem;
     font-weight: 500;
     font-family: "Outfit", sans-serif;
 }
@@ -66,6 +67,7 @@
 }
 
 .badge {
+    all: unset;
     color : #1a1a1a;
     font-size: 2rem;
     transition: 1s all ease;
@@ -377,7 +379,8 @@
     gap: 20px;
 }
 
-.cart_product_details .input { 
+.cart_product_details .input {
+    all: unset; 
     padding: 5px;
     width: 50px;
 }
@@ -683,4 +686,9 @@
     .subtotal_details h3, .subtotal_details .p {
         font-size: 1.2rem;
     }
+}
+
+.product_card_link {
+  text-decoration: none;
+  color: inherit; /* This makes the text color the same as the parent */
 }

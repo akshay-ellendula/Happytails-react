@@ -1,8 +1,9 @@
 import { useParams, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import { axiosInstance } from "../../utils/axios.js";
-import Header from '../Home/components/Header';
-import Footer from '../Home/components/Footer';
+import Header from '../../components/Header';
+import MobileMenu from '../../components/MobileMenu';
+import Footer from '../../components/Footer';
 import HeroSection from './components/HeroSection';
 import AboutSection from './components/AboutSection';
 import EventGuideSection from './components/EventGuideSection';
@@ -76,7 +77,10 @@ const EventDetailPage = () => {
 
   return (
     <div className="bg-[#effe8b] min-h-screen">
-      <Header />
+      <Header onMenuToggle={toggleMobileMenu} />
+      {isMobileMenuOpen && (
+        <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+      )}
       <HeroSection event={event} onBookTickets={handleBookTickets} /> 
       <section className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

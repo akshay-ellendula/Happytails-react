@@ -1,9 +1,11 @@
-import { Search, Menu, LogOut } from 'lucide-react';
+import { Search, Menu, LogOut, ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 const Header = ({ onMenuToggle }) => {
-  const { isAuthenticated, signout } = useAuth();
+  const { isAuthenticated, signout, user } = useAuth();
+  const { openCart } = useCart();
 
   const handleLogout = () => {
     signout();
@@ -35,13 +37,31 @@ const Header = ({ onMenuToggle }) => {
             <button className="md:hidden p-2" onClick={onMenuToggle}>
               <Menu className="w-6 h-6 text-[#1a1a1a]" />
             </button>
+
+            <button 
+              onClick={openCart}
+              className="hidden sm:flex p-2 text-[#1a1a1a] hover:text-[#1a1a1a]/70 transition"
+              title="View Cart"
+            >
+              <ShoppingCart className="w-6 h-6" />
+            </button>
+
             {isAuthenticated ? (
               <div className="hidden sm:flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-10 h-10 bg-yellow-400 rounded-full items-center justify-center text-[#1a1a1a] font-bold border border-black flex">
-                    U
-                  </div>
-                </div>
+                <Link to="/profile" className="flex items-center space-x-2" title="View Profile">
+                  {/* UPDATED: Conditionally render profile pic or initial */}
+                  {user && user.profilePic ? (
+                    <img
+                      src={user.profilePic}
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full border-2 border-black object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-yellow-400 rounded-full items-center justify-center text-[#1a1a1a] font-bold border border-black flex">
+                      {user?.userName ? user.userName.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
+                </Link>
                 <button 
                   onClick={handleLogout}
                   className="flex items-center space-x-2 px-3 py-2 text-[#1a1a1a] hover:text-[#1a1a1a]/70 transition"
