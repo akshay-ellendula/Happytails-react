@@ -91,7 +91,7 @@ const TicketDetails = ({ setCurrentPage, ticketData }) => {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           {/* Header */}
           <div className="text-center p-6 border-b border-gray-200 bg-gray-50">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white text-xl mx-auto mb-3">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl mx-auto mb-3">
               <i className="fas fa-ticket-alt"></i>
             </div>
             <h1 className="text-2xl font-bold text-[#1a1a1a] mb-1">Ticket Confirmation</h1>
