@@ -1,7 +1,7 @@
 // src/Pages/Accessory/ProductDetailPage.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router';
 // UPDATED: Removed AccessoryNavbar
 import Footer from '../../components/Footer';
 import { axiosInstance } from '../../utils/axios'; // This is needed for fetchProduct

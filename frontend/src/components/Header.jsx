@@ -1,5 +1,5 @@
 import { Search, Menu, LogOut, ShoppingCart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 
