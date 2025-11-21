@@ -18,7 +18,6 @@ const Header = ({ onMenuToggle }) => {
           <div className="flex items-center space-x-4 sm:space-x-14">
             <div className="flex items-center space-x-4 sm:space-x-10">
               <Link to="/" className="text-2xl sm:text-3xl font-bold text-[#1a1a1a]">🐾 HappyTails</Link>
-              <span className="hidden sm:inline text-xs bg-white text-[#1a1a1a] font-semibold px-4 py-2 sm:py-5 rounded-full border border-black">HYDERABAD</span>
             </div>
             <nav className="hidden md:flex space-x-8 lg:space-x-28 text-sm lg:text-base font-semibold">
               <Link to="/events" className="text-[#1a1a1a] hover:text-[#1a1a1a]/70 transition">Pet Events</Link>

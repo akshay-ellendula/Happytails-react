@@ -7,7 +7,6 @@ const Header = () => {
           <div className="flex items-center space-x-14">
             <div className="flex items-center space-x-10">
               <div className="text-3xl font-bold text-[#1a1a1a]">🐾 HappyTails</div>
-              <span className="text-xs bg-white text-[#1a1a1a] font-semibold px-4 py-5 rounded-full">HYDERABAD</span>
             </div>
             <nav className="hidden md:flex space-x-28 text-m font-semibold">
               <a href="#" className="text-[#1a1a1a] hover:transition">Pet Events</a>
