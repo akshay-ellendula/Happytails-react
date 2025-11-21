@@ -42,7 +42,7 @@ export const signup = async (req, res) => {
         })
 
         res.cookie('jwt', token, {
-            maxAge: 30 * 60 * 1000,
+            maxAge: 90 * 60 * 1000,
             httpOnly: true,
             sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
@@ -94,7 +94,7 @@ export const signin = async (req, res) => {
         })
 
         res.cookie('jwt', token, {
-            maxAge: 30 * 60 * 1000,
+            maxAge: 90 * 60 * 1000,
             httpOnly: true,
             sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
@@ -173,7 +173,7 @@ export const eventManagersignup = async (req, res) => {
 
         // FIX: Changed sameSite to 'Lax' for better compatibility during redirects
         res.cookie('jwt', token, {
-            maxAge: 30 * 60 * 1000,
+            maxAge: 90 * 60 * 1000,
             httpOnly: true,
             sameSite: "lax", // changed to lowercase 'lax' just to be safe standard
             secure: process.env.NODE_ENV === 'production'
@@ -216,7 +216,7 @@ export const eventManagersignin = async (req, res) => {
             expiresIn: '30min'
         })
         res.cookie('jwt', token, {
-            maxAge: 30 * 60 * 1000,
+            maxAge: 90 * 60 * 1000,
             httpOnly: true,
             sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
@@ -270,7 +270,7 @@ export const adminSignup = async (req, res) => {
         });
 
         res.cookie('jwt', token, {
-            maxAge: 30 * 60 * 1000,
+            maxAge: 90 * 60 * 1000,
             httpOnly: true,
             sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
@@ -283,6 +283,8 @@ export const adminSignup = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
+// ... existing imports
+
 // @desc    Signin for admin
 // @route   POST /api/auth/adminSignin
 // @access  Public
@@ -309,19 +311,30 @@ export const adminSignin = async (req, res) => {
         });
 
         res.cookie('jwt', token, {
-            maxAge: 30 * 60 * 1000,
+            maxAge: 90 * 60 * 1000,
             httpOnly: true,
             sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
         });
 
-        res.status(200).json({ success: true });
+        // ✅ FIX: Return the user object so AuthContext can update state
+        res.status(200).json({ 
+            success: true,
+            user: {
+                adminId: admin._id,
+                userName: admin.userName,
+                email: admin.email,
+                role: 'admin'
+            }
+        });
 
     } catch (error) {
         console.error("Error in adminSignin controller:", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
+// ... existing code
 // Add this to your auth controller
 //@dec verify auth status
 //@route GET /api/auth/verify
@@ -427,7 +440,7 @@ export const storePartnerSignup = async (req, res) => {
 
         // Set cookie
         res.cookie('jwt', token, {
-            maxAge: 30 * 60 * 1000,
+            maxAge: 90 * 60 * 1000,
             httpOnly: true,
             sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
@@ -503,7 +516,7 @@ export const storePartnerSignin = async (req, res) => {
 
         // Set cookie
         res.cookie('jwt', token, {
-            maxAge: 30 * 60 * 1000,
+            maxAge: 90 * 60 * 1000,
             httpOnly: true,
             sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'

@@ -1,9 +1,6 @@
 import express from 'express';
 import {
-    // admin-login.ejs
-    adminLogin,
     logout,
-
     // admin-Customer.ejs, admin-Customer-details.ejs
     getUsers,
     getUser,
@@ -63,15 +60,9 @@ import upload from '../middleware/uploadMiddleware.js';
 import protectRoute from '../middleware/authMiddleware.js'; 
 
 const router = express.Router();
-
 // =======================================================
-// 1. ADMIN AUTHENTICATION
-// =======================================================
-router.post('/login', adminLogin);
 router.get('/logout', protectRoute(['admin']), logout);
 
-
-// =======================================================
 // 2. DASHBOARD / STATS
 // =======================================================
 router.get('/stats', protectRoute(['admin']), dashBoardStats);

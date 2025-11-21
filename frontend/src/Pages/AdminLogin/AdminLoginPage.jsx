@@ -1,42 +1,27 @@
-import React from "react";
-import { useState } from "react";
-import { axiosInstance } from "../../utils/axios";
+import React, { useState } from "react";
+import { useNavigate } from "react-router"; // Use useNavigate for client-side routing
+import { useAuth } from "../../context/AuthContext"; // Import Auth Context
+import { toast } from "react-hot-toast"; // Use toast for consistent UI
 
 const AdminLoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { signin } = useAuth(); // Get signin function from context
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!email || !password) {
-      alert("Fill all fields");
+      toast.error("Please fill all fields");
       return;
     }
+    const result = await signin({ email, password }, 'admin');
 
-    const jsonData = {
-      admin_email: email,
-      admin_password: password,
-    };
-
-    try {
-      const res = await axiosInstance.post('/admin/login', jsonData);
-      const data = res.data;
-
-      if (data.success) {
-
-        // ✅ SAVE TOKEN HERE
-        localStorage.setItem("adminToken", data.token);
-
-
-        alert("Login Successful");
-        window.location.href = "/admin/dashboard";
-
-      } else {
-        alert("Login Failed: " + data.error);
-      }
-    } catch (err) {
-      alert("Network error");
+    if (result.success) {
+      toast.success("Login Successful");
+      navigate("/admin/dashboard");
+    } else {
+      toast.error(result.error || "Login Failed");
     }
   };
 
