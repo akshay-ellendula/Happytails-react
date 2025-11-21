@@ -278,7 +278,7 @@ const Dashboard = ({ setCurrentPage }) => {
                 <div className="space-y-4">
                     {upcomingEvents.length === 0 ? <p className="text-gray-500">No upcoming events.</p> : upcomingEvents.map((event) => (
                     <div key={event.id} className="flex items-start space-x-3 p-3 border border-gray-100 rounded-lg">
-                        <div className={`w-12 h-12 bg-gradient-to-br ${event.color} rounded-lg flex items-center justify-center text-white`}>
+                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white`}>
                             <span>{event.icon}</span>
                         </div>
                         <div className="flex-1">

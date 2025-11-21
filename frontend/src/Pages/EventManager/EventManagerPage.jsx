@@ -208,7 +208,7 @@ const EventManagerPages = () => {
         {/* Dynamic User Profile Footer */}
         <div className="pt-4 border-t border-gray-800">
           <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-800 transition-colors">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
               {profile.profilePic ? (
                  <img src={profile.profilePic} alt="Profile" className="w-full h-full object-cover" />
               ) : (

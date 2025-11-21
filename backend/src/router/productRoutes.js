@@ -1,5 +1,5 @@
 import express from 'express';
-console.log("--- Product routes file loaded ---");
+
 const router = express.Router();
 import { 
     getPetAccessories, 

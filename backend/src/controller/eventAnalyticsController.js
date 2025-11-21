@@ -1,130 +1,240 @@
 import Event from '../models/eventModel.js';
 import Ticket from '../models/ticketModel.js';
+import mongoose from 'mongoose';
 
 // ==========================================
 // CONTROLLER: Get Revenue Trends (Line Chart)
-// Matches Frontend: <LineChart data={revenueTrend}>
+// Supports: 30days (Daily), 3months (Weekly), 6months (Monthly)
 // ==========================================
 export const getRevenueTrends = async (req, res) => {
     try {
-        // In a real app, you would filter by req.user.eventManagerId
-        // For now, we return the mock data structure your frontend needs
-        const period = '6months'; 
-        const revenueData = await generateRevenueTrendsData(period);
+        const eventManagerId = req.user.eventManagerId;
+        const { period } = req.query; 
+
+        // 1. Fetch Event IDs for this Manager
+        const events = await Event.find({ eventManagerId }).select('_id');
+        const eventIds = events.map(e => e._id);
+
+        // 2. Determine Date Range & Grouping Format
+        const endDate = new Date();
+        let startDate = new Date();
+        let groupByFormat;
         
-        // DIRECTLY return the array. 
-        // Frontend: setRevenueTrend(trendRes.data || [])
-        res.status(200).json(revenueData);
+        // "Remove unwanted time interval": Logic is strictly mapped to frontend options
+        switch (period) {
+            case '30days':
+                startDate.setDate(endDate.getDate() - 30);
+                groupByFormat = "%Y-%m-%d"; // Group by Day
+                break;
+            case '3months':
+                startDate.setMonth(endDate.getMonth() - 3);
+                groupByFormat = "%Y-%U"; // Group by Week number
+                break;
+            case '6months':
+            default:
+                startDate.setMonth(endDate.getMonth() - 6);
+                groupByFormat = "%Y-%m"; // Group by Month
+                break;
+        }
+
+        // 3. Aggregate Data
+        const revenueData = await Ticket.aggregate([
+            {
+                $match: {
+                    eventId: { $in: eventIds },
+                    createdAt: { $gte: startDate, $lte: endDate },
+                    status: true // Only count active/paid tickets
+                }
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: groupByFormat, date: "$createdAt" } },
+                    revenue: { $sum: "$price" }
+                }
+            },
+            { $sort: { _id: 1 } } // Sort by date ascending
+        ]);
+
+        // 4. Map for Recharts (XAxis: month/date, Line: revenue)
+        // Note: For a perfect chart, you might want to fill in "0" for missing dates in JS, 
+        // but this returns the actual data points found.
+        const formattedData = revenueData.map(item => {
+            // Beautify labels based on format
+            let label = item._id;
+            if(period === '6months') {
+                const [year, month] = item._id.split('-');
+                const dateObj = new Date(year, month - 1);
+                label = dateObj.toLocaleString('default', { month: 'short' });
+            }
+            return {
+                month: label, 
+                revenue: item.revenue
+            };
+        });
+
+        res.status(200).json(formattedData);
 
     } catch (error) {
-        console.log("Error in getRevenueTrends controller:", error);
+        console.error("Error in getRevenueTrends:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
 
 // ==========================================
-// CONTROLLER: Get Event Type Distribution (Bar Chart)
-// Matches Frontend: <BarChart data={ticketBreakdown}>
+// CONTROLLER: Get Event Type Distribution (Pie Chart)
+// Groups by Event Category
 // ==========================================
 export const getEventTypeDistribution = async (req, res) => {
     try {
         const eventManagerId = req.user.eventManagerId;
 
-        // 1. Fetch Data
-        const events = await Event.find({ eventManagerId });
-        const eventIds = events.map(event => event._id);
-        const tickets = await Ticket.find({ eventId: { $in: eventIds } });
-
-        // 2. Aggregate Data
-        const categoryStats = {};
-        
-        events.forEach(event => {
-            // specific category or fallback
-            const catName = event.category || 'General'; 
-
-            if (!categoryStats[catName]) {
-                categoryStats[catName] = {
-                    event: catName, // "event" matches <XAxis dataKey="event" />
-                    sold: 0,        // "sold" matches <Bar dataKey="sold" />
-                    revenue: 0
-                };
+        // Aggregate: Join Events -> Tickets to count sales per category
+        const categoryStats = await Event.aggregate([
+            { $match: { eventManagerId: new mongoose.Types.ObjectId(eventManagerId) } },
+            {
+                $lookup: {
+                    from: "tickets",
+                    localField: "_id",
+                    foreignField: "eventId",
+                    as: "tickets"
+                }
+            },
+            // Unwind to count individual tickets. 
+            // preserveNullAndEmptyArrays: false removes events with 0 tickets (optional)
+            { $unwind: "$tickets" },
+            {
+                $group: {
+                    _id: "$category", // Group by Category
+                    sold: { $sum: 1 },
+                    revenue: { $sum: "$tickets.price" }
+                }
+            },
+            {
+                $project: {
+                    event: "$_id", // Frontend expects 'event' key for Name
+                    sold: 1,
+                    revenue: 1,
+                    _id: 0
+                }
             }
-            
-            // Calculate Revenue for this specific event
-            const eventTickets = tickets.filter(t => t.eventId.toString() === event._id.toString());
-            const eventRevenue = eventTickets.reduce((sum, t) => sum + t.price, 0);
-            
-            // Accumulate
-            // assuming event.tickets_sold is a field in your Event model, otherwise use eventTickets.length
-            const soldCount = event.tickets_sold || eventTickets.length || 0;
-            
-            categoryStats[catName].sold += soldCount;
-            categoryStats[catName].revenue += eventRevenue;
-        });
+        ]);
 
-        // 3. Convert Object to Array for Recharts
-        // Output: [{ event: 'Music', sold: 120, revenue: 5000 }, ...]
-        const chartData = Object.values(categoryStats);
-
-        res.status(200).json(chartData);
+        // If no data, return empty array to prevent frontend crash
+        res.status(200).json(categoryStats || []);
 
     } catch (error) {
-        console.log("Error in getEventTypeDistribution controller:", error);
+        console.error("Error in getEventTypeDistribution:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
 
 // ==========================================
-// CONTROLLER: Dashboard Analytics (General)
+// CONTROLLER: Platform Fees Breakdown (Bar Chart)
+// Fixed to last 6 months as typically required for breakdown
+// ==========================================
+export const getPlatformFeeBreakdown = async (req, res) => {
+    try {
+        const eventManagerId = req.user.eventManagerId;
+        const events = await Event.find({ eventManagerId }).select('_id');
+        const eventIds = events.map(e => e._id);
+
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+        const monthlyData = await Ticket.aggregate([
+            {
+                $match: {
+                    eventId: { $in: eventIds },
+                    createdAt: { $gte: sixMonthsAgo },
+                    status: true
+                }
+            },
+            {
+                $group: {
+                    _id: { 
+                        month: { $month: "$createdAt" }, 
+                        year: { $year: "$createdAt" } 
+                    },
+                    totalRevenue: { $sum: "$price" }
+                }
+            },
+            { $sort: { "_id.year": 1, "_id.month": 1 } }
+        ]);
+
+        const formattedData = monthlyData.map(item => {
+            const date = new Date(item._id.year, item._id.month - 1);
+            const monthName = date.toLocaleString('default', { month: 'short' });
+            
+            // Calculate Fees
+            const totalRevenue = item.totalRevenue;
+            const platformFee = totalRevenue * 0.06; // 6% Fee
+            const netRevenue = totalRevenue - platformFee;
+            
+            return {
+                month: `${monthName} ${item._id.year}`,
+                totalRevenue,
+                platformFee: Math.round(platformFee * 100) / 100,
+                netRevenue: Math.round(netRevenue * 100) / 100
+            };
+        });
+
+        res.status(200).json(formattedData);
+    } catch (error) {
+        console.error("Error in getPlatformFeeBreakdown:", error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// ==========================================
+// CONTROLLER: Dashboard Analytics (Basic Stats)
 // ==========================================
 export const getDashboardAnalytics = async (req, res) => {
     try {
         const eventManagerId = req.user.eventManagerId;
         
         const events = await Event.find({ eventManagerId });
-        const eventIds = events.map(event => event._id);
-        const tickets = await Ticket.find({ eventId: { $in: eventIds } });
+        const eventIds = events.map(e => e._id);
 
-        // Basic Stats Calculations
+        // Get All Valid Tickets
+        const tickets = await Ticket.find({ eventId: { $in: eventIds }, status: true });
+
+        // 1. Totals
         const totalEvents = events.length;
-        const totalTicketsSold = tickets.reduce((sum, ticket) => sum + ticket.numberOfTickets || 1, 0);
-        const totalRevenue = tickets.reduce((sum, ticket) => sum + ticket.price, 0);
+        const totalTicketsSold = tickets.reduce((sum, t) => sum + (t.numberOfTickets || 1), 0);
+        const totalRevenue = tickets.reduce((sum, t) => sum + t.price, 0);
         const platformFee = totalRevenue * 0.06;
         const netRevenue = totalRevenue - platformFee;
+
+        // 2. Calculate Growth (Current Month vs Previous Month)
+        const now = new Date();
+        const startCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        
+        // Filter tickets
+        const currentTickets = tickets.filter(t => t.createdAt >= startCurrentMonth);
+        const lastTickets = tickets.filter(t => t.createdAt >= startLastMonth && t.createdAt < startCurrentMonth);
+
+        const currentRev = currentTickets.reduce((sum, t) => sum + t.price, 0);
+        const lastRev = lastTickets.reduce((sum, t) => sum + t.price, 0);
+        
+        // Avoid division by zero
+        const revenueGrowth = lastRev === 0 ? 100 : Math.round(((currentRev - lastRev) / lastRev) * 100);
 
         res.status(200).json({
             basicStats: {
                 totalEvents,
                 totalTicketsSold,
                 totalRevenue,
-                platformFee,
-                netRevenue,
-                totalAttendees: totalTicketsSold, // Assuming 1 ticket = 1 attendee
-                revenueGrowth: 15, 
-                ticketsGrowth: 8,
-                eventsGrowth: 12,
-                attendeesGrowth: 5
-            },
-            // Ensure this helper also returns Recharts format if used in frontend
-            chartData: await generateChartData(eventIds), 
-            performanceMetrics: await getPerformanceMetricsHelper(eventManagerId, events, tickets)
+                platformFee: Math.round(platformFee * 100) / 100,
+                netRevenue: Math.round(netRevenue * 100) / 100,
+                revenueGrowth,
+                // Assuming 1 ticket = 1 attendee for simplicity in dashboard
+                totalAttendees: totalTicketsSold 
+            }
         });
 
     } catch (error) {
-        console.log("Error in getDashboardAnalytics controller:", error);
-        res.status(500).json({ message: 'Server Error' });
-    }
-};
-
-// ==========================================
-// CONTROLLER: Platform Fees
-// ==========================================
-export const getPlatformFeeBreakdown = async (req, res) => {
-    try {
-        const monthlyData = await generateMonthlyFeeData(6);
-        res.status(200).json(monthlyData);
-    } catch (error) {
-        console.log("Error in getPlatformFeeBreakdown controller:", error);
+        console.error("Error in getDashboardAnalytics:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -136,131 +246,65 @@ export const getPerformanceMetrics = async (req, res) => {
     try {
         const eventManagerId = req.user.eventManagerId;
         const events = await Event.find({ eventManagerId });
-        const eventIds = events.map(event => event._id);
-        const tickets = await Ticket.find({ eventId: { $in: eventIds } });
+        const eventIds = events.map(e => e._id);
+        
+        const tickets = await Ticket.find({ eventId: { $in: eventIds }, status: true });
 
-        const metrics = await getPerformanceMetricsHelper(eventManagerId, events, tickets);
-        res.status(200).json(metrics);
+        const totalRevenue = tickets.reduce((sum, t) => sum + t.price, 0);
+        const totalTickets = tickets.reduce((sum, t) => sum + (t.numberOfTickets || 1), 0);
+        
+        const averageTicketPrice = totalTickets > 0 ? totalRevenue / totalTickets : 0;
+
+        // Calculate Repeat Customers
+        const customerCounts = {};
+        tickets.forEach(t => {
+            if(t.customerId) {
+                const cid = t.customerId.toString();
+                customerCounts[cid] = (customerCounts[cid] || 0) + 1;
+            }
+        });
+        
+        const uniqueCustomers = Object.keys(customerCounts).length;
+        const repeatCount = Object.values(customerCounts).filter(count => count > 1).length;
+        const repeatCustomerRate = uniqueCustomers > 0 
+            ? Math.round((repeatCount / uniqueCustomers) * 100) 
+            : 0;
+
+        // Customer Lifetime Value
+        const clv = uniqueCustomers > 0 ? totalRevenue / uniqueCustomers : 0;
+
+        res.status(200).json({
+            averageTicketPrice: Math.round(averageTicketPrice * 100) / 100,
+            repeatCustomers: repeatCustomerRate,
+            customerLifetimeValue: Math.round(clv)
+        });
 
     } catch (error) {
-        console.log("Error in getPerformanceMetrics controller:", error);
+        console.error("Error in getPerformanceMetrics:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
 
 // ==========================================
-// CONTROLLER: Attendance (Optional/Extra)
+// CONTROLLER: Attendance (Extra Utility)
 // ==========================================
 export const getAttendanceAnalytics = async (req, res) => {
     try {
+        // Returns event-wise attendance stats
         const eventManagerId = req.user.eventManagerId;
         const events = await Event.find({ eventManagerId });
 
-        // Format directly for Recharts if you build a chart for this later
         const attendanceData = events.map(event => ({
             name: event.title,
-            date: new Date(event.date).toLocaleDateString(),
-            capacity: event.capacity || 100,
+            date: new Date(event.date_time).toLocaleDateString(),
+            capacity: event.total_tickets || 100,
             sold: event.tickets_sold || 0,
-            rate: Math.round(((event.tickets_sold || 0) / (event.capacity || 100)) * 100)
+            rate: Math.round(((event.tickets_sold || 0) / (event.total_tickets || 100)) * 100)
         }));
 
         res.status(200).json(attendanceData);
     } catch (error) {
-        console.log("Error in getAttendanceAnalytics controller:", error);
+        console.error("Error in getAttendanceAnalytics:", error);
         res.status(500).json({ message: 'Server Error' });
     }
-};
-
-
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
-
-// Helper for Performance Metrics to avoid code duplication
-const getPerformanceMetricsHelper = async (id, events, tickets) => {
-    const totalRevenue = tickets.reduce((sum, ticket) => sum + ticket.price, 0);
-    const totalTickets = tickets.reduce((sum, ticket) => sum + ticket.numberOfTickets || 1, 0);
-    const averageTicketPrice = totalTickets > 0 ? totalRevenue / totalTickets : 0;
-
-    return {
-        averageTicketPrice: Math.round(averageTicketPrice * 100) / 100,
-        conversionRate: 78,
-        repeatCustomers: 42,
-        customerLifetimeValue: 186
-    };
-};
-
-const generateChartData = async (eventIds) => {
-    // Recharts Format: Array of Objects
-    return [
-        { month: 'Jan', revenue: 3200 },
-        { month: 'Feb', revenue: 4500 },
-        { month: 'Mar', revenue: 3800 },
-        { month: 'Apr', revenue: 5100 },
-        { month: 'May', revenue: 4200 },
-        { month: 'Jun', revenue: 5900 },
-        { month: 'Jul', revenue: 4800 },
-        { month: 'Aug', revenue: 6200 },
-        { month: 'Sep', revenue: 5500 },
-        { month: 'Oct', revenue: 9000 }
-    ];
-};
-
-const generateRevenueTrendsData = async (period) => {
-    // Recharts Format: Array of Objects
-    // Keys MUST match <XAxis dataKey="month"> and <Line dataKey="revenue">
-    
-    const dataMap = {
-        '30days': [
-            { month: 'Week 1', revenue: 1200 },
-            { month: 'Week 2', revenue: 1800 },
-            { month: 'Week 3', revenue: 1500 },
-            { month: 'Week 4', revenue: 2100 }
-        ],
-        '3months': [
-            { month: 'Month 1', revenue: 5200 },
-            { month: 'Month 2', revenue: 4800 },
-            { month: 'Month 3', revenue: 6100 }
-        ],
-        '6months': [
-            { month: 'Jan', revenue: 3200 },
-            { month: 'Feb', revenue: 4500 },
-            { month: 'Mar', revenue: 3800 },
-            { month: 'Apr', revenue: 5100 },
-            { month: 'May', revenue: 4200 },
-            { month: 'Jun', revenue: 5900 }
-        ]
-    };
-
-    return dataMap[period] || dataMap['6months'];
-};
-
-const generateMonthlyFeeData = async (months) => {
-    const monthlyData = [];
-    const currentDate = new Date();
-    
-    // Fixed mock data array for simplicity
-    const revenuePattern = [6500, 7200, 6800, 7500, 8200, 9000];
-
-    for (let i = months - 1; i >= 0; i--) {
-        const monthDate = new Date();
-        monthDate.setMonth(currentDate.getMonth() - i);
-        
-        const monthName = monthDate.toLocaleString('default', { month: 'short' }); // 'Jan' not 'January'
-        const year = monthDate.getFullYear();
-        
-        const totalRevenue = revenuePattern[i] || 5000;
-        const platformFee = totalRevenue * 0.06;
-        const netRevenue = totalRevenue - platformFee;
-        
-        monthlyData.push({
-            month: `${monthName} ${year}`, // Matches XAxis
-            totalRevenue,
-            platformFee: Math.round(platformFee * 100) / 100,
-            netRevenue: Math.round(netRevenue * 100) / 100
-        });
-    }
-    
-    return monthlyData;
 };
