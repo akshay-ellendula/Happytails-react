@@ -28,7 +28,7 @@ export default function Products() {
   // Fetch Stats
   const loadStats = async () => {
     try {
-      const res = await axiosInstance.get("/admin/product-stats");
+      const res = await axiosInstance.get("/admin/products/stats");
       if (res.data.success) setStats(res.data.stats);
     } catch (err) {
       console.error("Error fetching stats:", err);
@@ -90,8 +90,8 @@ export default function Products() {
           stock > 5
             ? "bg-green-100 text-green-600"
             : stock > 0
-            ? "bg-yellow-100 text-yellow-600"
-            : "bg-red-100 text-red-600";
+              ? "bg-yellow-100 text-yellow-600"
+              : "bg-red-100 text-red-600";
 
         return (
           <span className={`px-3 py-1 rounded-md text-sm font-semibold ${className}`}>
@@ -188,11 +188,10 @@ export default function Products() {
               <button
                 key={i}
                 onClick={() => setPage(i + 1)}
-                className={`px-3 py-1 border rounded-md ${
-                  page === i + 1
+                className={`px-3 py-1 border rounded-md ${page === i + 1
                     ? "bg-green-500 text-white border-green-500"
                     : "bg-white border-gray-300"
-                }`}
+                  }`}
               >
                 {i + 1}
               </button>

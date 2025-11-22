@@ -16,13 +16,17 @@ export default function Events() {
   const loadEvents = async () => {
     try {
       const res = await axiosInstance.get("/admin/events");
-      if (res.data.success) setEvents(res.data.events);
+      if (res.data.success) {
+        setEvents(res.data.data.events);
+        setStats(res.data.data.stats);
+      }
     } catch (err) {
       console.error("Error loading events:", err);
     }
   };
 
-  // Fetch stats
+  // Fetch stats - Removed as it is included in loadEvents
+  /*
   const loadStats = async () => {
     try {
       const res = await axiosInstance.get("/admin/event-stats");
@@ -31,6 +35,7 @@ export default function Events() {
       console.error("Error loading event stats:", err);
     }
   };
+  */
 
   const deleteEvent = async (id) => {
     if (!window.confirm("Are you sure you want to delete this event?")) return;
@@ -47,7 +52,7 @@ export default function Events() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      await Promise.all([loadEvents(), loadStats()]);
+      await loadEvents();
       setLoading(false);
     };
     fetchAll();

@@ -12,7 +12,7 @@ export default function EventManagers() {
 
   const getEventManagers = async () => {
     try {
-      const res = await axiosInstance.get("/admin/eventManagers");
+      const res = await axiosInstance.get("/admin/event-managers");
       if (res.data.success) {
         setManagers(res.data.managers);
       }

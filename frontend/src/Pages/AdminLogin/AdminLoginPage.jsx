@@ -22,11 +22,17 @@ const AdminLoginPage = () => {
     try {
       const res = await axiosInstance.post('/admin/login', jsonData);
       const data = res.data;
+      console.log("Login Response Data:", data); // 🔥 DEBUG LOG
 
       if (data.success) {
 
         // ✅ SAVE TOKEN HERE
-        localStorage.setItem("adminToken", data.token);
+        if (data.token) {
+          localStorage.setItem("adminToken", data.token);
+          console.log("Admin token saved:", data.token);
+        } else {
+          console.warn("Login successful but no token received:", data);
+        }
 
 
         alert("Login Successful");
