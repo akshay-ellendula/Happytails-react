@@ -66,19 +66,38 @@ export default function Events() {
   });
 
   const columns = [
-    { label: "Event Name", key: "event_name" },
+    {
+      label: "ID",
+      key: "id",
+      render: (id) => `#${id}`,
+    },
+    { label: "Event Name", key: "title" },
     {
       label: "Manager",
-      key: "event_manager_id",
-      render: (val) => val?.name ?? "N/A",
+      key: "managerName",
+      render: (val) => val || "N/A",
     },
     {
       label: "Date",
       key: "date_time",
       render: (val) => (val ? new Date(val).toLocaleDateString() : "N/A"),
     },
-    { label: "Location", key: "city" },
-    { label: "Status", key: "status" },
+    { label: "Location", key: "venue" },
+    {
+      label: "Status",
+      key: "date_time",
+      render: (val) => {
+        const isUpcoming = new Date(val) > new Date();
+        return (
+          <span
+            className={`px-2 py-1 rounded-full text-xs text-white ${isUpcoming ? "bg-green-500" : "bg-gray-500"
+              }`}
+          >
+            {isUpcoming ? "Upcoming" : "Completed"}
+          </span>
+        );
+      },
+    },
     {
       label: "Action",
       key: "action",
@@ -87,7 +106,7 @@ export default function Events() {
           <Button
             className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md"
             onClick={() =>
-              (window.location.href = `/admin/events/${row._id}`)
+              (window.location.href = `/admin/events/${row.id}`)
             }
           >
             View
@@ -95,7 +114,7 @@ export default function Events() {
 
           <Button
             className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md"
-            onClick={() => deleteEvent(row._id)}
+            onClick={() => deleteEvent(row.id)}
           >
             Delete
           </Button>

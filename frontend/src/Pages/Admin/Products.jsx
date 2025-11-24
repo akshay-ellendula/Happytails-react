@@ -72,7 +72,7 @@ export default function Products() {
   const columns = [
     {
       label: "ID",
-      key: "_id",
+      key: "id",
       render: (id) => `#${id}`,
     },
     { label: "Product Name", key: "product_name" },
@@ -113,14 +113,14 @@ export default function Products() {
         <div className="flex gap-3">
           <Button
             className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-            onClick={() => (window.location.href = `/admin/products/${row._id}`)}
+            onClick={() => (window.location.href = `/admin/products/${row.id}`)}
           >
             View
           </Button>
 
           <Button
             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
-            onClick={() => deleteProduct(row._id)}
+            onClick={() => deleteProduct(row.id)}
           >
             Delete
           </Button>
@@ -189,8 +189,8 @@ export default function Products() {
                 key={i}
                 onClick={() => setPage(i + 1)}
                 className={`px-3 py-1 border rounded-md ${page === i + 1
-                    ? "bg-green-500 text-white border-green-500"
-                    : "bg-white border-gray-300"
+                  ? "bg-green-500 text-white border-green-500"
+                  : "bg-white border-gray-300"
                   }`}
               >
                 {i + 1}

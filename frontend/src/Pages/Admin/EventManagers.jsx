@@ -42,6 +42,11 @@ export default function EventManagers() {
   }, []);
 
   const columns = [
+    {
+      label: "ID",
+      key: "id",
+      render: (id) => `#${id}`,
+    },
     { label: "Name", key: "name" },
     { label: "Organization", key: "organization" },
     { label: "Email", key: "email" },
