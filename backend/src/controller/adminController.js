@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Customer from '../models/customerModel.js';
 import Vendor from '../models/vendorModel.js';
 import { Product, ProductVariant, ProductImage } from '../models/productsModel.js';

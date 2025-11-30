@@ -8,7 +8,7 @@ import ProductAccessoryPageWrapper from './pages/Accessory/ProductAccessoryPageW
 import EventsPage from './pages/Events/EventsPage';
 import EventDetailPage from "./pages/EventDeatils/EventDetailPage";
 import BookingPage from "./pages/BookingPage/BookingPage";
-import AdminLoginPage from "./pages/AdminLogin/AdminLoginPage";
+import AdminLoginPage from "./Pages/AdminLogin/AdminLoginPage";
 import Dashboard from "./Pages/Admin/Dashboard";
 import Users from "./Pages/Admin/Users";
 import EventManagers from "./Pages/Admin/EventManagers";
@@ -19,6 +19,8 @@ import Vendors from "./Pages/Admin/Vendors";
 import UserDetails from "./Pages/Admin/UserDetails";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
+import VendorDetails from "./Pages/Admin/VendorDetails";
+
 
 
 
@@ -56,6 +58,8 @@ function AppRoutes() {
      <Route path="/admin/orders" element={<Orders />} />
      <Route path="/admin/vendors" element={<Vendors />} />
      <Route path="/admin/users/:id" element={<UserDetails />} />
+     <Route path="/admin/vendors/:id" element={<VendorDetails />} />
+
 
 
 
