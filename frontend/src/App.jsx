@@ -16,6 +16,10 @@ import Events from "./Pages/Admin/Events";
 import Products from "./Pages/Admin/Products";
 import Orders from "./Pages/Admin/Orders";
 import Vendors from "./Pages/Admin/Vendors";
+import UserDetails from "./Pages/Admin/UserDetails";
+import { Provider } from "react-redux";
+import { store } from "./store/store";
+
 
 
 
@@ -27,6 +31,7 @@ const ProtectedRoute = ({ children }) => {
 
 function AppRoutes() {
   return (
+    <Provider store={store}>
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/pet_accessory" element={<ProductAccessoryPageWrapper />} />
@@ -50,10 +55,13 @@ function AppRoutes() {
      <Route path="/admin/products" element={<Products />} />
      <Route path="/admin/orders" element={<Orders />} />
      <Route path="/admin/vendors" element={<Vendors />} />
+     <Route path="/admin/users/:id" element={<UserDetails />} />
+
 
 
 
     </Routes>
+    </Provider>
   );
 }
 

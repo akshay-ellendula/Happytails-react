@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "./Components/Sidebar";
 import Header from "./Components/Header";
 import Table from "./Components/Table";
@@ -7,6 +8,7 @@ import Button from "./Components/Button";
 import { axiosInstance } from "../../utils/axios";
 
 export default function Users() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -57,7 +59,7 @@ export default function Users() {
       render: (_, row) => (
         <Button
           className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md"
-          onClick={() => (window.location.href = `/admin/users/${row.id}`)}
+          onClick={() => navigate(`/admin/users/${row.id}`)}
         >
           View
         </Button>
