@@ -26,6 +26,8 @@ import PartnerRegistration from "./pages/PartnerRegistration/PartnerRegistration
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
 import MyOrdersPage from "./pages/MyOrdersPage/MyOrdersPage";
 import PaymentPage from "./pages/PaymentPage/PaymentPage";
+import MyEventsPage from "./pages/MyEventsPage/MyEventsPage";
+import TrackOrderPage from "./pages/TrackOrderPage/TrackOrderPage";
 
 // --- Pages: Admin ---
 import AdminLoginPage from "./Pages/AdminLogin/AdminLoginPage";
@@ -83,7 +85,8 @@ function AppRoutes() {
       <Route path="/profile" element={<ProtectedRoute> <ProfilePage /> </ProtectedRoute>} />
       <Route path="/my_orders" element={<ProtectedRoute> <MyOrdersPage /> </ProtectedRoute>} />
       <Route path="/payment" element={<ProtectedRoute> <PaymentPage /> </ProtectedRoute>} />
-
+      <Route path="/my_events" element={<ProtectedRoute> <MyEventsPage /> </ProtectedRoute>} />
+      <Route path="/track-order/:orderId" element={<ProtectedRoute> <TrackOrderPage /> </ProtectedRoute>} />
       {/* --- Protected: Booking (Customer or Admin) --- */}
       <Route 
         path="/booking" 

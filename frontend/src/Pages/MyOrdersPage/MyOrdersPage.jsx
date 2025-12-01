@@ -1,39 +1,51 @@
 import React, { useEffect, useState } from "react";
 // UPDATED: Import Header and MobileMenu
-import Header from "../../components/Header"; 
+import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
-import Sidebar from "../../components/Sidebar"; 
-import Footer from "../../components/Footer"; 
+import Sidebar from "../../components/Sidebar";
+import Footer from "../../components/Footer";
 import { axiosInstance } from "../../utils/axios";
+import { useNavigate } from "react-router"; //
 
 export default function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+  const navigate = useNavigate();
+
   // UPDATED: Add mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  const handleTrackOrder = (order) => {
+    navigate(`/track-order/${order._id || order.id}`, { state: { order } });
+  };
+
   useEffect(() => {
-    axiosInstance.get("/products/getUserOrders")
+    axiosInstance
+      .get("/products/getUserOrders")
       .then((res) => res.data)
       .then((data) => {
         if (data.success) setOrders(data.orders);
         else alert("Error fetching orders: " + data.message);
       })
       .catch((err) => {
-          console.error("Error fetching orders:", err);
-          alert("Error fetching orders: " + (err.response?.data?.message || err.message));
+        console.error("Error fetching orders:", err);
+        alert(
+          "Error fetching orders: " +
+            (err.response?.data?.message || err.message)
+        );
       })
       .finally(() => setLoading(false));
   }, []);
 
   const handleBuyAgain = async (orderId) => {
     try {
-      const res = await axiosInstance.post(`/products/orders/${orderId}/reorder`);
-      const data = res.data; 
+      const res = await axiosInstance.post(
+        `/products/orders/${orderId}/reorder`
+      );
+      const data = res.data;
 
       if (data.success) {
         let cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -55,7 +67,10 @@ export default function MyOrdersPage() {
       } else alert("Error reordering: " + data.message);
     } catch (err) {
       console.error(err);
-      alert("Error adding items to cart: " + (err.response?.data?.message || err.message));
+      alert(
+        "Error adding items to cart: " +
+          (err.response?.data?.message || err.message)
+      );
     }
   };
 
@@ -64,8 +79,7 @@ export default function MyOrdersPage() {
     let imageSrc = "";
 
     if (item?.image_data) {
-      if (item.image_data.startsWith("data:"))
-        imageSrc = item.image_data;
+      if (item.image_data.startsWith("data:")) imageSrc = item.image_data;
       else if (!item.image_data.startsWith("/images/"))
         imageSrc = `data:image/jpeg;base64,${item.image_data}`;
     }
@@ -143,11 +157,14 @@ export default function MyOrdersPage() {
                 <p className="text-gray-700">
                   <span className="font-bold text-dark">Delivery Date:</span>{" "}
                   {order.delivery_date
-                    ? new Date(order.delivery_date).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })
+                    ? new Date(order.delivery_date).toLocaleDateString(
+                        "en-US",
+                        {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        }
+                      )
                     : "Pending"}
                 </p>
                 <p className="text-gray-700">
@@ -175,7 +192,10 @@ export default function MyOrdersPage() {
               >
                 Buy Again
               </button>
-              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
+              <button
+                onClick={() => handleTrackOrder(order)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg"
+              >
                 Track Order
               </button>
               {order.status === "Delivered" && (
@@ -200,7 +220,7 @@ export default function MyOrdersPage() {
       {isMobileMenuOpen && (
         <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
       )}
-      
+
       <div className="flex flex-col lg:flex-row gap-8 mx-4 md:mx-8 lg:mx-20 mt-12 mb-20 grow">
         <Sidebar />
         <main className="flex-1 space-y-8">
