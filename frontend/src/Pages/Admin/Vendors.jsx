@@ -21,14 +21,14 @@ export default function Vendors() {
       const res = await axiosInstance.get("/admin/vendors");
       if (res.data.success) setVendors(res.data.vendors);
     } catch (err) {
-      console.error("Error loading vendors:", err);
+      console.error("Error loading vendors:", err.response?.data || err.message);
     }
   };
 
   // Fetch stats
   const loadStats = async () => {
     try {
-      const res = await axiosInstance.get("/admin/vendor-stats");
+      const res = await axiosInstance.get("/admin/vendors/stats");
       if (res.data.success) setStats(res.data.stats);
     } catch (err) {
       console.error("Error loading vendor stats:", err);
@@ -38,6 +38,8 @@ export default function Vendors() {
   useEffect(() => {
     const fetchData = async () => {
       await Promise.all([loadVendors(), loadStats()]);
+      // await loadVendors();
+      // await loadStats();
       setLoading(false);
     };
     fetchData();
@@ -170,11 +172,10 @@ export default function Vendors() {
               <button
                 key={i}
                 onClick={() => setPage(i + 1)}
-                className={`px-3 py-1 border rounded-md ${
-                  page === i + 1
-                    ? "bg-green-500 text-white border-green-500"
-                    : "bg-white border-gray-300"
-                }`}
+                className={`px-3 py-1 border rounded-md ${page === i + 1
+                  ? "bg-green-500 text-white border-green-500"
+                  : "bg-white border-gray-300"
+                  }`}
               >
                 {i + 1}
               </button>

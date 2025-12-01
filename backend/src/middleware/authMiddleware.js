@@ -7,7 +7,8 @@ const protectRoute = (roles = []) => {
         }
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-            if (!roles.includes(decoded.role)) {
+            console.log(decoded)
+            if (roles.length > 0 && !roles.includes(decoded.role)) {
                 return res.status(403).json({ message: 'You are not authorisied' });
             }
             req.user = decoded;
