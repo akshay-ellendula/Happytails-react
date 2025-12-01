@@ -1215,51 +1215,51 @@ const deleteVendor = async (req, res) => {
 
 // GET: Stats for Event Managers list page
 const getEventManagerStats = async (req, res) => {
-  try {
-    const total = await EventManager.countDocuments({ isActive: true });
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    try {
+        const total = await EventManager.countDocuments({ isActive: true });
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
 
-    const newThisMonth = await EventManager.countDocuments({
-      createdAt: { $gte: lastMonth },
-      isActive: true,
-    });
+        const newThisMonth = await EventManager.countDocuments({
+            createdAt: { $gte: lastMonth },
+            isActive: true,
+        });
 
-    const managerGrowthPercent = total > 0
-      ? ((newThisMonth / (total - newThisMonth || 1)) * 100).toFixed(1)
-      : 0;
+        const managerGrowthPercent = total > 0
+            ? ((newThisMonth / (total - newThisMonth || 1)) * 100).toFixed(1)
+            : 0;
 
-    // Real revenue from all tickets (from all events)
-    const revenueResult = await Ticket.aggregate([
-      { $match: { status: true } },
-      { $group: { _id: null, total: { $sum: "$price" } } }
-    ]);
+        // Real revenue from all tickets (from all events)
+        const revenueResult = await Ticket.aggregate([
+            { $match: { status: true } },
+            { $group: { _id: null, total: { $sum: "$price" } } }
+        ]);
 
-    const totalRevenue = revenueResult[0]?.total || 0;
+        const totalRevenue = revenueResult[0]?.total || 0;
 
-    // You can add more stats like total events, today's events, etc.
-    res.json({
-      success: true,
-      stats: {
-        total,
-        managerGrowthPercent: parseFloat(managerGrowthPercent),
-        revenue: totalRevenue,
-        revenueGrowthPercent: 0, // You can calculate this later
-        totalEvents: await Event.countDocuments(),
-        eventsGrowthPercent: 0,
-        todayEvents: await Event.countDocuments({
-          date_time: {
-            $gte: new Date().setHours(0, 0, 0, 0),
-            $lt: new Date().setHours(23, 59, 59, 999)
-          }
-        }),
-        todayEventsChange: 0,
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching event manager stats:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
+        // You can add more stats like total events, today's events, etc.
+        res.json({
+            success: true,
+            stats: {
+                total,
+                managerGrowthPercent: parseFloat(managerGrowthPercent),
+                revenue: totalRevenue,
+                revenueGrowthPercent: 0, // You can calculate this later
+                totalEvents: await Event.countDocuments(),
+                eventsGrowthPercent: 0,
+                todayEvents: await Event.countDocuments({
+                    date_time: {
+                        $gte: new Date().setHours(0, 0, 0, 0),
+                        $lt: new Date().setHours(23, 59, 59, 999)
+                    }
+                }),
+                todayEventsChange: 0,
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching event manager stats:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
 };
 
 const getTotalEvents = async (req, res) => {
@@ -1274,289 +1274,289 @@ const getTotalEvents = async (req, res) => {
 
 // GET: Single Event Manager Details
 const getEventManager = async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: "Invalid manager ID" });
-    }
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: "Invalid manager ID" });
+        }
 
-    const manager = await EventManager.findById(id).select("-password");
-    if (!manager) {
-      return res.status(404).json({ success: false, message: "Event manager not found" });
-    }
+        const manager = await EventManager.findById(id).select("-password");
+        if (!manager) {
+            return res.status(404).json({ success: false, message: "Event manager not found" });
+        }
 
-    res.json({
-      success: true,
-      manager: {
-        id: manager._id.toString(),
-        name: manager.userName,
-        email: manager.email,
-        organization: manager.companyName || "Not specified",
-        phone: manager.phoneNumber || "N/A",
-        joined_date: manager.createdAt,
-        profilePic: manager.profilePic,
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching event manager:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
+        res.json({
+            success: true,
+            manager: {
+                id: manager._id.toString(),
+                name: manager.userName,
+                email: manager.email,
+                organization: manager.companyName || "Not specified",
+                phone: manager.phoneNumber || "N/A",
+                joined_date: manager.createdAt,
+                profilePic: manager.profilePic,
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching event manager:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
 };
 
 // GET: All Event Managers (for the list page)
 const getEventManagers = async (req, res) => {
-  try {
-    const managers = await EventManager.find({ isActive: true })
-      .select("-password")
-      .sort({ createdAt: -1 });
+    try {
+        const managers = await EventManager.find({ isActive: true })
+            .select("-password")
+            .sort({ createdAt: -1 });
 
-    const eventManagers = managers.map(m => ({
-      id: m._id.toString(),           // THIS FIXES THE ID PROBLEM
-      name: m.userName,
-      email: m.email,
-      organization: m.companyName || "Not specified",
-      phone: m.phoneNumber || "N/A",
-      joined_date: m.createdAt,
-      profilePic: m.profilePic,
-    }));
+        const eventManagers = managers.map(m => ({
+            id: m._id.toString(),           // THIS FIXES THE ID PROBLEM
+            name: m.userName,
+            email: m.email,
+            organization: m.companyName || "Not specified",
+            phone: m.phoneNumber || "N/A",
+            joined_date: m.createdAt,
+            profilePic: m.profilePic,
+        }));
 
-    res.json({ success: true, eventManagers });
-  } catch (error) {
-    console.error("Error fetching event managers:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
+        res.json({ success: true, eventManagers });
+    } catch (error) {
+        console.error("Error fetching event managers:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
 };
 
 // GET: Metrics for Event Manager Details Page
 const getEventManagerMetrics = async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: "Invalid manager ID" });
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: "Invalid manager ID" });
+        }
+
+        const managerExists = await EventManager.exists({ _id: id });
+        if (!managerExists) {
+            return res.status(404).json({ success: false, message: "Event manager not found" });
+        }
+
+        const now = new Date();
+        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const [upcoming, weekly, monthly, totalRevenueResult, monthlyBreakdown] = await Promise.all([
+            Event.countDocuments({ eventManagerId: id, date_time: { $gte: now } }),
+            Event.countDocuments({ eventManagerId: id, date_time: { $gte: startOfWeek } }),
+            Event.countDocuments({ eventManagerId: id, date_time: { $gte: startOfMonth } }),
+
+            // Real revenue from tickets of this manager's events
+            Ticket.aggregate([
+                {
+                    $lookup: {
+                        from: "events",
+                        localField: "eventId",
+                        foreignField: "_id",
+                        as: "event"
+                    }
+                },
+                { $unwind: "$event" },
+                { $match: { "event.eventManagerId": new mongoose.Types.ObjectId(id), status: true } },
+                { $group: { _id: null, total: { $sum: "$price" } } }
+            ]),
+
+            // Monthly breakdown
+            Event.aggregate([
+                { $match: { eventManagerId: new mongoose.Types.ObjectId(id) } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m", date: "$date_time" } },
+                        total_events: { $sum: 1 },
+                    }
+                },
+                { $sort: { _id: -1 } },
+                { $limit: 6 }
+            ])
+        ]);
+
+        const totalRevenue = totalRevenueResult[0]?.total || 0;
+
+        res.json({
+            success: true,
+            metrics: {
+                upcoming: upcoming || 0,
+                weekly: weekly || 0,
+                monthly: monthly || 0,
+                totalRevenue,
+                monthly_breakdown: monthlyBreakdown.map(m => ({
+                    month: m._id,
+                    total_events: m.total_events,
+                    attendees: 0, // You can enhance this later
+                    avg_attendance: 0,
+                })),
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching metrics:", error);
+        res.status(500).json({ success: false, message: "Server error" });
     }
-
-    const managerExists = await EventManager.exists({ _id: id });
-    if (!managerExists) {
-      return res.status(404).json({ success: false, message: "Event manager not found" });
-    }
-
-    const now = new Date();
-    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    const [upcoming, weekly, monthly, totalRevenueResult, monthlyBreakdown] = await Promise.all([
-      Event.countDocuments({ eventManagerId: id, date_time: { $gte: now } }),
-      Event.countDocuments({ eventManagerId: id, date_time: { $gte: startOfWeek } }),
-      Event.countDocuments({ eventManagerId: id, date_time: { $gte: startOfMonth } }),
-
-      // Real revenue from tickets of this manager's events
-      Ticket.aggregate([
-        {
-          $lookup: {
-            from: "events",
-            localField: "eventId",
-            foreignField: "_id",
-            as: "event"
-          }
-        },
-        { $unwind: "$event" },
-        { $match: { "event.eventManagerId": new mongoose.Types.ObjectId(id), status: true } },
-        { $group: { _id: null, total: { $sum: "$price" } } }
-      ]),
-
-      // Monthly breakdown
-      Event.aggregate([
-        { $match: { eventManagerId: new mongoose.Types.ObjectId(id) } },
-        {
-          $group: {
-            _id: { $dateToString: { format: "%Y-%m", date: "$date_time" } },
-            total_events: { $sum: 1 },
-          }
-        },
-        { $sort: { _id: -1 } },
-        { $limit: 6 }
-      ])
-    ]);
-
-    const totalRevenue = totalRevenueResult[0]?.total || 0;
-
-    res.json({
-      success: true,
-      metrics: {
-        upcoming: upcoming || 0,
-        weekly: weekly || 0,
-        monthly: monthly || 0,
-        totalRevenue,
-        monthly_breakdown: monthlyBreakdown.map(m => ({
-          month: m._id,
-          total_events: m.total_events,
-          attendees: 0, // You can enhance this later
-          avg_attendance: 0,
-        })),
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching metrics:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
 };
 
 // GET: Upcoming Events
 const getUpcomingEvents = async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: "Invalid manager ID" });
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: "Invalid manager ID" });
+        }
+
+        const events = await Event.find({
+            eventManagerId: id,
+            date_time: { $gte: new Date() },
+        })
+            .select("title date_time venue location total_tickets tickets_sold")
+            .sort({ date_time: 1 })
+            .limit(50);
+
+        const formatted = events.map(e => ({
+            event_id: e._id.toString(),
+            event_name: e.title,
+            date: e.date_time,
+            location: e.location,
+            total_tickets: e.total_tickets,
+            tickets_sold: e.tickets_sold,
+            status: e.tickets_sold >= e.total_tickets ? "Sold Out" : "Available",
+        }));
+
+        res.json({ success: true, events: formatted });
+    } catch (error) {
+        console.error("Error fetching upcoming events:", error);
+        res.status(500).json({ success: false, message: "Server error" });
     }
-
-    const events = await Event.find({
-      eventManagerId: id,
-      date_time: { $gte: new Date() },
-    })
-      .select("title date_time venue location total_tickets tickets_sold")
-      .sort({ date_time: 1 })
-      .limit(50);
-
-    const formatted = events.map(e => ({
-      event_id: e._id.toString(),
-      event_name: e.title,
-      date: e.date_time,
-      location: e.location,
-      total_tickets: e.total_tickets,
-      tickets_sold: e.tickets_sold,
-      status: e.tickets_sold >= e.total_tickets ? "Sold Out" : "Available",
-    }));
-
-    res.json({ success: true, events: formatted });
-  } catch (error) {
-    console.error("Error fetching upcoming events:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
 };
 
 // GET: Past Events
 const getPastEvents = async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: "Invalid manager ID" });
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: "Invalid manager ID" });
+        }
+
+        const events = await Event.find({
+            eventManagerId: id,
+            date_time: { $lt: new Date() },
+        })
+            .select("title date_time tickets_sold")
+            .sort({ date_time: -1 })
+            .limit(50);
+
+        const formatted = events.map(e => ({
+            event_id: e._id.toString(),
+            event_name: e.title,
+            date: e.date_time,
+            attendees: e.tickets_sold,
+        }));
+
+        res.json({ success: true, events: formatted });
+    } catch (error) {
+        console.error("Error fetching past events:", error);
+        res.status(500).json({ success: false, message: "Server error" });
     }
-
-    const events = await Event.find({
-      eventManagerId: id,
-      date_time: { $lt: new Date() },
-    })
-      .select("title date_time tickets_sold")
-      .sort({ date_time: -1 })
-      .limit(50);
-
-    const formatted = events.map(e => ({
-      event_id: e._id.toString(),
-      event_name: e.title,
-      date: e.date_time,
-      attendees: e.tickets_sold,
-    }));
-
-    res.json({ success: true, events: formatted });
-  } catch (error) {
-    console.error("Error fetching past events:", error);
-    res.status(500).json({ success: false, message: "Server error" });
-  }
 };
 
 // PUT: Update Event Manager
 const updateEventManager = async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: "Invalid manager ID" });
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: "Invalid manager ID" });
+        }
+
+        const updates = {
+            userName: req.body.name?.trim(),
+            email: req.body.email?.trim(),
+            companyName: req.body.organization?.trim() || null,
+            phoneNumber: req.body.phone?.trim() || null,
+        };
+
+        if (req.file) {
+            // Save as base64 (since your model expects string)
+            updates.profilePic = req.file.buffer.toString("base64");
+        }
+
+        const manager = await EventManager.findByIdAndUpdate(
+            id,
+            updates,
+            { new: true, runValidators: true }
+        ).select("-password");
+
+        if (!manager) {
+            return res.status(404).json({ success: false, message: "Event manager not found" });
+        }
+
+        res.json({
+            success: true,
+            manager: {
+                id: manager._id.toString(),
+                name: manager.userName,
+                email: manager.email,
+                organization: manager.companyName || "Not specified",
+                phone: manager.phoneNumber || "N/A",
+                profilePic: manager.profilePic,
+            },
+        });
+    } catch (error) {
+        console.error("Error updating event manager:", error);
+        if (error.code === 11000) {
+            return res.status(400).json({ success: false, message: "Email already exists" });
+        }
+        res.status(500).json({ success: false, message: "Update failed" });
     }
-
-    const updates = {
-      userName: req.body.name?.trim(),
-      email: req.body.email?.trim(),
-      companyName: req.body.organization?.trim() || null,
-      phoneNumber: req.body.phone?.trim() || null,
-    };
-
-    if (req.file) {
-      // Save as base64 (since your model expects string)
-      updates.profilePic = req.file.buffer.toString("base64");
-    }
-
-    const manager = await EventManager.findByIdAndUpdate(
-      id,
-      updates,
-      { new: true, runValidators: true }
-    ).select("-password");
-
-    if (!manager) {
-      return res.status(404).json({ success: false, message: "Event manager not found" });
-    }
-
-    res.json({
-      success: true,
-      manager: {
-        id: manager._id.toString(),
-        name: manager.userName,
-        email: manager.email,
-        organization: manager.companyName || "Not specified",
-        phone: manager.phoneNumber || "N/A",
-        profilePic: manager.profilePic,
-      },
-    });
-  } catch (error) {
-    console.error("Error updating event manager:", error);
-    if (error.code === 11000) {
-      return res.status(400).json({ success: false, message: "Email already exists" });
-    }
-    res.status(500).json({ success: false, message: "Update failed" });
-  }
 };
 
 // DELETE: Delete Event Manager + All Events + All Tickets (Full Cascade)
 const deleteEventManager = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      await session.abortTransaction();
-      return res.status(400).json({ success: false, message: "Invalid manager ID" });
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            await session.abortTransaction();
+            return res.status(400).json({ success: false, message: "Invalid manager ID" });
+        }
+
+        const manager = await EventManager.findById(id);
+        if (!manager) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, message: "Event manager not found" });
+        }
+
+        // Get all event IDs by this manager
+        const events = await Event.find({ eventManagerId: id }).select("_id");
+        const eventIds = events.map(e => e._id);
+
+        // Delete all tickets for those events
+        if (eventIds.length > 0) {
+            await Ticket.deleteMany({ eventId: { $in: eventIds } }, { session });
+        }
+
+        // Delete all events
+        await Event.deleteMany({ eventManagerId: id }, { session });
+
+        // Finally delete the manager
+        await EventManager.findByIdAndDelete(id, { session });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.json({ success: true, message: "Event manager, events, and tickets deleted successfully" });
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        console.error("Error deleting event manager:", error);
+        res.status(500).json({ success: false, message: "Failed to delete manager" });
     }
-
-    const manager = await EventManager.findById(id);
-    if (!manager) {
-      await session.abortTransaction();
-      return res.status(404).json({ success: false, message: "Event manager not found" });
-    }
-
-    // Get all event IDs by this manager
-    const events = await Event.find({ eventManagerId: id }).select("_id");
-    const eventIds = events.map(e => e._id);
-
-    // Delete all tickets for those events
-    if (eventIds.length > 0) {
-      await Ticket.deleteMany({ eventId: { $in: eventIds } }, { session });
-    }
-
-    // Delete all events
-    await Event.deleteMany({ eventManagerId: id }, { session });
-
-    // Finally delete the manager
-    await EventManager.findByIdAndDelete(id, { session });
-
-    await session.commitTransaction();
-    session.endSession();
-
-    res.json({ success: true, message: "Event manager, events, and tickets deleted successfully" });
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error("Error deleting event manager:", error);
-    res.status(500).json({ success: false, message: "Failed to delete manager" });
-  }
 };
 
 const deleteProduct = async (req, res) => {
@@ -1804,7 +1804,6 @@ const getEventsData = async (req, res) => {
             events
         ] = await Promise.all([
             Event.countDocuments(),
-            // Use Ticket model to count total tickets sold (numberOfTickets field)
             Ticket.aggregate([
                 { $group: { _id: null, totalTickets: { $sum: '$numberOfTickets' } } }
             ]),
@@ -1812,14 +1811,33 @@ const getEventsData = async (req, res) => {
                 .populate({
                     path: 'eventManagerId',
                     model: 'EventManager',
-                    select: 'userName'
+                    select: 'userName email companyName profilePic'
                 })
                 .sort({ date_time: -1 })
+                .lean() // ← IMPORTANT: use .lean() so we can modify the objects
         ]);
 
-        const ticketsSold = ticketAggregation.length > 0 ? ticketAggregation[0].totalTickets : 0;
+        const ticketsSold = ticketAggregation.length > 0 
+            ? ticketAggregation[0].totalTickets 
+            : 0;
 
-        // NOTE: Removed upcomingEvents and completedEvents since the Event model lacks a status field.
+        // Transform events: replace _id → id (string) for frontend consistency
+        const formattedEvents = events.map(event => {
+            const obj = { ...event }; // copy
+            obj.id = obj._id.toString();   // ← This is the key fix
+            delete obj._id;                // ← Remove MongoDB's _id
+            return {
+                id: obj.id,
+                title: obj.title,
+                date_time: obj.date_time,
+                venue: obj.venue,
+                total_tickets: obj.total_tickets,
+                tickets_sold: obj.tickets_sold,
+                managerName: obj.eventManagerId?.userName || 'N/A',
+                event_manager_id: obj.eventManagerId // keep full manager object if needed elsewhere
+            };
+        });
+
         res.status(200).json({
             success: true,
             data: {
@@ -1827,15 +1845,7 @@ const getEventsData = async (req, res) => {
                     totalEvents,
                     ticketsSold
                 },
-                events: events.map(event => ({
-                    id: event._id,
-                    title: event.title,
-                    date_time: event.date_time,
-                    venue: event.venue,
-                    total_tickets: event.total_tickets,
-                    tickets_sold: event.tickets_sold,
-                    managerName: event.eventManagerId ? event.eventManagerId.userName : 'N/A'
-                }))
+                events: formattedEvents
             }
         });
 
@@ -1878,42 +1888,28 @@ const deleteEvent = async (req, res) => {
 
 const getEvent = async (req, res) => {
     try {
-        const eventId = req.params.id;
-        const event = await Event.findById(eventId).populate('eventManagerId', 'userName');
-        if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+        const event = await Event.findById(req.params.id)
+            .populate({
+                path: 'eventManagerId',
+                select: 'userName email companyName profilePic'
+            })
+            .lean(); // ← Important
 
-        const thumbnail = event.images ? event.images.thumbnail : null;
-        const banner = event.images ? event.images.banner : null;
+        if (!event) {
+            return res.status(404).json({ success: false, message: "Event not found" });
+        }
+
+        // Convert _id → id (string) – this is what your React page expects
+        event.id = event._id.toString();
+        delete event._id;
 
         res.json({
             success: true,
-            event: {
-                id: event._id.toString(),
-                name: event.title,
-                about: event.description,
-                language: event.language,
-                duration: event.duration,
-                ticket_price: event.ticketPrice,
-                age_limit: event.ageLimit,
-                instructions: null, // Missing in model
-                venue: event.venue,
-                terms: null, // Missing in model
-                category: event.category,
-                date_time: event.date_time,
-                status: event.date_time > new Date() ? 'Upcoming' : 'Past',
-                total_tickets: event.total_tickets,
-                tickets_sold: event.tickets_sold,
-                location: event.location,
-                contact_number: event.phoneNumber || null, // Assuming 'phoneNumber' is used for contact
-                image_thumbnail: thumbnail,
-                image_banner: banner,
-                created_at: event.createdAt,
-                manager: event.eventManagerId ? { name: event.eventManagerId.userName } : null
-            }
+            event
         });
     } catch (err) {
-        console.error('Error in getEvent:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
+        console.error(err);
+        res.status(500).json({ success: false, message: "Server error" });
     }
 };
 
