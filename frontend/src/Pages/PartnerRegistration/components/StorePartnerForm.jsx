@@ -101,7 +101,7 @@ const StorePartnerForm = ({ loading, setLoading, navigate }) => {
     try {
       // Map userName -> name for vendor endpoint and call AuthContext.signup
       const submitData = {
-        name: formData.userName,
+        userName: formData.userName,
         contactnumber: formData.contactnumber,
         email: formData.email,
         password: formData.password,
@@ -109,6 +109,7 @@ const StorePartnerForm = ({ loading, setLoading, navigate }) => {
         storename: formData.storename,
         storelocation: formData.storelocation,
       };
+      console.log(submitData)
       const result = await signup(submitData, "storePartner");
       if (result.success) {
         toast.success("Store partner registration successful!");

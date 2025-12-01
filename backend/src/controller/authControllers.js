@@ -389,7 +389,6 @@ export const verifyAuth = async (req, res) => {
 // @access  Public
 export const storePartnerSignup = async (req, res) => {
     const { userName, email, password, contactnumber, storename, storelocation } = req.body;
-
     try {
         // Validation
         if (!userName || !email || !password || !contactnumber || !storename || !storelocation) {

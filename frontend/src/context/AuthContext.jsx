@@ -1,8 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { AuthContext } from "./AuthContextObject";
-import { axiosInstance } from "../utils/axios";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { axiosInstance } from "../utils/axios"; // Ensure this path is correct
 
-// AuthContext is created in AuthContextObject, imported above.
+const AuthContext = createContext();
+
+// Custom Hook to use the context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -20,9 +28,8 @@ export const AuthProvider = ({ children }) => {
       signup: "/auth/eventManagerSignup",
     },
     storePartner: {
-      // Vendor endpoints use JWT; backend sets cookie 'jwt' on login/signup
-      signin: "/vendors/login",
-      signup: "/vendors/signup",
+      signin: "/auth/storeSignin",
+      signup: "/auth/storeSignup",
     },
     admin: {
       signin: "/auth/adminSignin",
@@ -30,27 +37,45 @@ export const AuthProvider = ({ children }) => {
     },
   };
 
-  // 1. Check Auth Status on Mount
+  /**
+   * Helper: Fetch full profile details based on role.
+   * This ensures we get the same data structure on Login AND on Page Refresh.
+   */
+  const fetchFullUserProfile = useCallback(async (basicUser) => {
+    // If it's a customer, we often need more data (address, profile pic, etc.)
+    // that might not be in the initial Auth/Verify response.
+    if (basicUser?.role === "customer" && basicUser?.customerId) {
+      try {
+        const response = await axiosInstance.get(`/public/${basicUser.customerId}`);
+        // Merge the basic auth info with the full profile info
+        return { ...basicUser, ...response.data };
+      } catch (error) {
+        console.error("Error fetching full customer profile:", error);
+        return basicUser; // Fallback to basic info if fetch fails
+      }
+    }
+    // For Admin/Store/Manager, usually the basic auth object is enough
+    return basicUser;
+  }, []);
+
+  // 1. Check Auth Status on Mount (Persist Login)
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        // 1. Check JWT-based auth first
+        // Assume backend checks HttpOnly cookie
         const response = await axiosInstance.get("/auth/verify");
-        setIsAuthenticated(response.data.authenticated);
+
         if (response.data.authenticated && response.data.user) {
-          const u = response.data.user;
-          const normalized = {
-            ...u,
-            customerId: u.customerId || u._id || u.id,
-          };
-          setUser(normalized);
-          setLoading(false);
-          return;
+          setIsAuthenticated(true);
+          // Fetch full details (Address, etc) so state is consistent with Login
+          const fullUser = await fetchFullUserProfile(response.data.user);
+          setUser(fullUser);
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
         }
-        // Previously we supported a session-based fallback for vendors; with cookie-only JWT,
-        // this is no longer needed because /auth/verify returns user info for all roles.
       } catch (error) {
-        console.log("User not authenticated or verification failed", error);
+        // Quiet failure on verify (user just isn't logged in)
         setIsAuthenticated(false);
         setUser(null);
       } finally {
@@ -59,7 +84,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkAuthStatus();
-  }, []);
+  }, [fetchFullUserProfile]);
 
   // 2. Update Local User State (for Profile updates)
   const updateUser = (newUserData) => {
@@ -73,47 +98,18 @@ export const AuthProvider = ({ children }) => {
   const signin = async (userData, role = "customer") => {
     setLoading(true);
     try {
-      // Get the correct endpoint based on role
       const endpoint = authConfig[role]?.signin || authConfig.customer.signin;
+      const response = await axiosInstance.post(endpoint, userData);
 
-      // When calling vendor endpoints, attach the role required by the vendor API
-      const payload =
-        role === "storePartner"
-          ? { ...userData, role: "store-manager" }
-          : role === "eventManager"
-          ? { ...userData, role: "event-manager" }
-          : userData;
-      const response = await axiosInstance.post(endpoint, payload);
+      const basicUser = response.data.user;
+      
+      // Ensure the user object has the role attached if the backend didn't send it
+      if (!basicUser.role) basicUser.role = role;
 
-      // Special logic for Customers: Fetch full profile details
-      if (role === "customer" && response.data.user?.customerId) {
-        const id = response.data.user.customerId;
-        try {
-          const fullUserResponse = await axiosInstance.get(`/public/${id}`);
-          const f = fullUserResponse.data;
-          setUser({ ...f, customerId: f.customerId || f._id || f.id });
-        } catch (fetchError) {
-          console.error(
-            "Could not fetch full user details, using basic info",
-            fetchError
-          );
-          setUser(response.data.user);
-        }
-      } else if (role === "storePartner") {
-        // When storePartner signs in, the server returns the vendor object in the response
-        if (response.data?.vendor) {
-          const v = response.data.vendor;
-          setUser({
-            role: "storePartner",
-            vendorId: v.vendorId || v._id || v.id,
-            ...v,
-          });
-        }
-      } else {
-        // For Admin, Event Managers, etc., use the data returned from login
-        setUser(response.data.user);
-      }
+      // Fetch extended details if necessary
+      const fullUser = await fetchFullUserProfile(basicUser);
 
+      setUser(fullUser);
       setIsAuthenticated(true);
       return { success: true };
     } catch (error) {
@@ -133,26 +129,12 @@ export const AuthProvider = ({ children }) => {
       const endpoint = authConfig[role]?.signup || authConfig.customer.signup;
       const response = await axiosInstance.post(endpoint, userData);
 
-      // Similar fetch logic for signup if backend returns ID immediately
-      if (role === "customer" && response.data.user?.customerId) {
-        const id = response.data.user.customerId;
-        const fullUserResponse = await axiosInstance.get(`/public/${id}`);
-        const f = fullUserResponse.data;
-        setUser({ ...f, customerId: f.customerId || f._id || f.id });
-      } else if (role === "storePartner") {
-        // After storePartner signup, the server should return vendor data in response
-        if (response.data?.vendor) {
-          const v = response.data.vendor;
-          setUser({
-            role: "storePartner",
-            vendorId: v.vendorId || v._id || v.id,
-            ...v,
-          });
-        }
-      } else {
-        setUser(response.data.user);
-      }
+      const basicUser = response.data.user;
+      if (!basicUser.role) basicUser.role = role;
 
+      const fullUser = await fetchFullUserProfile(basicUser);
+
+      setUser(fullUser);
       setIsAuthenticated(true);
       return { success: true };
     } catch (error) {
@@ -167,6 +149,7 @@ export const AuthProvider = ({ children }) => {
 
   // 5. Sign Out
   const signout = async () => {
+    setLoading(true);
     try {
       await axiosInstance.post("/auth/logout");
     } catch (error) {
@@ -174,6 +157,9 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsAuthenticated(false);
       setUser(null);
+      setLoading(false);
+      // Optional: Clear any local storage if you use it alongside cookies
+      // localStorage.removeItem('token'); 
     }
   };
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom"; // Fixed import
+import { Routes, Route, Navigate } from "react-router";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
@@ -41,10 +41,6 @@ import Vendors from "./Pages/Admin/Vendors";
 
 // --- Pages: Service Providers ---
 import EventManagerPage from "./Pages/EventManager/EventManagerPage";
-
-// ------------------------------------------------------------------
-// 1. IMPORT YOUR NEW SHOP MANAGER FILES HERE
-// ------------------------------------------------------------------
 import ShopManagerLayout from "./Pages/ShopManager/Layout/ShopManagerLayout";
 import ShopDashboard from "./Pages/ShopManager/Dashboard/ShopDashboard";
 import ProductList from "./Pages/ShopManager/Products/ProductList";
