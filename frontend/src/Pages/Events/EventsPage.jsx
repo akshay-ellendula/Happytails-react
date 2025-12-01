@@ -45,7 +45,7 @@ const EventsPage = () => {
           date: formatDate(event.date_time),
           title: event.title,
           venue: event.venue,
-          price: event.ticketPrice === 0 || !event.ticketPrice ? 'Free Entry' : `₹${event.ticketPrice}`,
+          price: event.ticketPrice === 0 || !event.ticketPrice ? 'Free Entry' : `${event.ticketPrice}`,
           buttonText: event.ticketPrice === 0 ? 'Free Register' : 'Book tickets',
           category: event.category || 'general'
         }));

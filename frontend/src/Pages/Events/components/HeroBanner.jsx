@@ -84,7 +84,7 @@ const HeroBanner = ({ events }) => {
               <span className="text-[#1a1a1a] font-bold text-lg">
                 {featuredEvent.price === 0
                   ? "Free Entry"
-                  : `₹${featuredEvent.price} onwards`}
+                  : `${featuredEvent.price} onwards`}
               </span>
               <button
                 onClick={handleEventClick}

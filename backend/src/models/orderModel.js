@@ -21,6 +21,7 @@ const orderItemSchema = new mongoose.Schema({
     order_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
     product_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: null },
     variant_id: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductVariant', default: null },
+    vendor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
     product_name: { type: String, required: true },
     quantity: { type: Number, required: true },
     price: { type: Number, required: true },

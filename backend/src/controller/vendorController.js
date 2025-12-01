@@ -1,24 +1,20 @@
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-import multer from "multer";
+import bcrypt from "bcryptjs"; 
 
 // --- IMPORTS: Models ---
-// We import these from the specific files you have created
-import Vendor from "../models/vendorModel.js";
+import Vendor from "../models/vendorModel.js"; 
 import { Order, OrderItem } from "../models/orderModel.js";
 import {
   Product,
   ProductVariant,
   ProductImage,
 } from "../models/productsModel.js";
-import User from "../models/customerModel.js"; // Assuming 'Customer' is your User model
-import uploadToCloudinary from "../utils/cloudinaryUploader.js";
-import EventManager from "../models/eventManagerModel.js"; // UNCOMMENT THIS when you create the EventManager model file
+import User from "../models/customerModel.js";
 
-// Configure Multer for memory storage (for image uploads)
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+// --- IMPORT CLOUDINARY HELPER ---
+// Fixed: Now importing the function properly instead of the object
+import uploadToCloudinary from "../utils/cloudinaryUploader.js"; 
 
 // --- HELPER TO SEND JSON RESPONSES ---
 const sendJson = (res, data) =>
@@ -30,52 +26,42 @@ const sendError = (res, message, code = 500) =>
 const serviceProviderLogin = async (req, res) => {
   const { email, password, role } = req.body;
 
-  console.log("serviceProviderLogin payload:", { email, role });
-
   if (!email || !password || !role)
     return sendError(res, "Email, password, and role are required", 400);
 
   try {
-    let Model;
-
-    if (role === "store-manager") {
-      Model = Vendor;
-    } else if (role === "event-manager") {
-      Model = EventManager; // Enable this when you have the EventManager model
-      sessionKey = "eventManager";
-      return sendError(
-        res,
-        "Event Manager login not yet implemented (Model missing)",
-        501
-      );
-    } else {
-      return sendError(res, "Invalid role", 400);
+    if (role !== "vendor") {
+      return sendError(res, "Invalid role. Expected 'vendor'", 400);
     }
 
-    const user = await Model.findOne({ email });
+    const user = await Vendor.findOne({ email });
     if (!user) {
-      console.warn("Login attempt: user not found for role", role, email);
       return sendError(res, "User not found", 404);
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.warn("Login attempt: invalid password for", email);
       return sendError(res, "Incorrect password", 401);
     }
 
-    // Issue JWT token instead of session
+    const tokenPayload = { 
+        role: "vendor",
+        vendorId: user._id.toString()
+    };
+
     const token = jwt.sign(
-      { vendorId: user._id.toString(), role },
+      tokenPayload,
       process.env.JWT_SECRET_KEY,
-      { expiresIn: "30m" }
+      { expiresIn: "24h" }
     );
+
     res.cookie("jwt", token, {
       httpOnly: true,
-      maxAge: 90 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000,
       sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
     });
+
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -95,14 +81,13 @@ const serviceProviderLogin = async (req, res) => {
 };
 
 const logout = (req, res) => {
-  // For JWT based auth, clear the cookie
   res.clearCookie("jwt");
   res.status(200).json({ success: true, message: "Logged out successfully" });
 };
 
-const storeSignup = async (req, res) => {
+const vendorSignup = async (req, res) => {
   const {
-    name,
+    name, 
     contactnumber,
     email,
     password,
@@ -111,27 +96,13 @@ const storeSignup = async (req, res) => {
     storelocation,
   } = req.body;
 
-  if (
-    !name ||
-    !contactnumber ||
-    !email ||
-    !password ||
-    !storename ||
-    !storelocation
-  ) {
+  if (!name || !contactnumber || !email || !password || !storename || !storelocation) {
     return sendError(res, "All fields are required", 400);
   }
   if (password !== confirmpassword)
     return sendError(res, "Passwords do not match", 400);
 
   try {
-    console.log("vendor signup request body:", {
-      name,
-      contactnumber,
-      email,
-      storename,
-      storelocation,
-    });
     const existingVendor = await Vendor.findOne({
       $or: [{ email }, { store_name: storename }],
     });
@@ -144,33 +115,28 @@ const storeSignup = async (req, res) => {
       store_name: storename,
       name: name,
       email: email,
-      contact_number: contactnumber,
+      contact_number: contactnumber, 
       store_location: storelocation,
-      password: hashedPassword,
+      password: hashedPassword, 
       description: "",
-      role: "store-manager", // Explicitly set role
     });
 
-    // Create a JWT for the newly created vendor and set it as cookie
     const token = jwt.sign(
-      { vendorId: newVendor._id.toString(), role: "store-manager" },
+      { 
+          vendorId: newVendor._id.toString(), 
+          role: "vendor" 
+      },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: "30m" }
+      { expiresIn: "24h" }
     );
+
     res.cookie("jwt", token, {
       httpOnly: true,
-      maxAge: 90 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000,
       sameSite: "strict",
       secure: process.env.NODE_ENV === "production",
     });
 
-    console.log(
-      "vendor created, _id:",
-      newVendor._id,
-      "connected db:",
-      mongoose.connection.name
-    );
-    // Return the newly created vendor details so the frontend can confirm and set state
     res.status(201).json({
       success: true,
       vendor: {
@@ -189,9 +155,8 @@ const storeSignup = async (req, res) => {
 
 // --- 2. DASHBOARD & ANALYTICS ---
 const getVendorProfile = async (req, res) => {
-  // req.user is set by the auth middleware
   if (!req.user) return sendError(res, "Unauthorized", 401);
-  const vendorId = req.user.vendorId || req.user.eventManagerId;
+  const vendorId = req.user.vendorId;
 
   try {
     const vendor = await Vendor.findById(vendorId);
@@ -212,7 +177,6 @@ const getVendorProfile = async (req, res) => {
     sendError(res, "Server error");
   }
 };
-
 const getVendorAnalytics = async (req, res) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
@@ -220,61 +184,60 @@ const getVendorAnalytics = async (req, res) => {
   try {
     const now = new Date();
     const startOfDay = new Date(now.setHours(0, 0, 0, 0));
-    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Helper to get stats for a date range
     const getStats = async (startDate) => {
+      // 1. Match items belonging to this vendor
       const matchStage = {
-        "order_items.vendor_id": new mongoose.Types.ObjectId(vendorId),
-        status: { $in: ["Confirmed", "Shipped", "Delivered"] },
+        vendor_id: new mongoose.Types.ObjectId(vendorId),
       };
-      if (startDate) {
-        matchStage.order_date = { $gte: startDate };
-      }
 
-      const stats = await Order.aggregate([
+      const pipeline = [
+        { $match: matchStage },
+        // 2. Lookup the parent Order to check status and date
         {
           $lookup: {
-            from: "orderitems",
-            localField: "_id",
-            foreignField: "order_id",
-            as: "order_items",
+            from: "orders",
+            localField: "order_id",
+            foreignField: "_id",
+            as: "order",
           },
         },
-        { $match: matchStage },
+        { $unwind: "$order" },
+        // 3. Filter by Order Status (Only count valid sales)
         {
-          $project: {
-            order_total: {
-              $sum: {
-                $map: {
-                  input: {
-                    $filter: {
-                      input: "$order_items",
-                      as: "item",
-                      cond: {
-                        $eq: [
-                          "$$item.vendor_id",
-                          new mongoose.Types.ObjectId(vendorId),
-                        ],
-                      },
-                    },
-                  },
-                  as: "item",
-                  in: { $multiply: ["$$item.price", "$$item.quantity"] },
-                },
-              },
-            },
+          $match: {
+            "order.status": { $in: ["Confirmed", "Shipped", "Delivered"] },
           },
         },
-        {
-          $group: {
-            _id: null,
-            totalRevenue: { $sum: "$order_total" },
-            totalOrders: { $sum: 1 },
-          },
+      ];
+
+      // 4. Apply Date Filter if provided
+      if (startDate) {
+        pipeline.push({
+          $match: { "order.order_date": { $gte: startDate } },
+        });
+      }
+
+      // 5. Group and Calculate
+      pipeline.push({
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: { $multiply: ["$price", "$quantity"] } },
+          totalOrders: { $addToSet: "$order._id" }, // Count unique orders
         },
-      ]);
+      });
+
+      pipeline.push({
+        $project: {
+          totalRevenue: 1,
+          totalOrders: { $size: "$totalOrders" },
+        },
+      });
+
+      const stats = await OrderItem.aggregate(pipeline);
       return stats[0] || { totalRevenue: 0, totalOrders: 0 };
     };
 
@@ -319,106 +282,110 @@ const getVendorAnalytics = async (req, res) => {
 
 // --- 3. PRODUCTS ---
 const getVendorProducts = async (req, res) => {
-  if (!req.user) return sendError(res, "Unauthorized", 401);
-  const vendorId = req.user.vendorId;
-  const { category, sort } = req.query;
+    if (!req.user) return sendError(res, "Unauthorized", 401);
+    const vendorId = req.user.vendorId;
+    const { category, sort } = req.query;
 
-  const matchStage = {
-    vendor_id: new mongoose.Types.ObjectId(vendorId),
-    is_deleted: { $ne: true },
-  };
-  if (category && category !== "All Categories")
-    matchStage.product_category = category;
+    const matchStage = {
+        vendor_id: new mongoose.Types.ObjectId(vendorId),
+        is_deleted: { $ne: true },
+    };
+    if (category && category !== "All Categories")
+        matchStage.product_category = category;
 
-  const sortStage = {};
-  if (sort === "oldest") sortStage.created_at = 1;
-  else if (sort === "price_asc") sortStage.price_for_sort = 1;
-  else if (sort === "price_desc") sortStage.price_for_sort = -1;
-  else sortStage.created_at = -1;
+    const sortStage = {};
+    if (sort === "oldest") sortStage.created_at = 1;
+    else if (sort === "price_asc") sortStage.price_for_sort = 1;
+    else if (sort === "price_desc") sortStage.price_for_sort = -1;
+    else sortStage.created_at = -1;
 
-  try {
-    const products = await Product.aggregate([
-      { $match: matchStage },
-      {
-        $lookup: {
-          from: "productvariants",
-          localField: "_id",
-          foreignField: "product_id",
-          as: "variants",
+    try {
+        const products = await Product.aggregate([
+        { $match: matchStage },
+        {
+            $lookup: {
+            from: "productvariants",
+            localField: "_id",
+            foreignField: "product_id",
+            as: "variants",
+            },
         },
-      },
-      {
-        $lookup: {
-          from: "productimages",
-          localField: "_id",
-          foreignField: "product_id",
-          as: "images",
+        {
+            $lookup: {
+            from: "productimages",
+            localField: "_id",
+            foreignField: "product_id",
+            as: "images",
+            },
         },
-      },
-      {
-        $lookup: {
-          from: "orderitems",
-          localField: "_id",
-          foreignField: "product_id",
-          as: "order_items",
+        {
+            $lookup: {
+            from: "orderitems",
+            localField: "_id",
+            foreignField: "product_id",
+            as: "order_items",
+            },
         },
-      },
-      {
-        $addFields: {
-          primary_image: {
-            $arrayElemAt: [
-              {
-                $filter: {
-                  input: "$images",
-                  as: "image",
-                  cond: { $eq: ["$$image.is_primary", true] },
+        {
+            $addFields: {
+            primary_image: {
+                $arrayElemAt: [
+                {
+                    $filter: {
+                    input: "$images",
+                    as: "image",
+                    cond: { $eq: ["$$image.is_primary", true] },
+                    },
                 },
-              },
-              0,
-            ],
-          },
-          price_for_sort: {
-            $ifNull: [{ $arrayElemAt: ["$variants.regular_price", 0] }, 0],
-          },
-          total_stock: { $sum: "$variants.stock_quantity" },
+                0,
+                ],
+            },
+            price_for_sort: {
+                $ifNull: [{ $arrayElemAt: ["$variants.regular_price", 0] }, 0],
+            },
+            total_stock: { $sum: "$variants.stock_quantity" },
+            },
         },
-      },
-      { $sort: sortStage },
-      {
-        $project: {
-          id: "$_id",
-          product_name: 1,
-          product_category: 1,
-          regular_price: {
-            $ifNull: [{ $arrayElemAt: ["$variants.regular_price", 0] }, 0],
-          },
-          sale_price: { $arrayElemAt: ["$variants.sale_price", 0] },
-          stock_quantity: "$total_stock",
-          sold: { $sum: "$order_items.quantity" },
-          image_data: {
-            $ifNull: ["$primary_image.image_data", "/images/default.jpg"],
-          },
+        { $sort: sortStage },
+        {
+            $project: {
+            id: "$_id",
+            product_name: 1,
+            product_category: 1,
+            regular_price: {
+                $ifNull: [{ $arrayElemAt: ["$variants.regular_price", 0] }, 0],
+            },
+            sale_price: { $arrayElemAt: ["$variants.sale_price", 0] },
+            stock_quantity: "$total_stock",
+            sold: { $sum: "$order_items.quantity" },
+            image_data: {
+                $ifNull: ["$primary_image.image_data", "/images/default.jpg"],
+            },
+            },
         },
-      },
-    ]);
-    sendJson(res, { products });
-  } catch (error) {
-    sendError(res, "Server error");
-  }
+        ]);
+        sendJson(res, { products });
+    } catch (error) {
+        sendError(res, "Server error");
+    }
 };
 
-const submitProduct = [
-  upload.array("product_images", 4),
-  async (req, res) => {
-    if (!req.user || !req.user.vendorId)
-      return sendError(res, "Unauthorized", 401);
+// --- SUBMIT PRODUCT (MULTER + CLOUDINARY) ---
+const submitProduct = async (req, res) => {
+    if (!req.user) return sendError(res, "Unauthorized", 401);
     const vendorId = req.user.vendorId;
+
+    // DEBUG: Log to verify what is being received
+    console.log("Submit Product - Body:", req.body);
+    console.log("Submit Product - Files:", req.files);
+
     const {
       product_name,
       product_category,
       product_type,
       product_description,
       stock_status,
+      variants 
     } = req.body;
 
     try {
@@ -430,69 +397,71 @@ const submitProduct = [
         product_description,
         stock_status,
       });
-      // --- VARIANTS: parse and save if present ---
+
+      // --- VARIANTS ---
       let parsedVariants = [];
-      if (req.body.variants) {
-        try {
-          parsedVariants = JSON.parse(req.body.variants);
-        } catch (err) {
-          parsedVariants = [];
-        }
+      if (typeof variants === 'string') {
+          try { parsedVariants = JSON.parse(variants); } catch (e) { parsedVariants = []; }
+      } else if (Array.isArray(variants)) {
+          parsedVariants = variants;
       }
+
       for (const variant of parsedVariants) {
         await ProductVariant.create({
           product_id: newProduct._id,
           size: variant.size || null,
           color: variant.color || null,
           regular_price: parseFloat(variant.regular_price) || 0,
-          sale_price: variant.sale_price
-            ? parseFloat(variant.sale_price)
-            : null,
+          sale_price: variant.sale_price ? parseFloat(variant.sale_price) : null,
           stock_quantity: parseInt(variant.stock_quantity) || 0,
           sku: variant.sku || null,
         });
       }
 
-      // --- IMAGES: Upload to Cloudinary and save image docs ---
+      // --- IMAGES (CLOUDINARY) ---
       if (req.files && req.files.length > 0) {
         for (let i = 0; i < req.files.length; i++) {
           const file = req.files[i];
           try {
-            const imageUrl = await uploadToCloudinary(file, "product_images", [
-              { width: 800, height: 800, crop: "limit" },
-            ]);
+            // FIX: Using the imported unified upload helper
+            const secureUrl = await uploadToCloudinary(file, "pet_store_products");
+
             await ProductImage.create({
               product_id: newProduct._id,
-              image_data: imageUrl,
+              image_data: secureUrl, // Storing the URL string directly
               is_primary: i === 0,
             });
           } catch (err) {
-            console.error("Image upload failed for product:", err);
+            console.error("Cloudinary upload failed for product:", err);
+            // We continue loop even if one fails, or you could throw to stop
           }
         }
       }
 
       sendJson(res, { message: "Product added successfully" });
     } catch (error) {
+      console.error("Submit Product Error:", error);
       sendError(res, error.message);
     }
-  },
-];
+};
 
-const updateProduct = [
-  upload.array("product_images", 4),
-  async (req, res) => {
-    if (!req.user || !req.user.vendorId)
-      return sendError(res, "Unauthorized", 401);
+// --- UPDATE PRODUCT (MULTER + CLOUDINARY) ---
+const updateProduct = async (req, res) => {
+    if (!req.user) return sendError(res, "Unauthorized", 401);
     const vendorId = req.user.vendorId;
     const productId = req.params.productId;
+    
+    // DEBUG: Log for update
+    console.log("Update Product - Files:", req.files);
+
     const {
       product_name,
       product_category,
       product_type,
       product_description,
       stock_status,
-      deletedImages, // Array of image IDs to delete
+      deletedImages,
+      variants
     } = req.body;
 
     try {
@@ -511,14 +480,13 @@ const updateProduct = [
         stock_status,
       });
 
-      // 2. Handle Variants (Delete all and recreate)
-      // This is simpler than matching. Old orders preserve data in OrderItem.
-      if (req.body.variants) {
+      // 2. Handle Variants
+      if (variants) {
         let parsedVariants = [];
-        try {
-          parsedVariants = JSON.parse(req.body.variants);
-        } catch (err) {
-          parsedVariants = [];
+        if (typeof variants === 'string') {
+            try { parsedVariants = JSON.parse(variants); } catch (e) { parsedVariants = []; }
+        } else if (Array.isArray(variants)) {
+            parsedVariants = variants;
         }
 
         if (parsedVariants.length > 0) {
@@ -529,9 +497,7 @@ const updateProduct = [
               size: variant.size || null,
               color: variant.color || null,
               regular_price: parseFloat(variant.regular_price) || 0,
-              sale_price: variant.sale_price
-                ? parseFloat(variant.sale_price)
-                : null,
+              sale_price: variant.sale_price ? parseFloat(variant.sale_price) : null,
               stock_quantity: parseInt(variant.stock_quantity) || 0,
               sku: variant.sku || null,
             });
@@ -542,31 +508,39 @@ const updateProduct = [
       // 3. Handle Images
       // A. Delete removed images
       if (deletedImages) {
-        const idsToDelete = Array.isArray(deletedImages)
-          ? deletedImages
-          : [deletedImages];
+        let idsToDelete = deletedImages;
+        if (typeof deletedImages === 'string') {
+             if(deletedImages.includes(',')) idsToDelete = deletedImages.split(',');
+             else idsToDelete = [deletedImages];
+        } else if (!Array.isArray(deletedImages)) {
+            idsToDelete = [deletedImages];
+        }
+
         await ProductImage.deleteMany({
           _id: { $in: idsToDelete },
           product_id: productId,
         });
-        // Optional: Delete from Cloudinary if you stored public_id
       }
 
-      // B. Add new images
+      // B. Add new images (req.files)
       if (req.files && req.files.length > 0) {
+        const existingImagesCount = await ProductImage.countDocuments({ product_id: productId });
+        let isNextPrimary = existingImagesCount === 0;
+
         for (let i = 0; i < req.files.length; i++) {
           const file = req.files[i];
           try {
-            const imageUrl = await uploadToCloudinary(file, "product_images", [
-              { width: 800, height: 800, crop: "limit" },
-            ]);
+            // FIX: Using the imported unified upload helper
+            const secureUrl = await uploadToCloudinary(file, "pet_store_products");
+
             await ProductImage.create({
               product_id: productId,
-              image_data: imageUrl,
-              is_primary: false, // You might want logic to set primary if no images exist
+              image_data: secureUrl,
+              is_primary: isNextPrimary, 
             });
+            isNextPrimary = false; 
           } catch (err) {
-            console.error("Image upload failed:", err);
+            console.error("Cloudinary upload failed:", err);
           }
         }
       }
@@ -576,16 +550,16 @@ const updateProduct = [
       console.error("Update product error:", error);
       sendError(res, "Server error");
     }
-  },
-];
+};
 
 const getProductForEdit = async (req, res) => {
-  if (!req.user || !req.user.vendorId)
-    return sendError(res, "Unauthorized", 401);
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+
   try {
     const product = await Product.findOne({
       _id: req.params.productId,
-      vendor_id: req.user.vendorId,
+      vendor_id: vendorId,
     });
     if (!product) return sendError(res, "Product not found", 404);
 
@@ -601,22 +575,18 @@ const getProductForEdit = async (req, res) => {
 // --- 4. ORDERS ---
 const getVendorOrders = async (req, res) => {
   try {
-    if (!req.user || !req.user.vendorId) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
-    }
-
+    if (!req.user) return res.status(401).json({ success: false, message: "Unauthorized" });
     const vendorId = req.user.vendorId;
     const statusFilter = req.query.status;
 
-    // 1. Find all order IDs associated with this vendor
+    // 1. Find all items belonging to this vendor
     const matchStage = { vendor_id: new mongoose.Types.ObjectId(vendorId) };
-
-    // Note: We can't filter by order status here yet because status is on the Order, not OrderItem
-    // So we first get the order IDs, then filter in the Order lookup
 
     const orders = await OrderItem.aggregate([
       { $match: matchStage },
-      { $group: { _id: "$order_id" } }, // Unique orders
+      // 2. Group by Order ID to distinct them (A vendor might have 2 items in 1 order)
+      { $group: { _id: "$order_id" } },
+      // 3. Lookup the actual Order details
       {
         $lookup: {
           from: "orders",
@@ -626,8 +596,7 @@ const getVendorOrders = async (req, res) => {
         },
       },
       { $unwind: "$order" },
-      // Filter by status if provided
-      // Filter by status if provided
+      // 4. Apply Status Filter (case-insensitive)
       ...(statusFilter && statusFilter !== "all"
         ? [
             {
@@ -639,6 +608,7 @@ const getVendorOrders = async (req, res) => {
             },
           ]
         : []),
+      // 5. Lookup Customer Details
       {
         $lookup: {
           from: "customers",
@@ -648,27 +618,16 @@ const getVendorOrders = async (req, res) => {
         },
       },
       { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
+      // 6. Format the Output
       {
         $project: {
           id: { $toString: "$order._id" },
-          total: "$order.total_amount",
+          // Note: Showing the full order total might be confusing in a multi-vendor app. 
+          // Ideally, you should sum only this vendor's items, but for now we keep order total.
+          total: "$order.total_amount", 
           order_date: "$order.order_date",
-          timeline: "$order.timeline", // Added timeline
-          status: {
-            $switch: {
-              branches: [
-                {
-                  case: { $eq: ["$order.status", "confirmed"] },
-                  then: "Confirmed",
-                },
-                {
-                  case: { $eq: ["$order.status", "pending"] },
-                  then: "Pending",
-                },
-              ],
-              default: "$order.status",
-            },
-          },
+          timeline: "$order.timeline",
+          status: "$order.status", // Keep it simple, use the string directly
           customer_name: {
             $ifNull: [
               "$customer.userName",
@@ -701,11 +660,9 @@ const getVendorCustomerDetails = async (req, res) => {
   const customerId = req.params.customerId;
 
   try {
-    // 1. Get Customer Details
     const customer = await User.findById(customerId).select("-password");
     if (!customer) return sendError(res, "Customer not found", 404);
 
-    // 2. Get Orders for this Customer & Vendor
     const orders = await OrderItem.aggregate([
       {
         $match: {
@@ -740,11 +697,9 @@ const getVendorCustomerDetails = async (req, res) => {
       { $sort: { order_date: -1 } },
     ]);
 
-    // 3. Calculate Summary
     const totalOrders = new Set(orders.map((o) => o.order_id.toString())).size;
     const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
 
-    // Calculate Most Purchased
     const productCounts = {};
     orders.forEach((o) => {
       productCounts[o.product_name] =
@@ -759,7 +714,6 @@ const getVendorCustomerDetails = async (req, res) => {
       }
     }
 
-    // Group items by Order ID for display
     const orderHistory = Object.values(
       orders.reduce((acc, item) => {
         if (!acc[item.order_id]) {
@@ -791,9 +745,7 @@ const getVendorCustomerDetails = async (req, res) => {
       summary: {
         totalOrders,
         totalRevenue: totalRevenue.toFixed(2),
-        avgOrderValue: (totalOrders ? totalRevenue / totalOrders : 0).toFixed(
-          2
-        ),
+        avgOrderValue: (totalOrders ? totalRevenue / totalOrders : 0).toFixed(2),
         lastPurchase: orders[0]
           ? new Date(orders[0].order_date).toLocaleDateString()
           : "N/A",
@@ -812,8 +764,7 @@ const getVendorCustomerDetails = async (req, res) => {
 };
 
 const getOrderDetails = async (req, res) => {
-  if (!req.user || !req.user.vendorId)
-    return sendError(res, "Unauthorized", 401);
+  if (!req.user) return sendError(res, "Unauthorized", 401);
   try {
     const order = await Order.findById(req.params.orderId).populate(
       "customer_id"
@@ -867,12 +818,9 @@ const updateOrderStatus = async (req, res) => {
     const { orderId } = req.params;
     const { status } = req.body;
 
-    if (!req.user || !req.user.vendorId) {
-      return sendError(res, "Unauthorized", 401);
-    }
+    if (!req.user) return sendError(res, "Unauthorized", 401);
     const vendorId = req.user.vendorId;
 
-    // REMOVED "Pending" completely
     const validStatuses = ["Confirmed", "Shipped", "Delivered", "Cancelled"];
     if (!validStatuses.includes(status)) {
       return sendError(res, "Invalid status", 400);
@@ -880,13 +828,11 @@ const updateOrderStatus = async (req, res) => {
 
     const updateFields = { status };
 
-    // Save timestamps
     if (status === "Confirmed") updateFields.Confirmed_at = new Date();
     if (status === "Shipped") updateFields.shipped_at = new Date();
     if (status === "Delivered") updateFields.delivered_at = new Date();
     if (status === "Cancelled") updateFields.cancelled_at = new Date();
 
-    // Add to timeline
     updateFields.$push = {
       timeline: {
         status,
@@ -902,7 +848,6 @@ const updateOrderStatus = async (req, res) => {
       },
     };
 
-    // 1. Verify that the vendor has items in this order
     const hasItem = await OrderItem.findOne({
       order_id: orderId,
       vendor_id: vendorId,
@@ -912,7 +857,6 @@ const updateOrderStatus = async (req, res) => {
       return sendError(res, "Unauthorized: You do not own this order", 403);
     }
 
-    // 2. Update the Order (Order model does not have vendor_id)
     const order = await Order.findByIdAndUpdate(orderId, updateFields, {
       new: true,
     }).populate("customer_id", "name email phone");
@@ -921,14 +865,13 @@ const updateOrderStatus = async (req, res) => {
       return sendError(res, "Order not found", 404);
     }
 
-    // Format response to match frontend expectations
     const formattedOrder = {
       id: order._id.toString(),
-      order_id: order._id.toString(), // Fallback
+      order_id: order._id.toString(),
       customer: {
-        name: order.customer_id?.name || "Guest",
+        name: order.customer_id?.userName || "Guest",
         email: order.customer_id?.email,
-        phone: order.customer_id?.phone,
+        phone: order.customer_id?.phoneNumber,
       },
       total: order.total_amount,
       order_date: order.order_date,
@@ -1004,11 +947,15 @@ const getVendorCustomers = async (req, res) => {
 
 // --- 6. PROFILE UPDATE ---
 const updateVendorProfile = async (req, res) => {
-  if (!req.user || !req.user.vendorId)
-    return sendError(res, "Unauthorized", 401);
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+  
+  // Mapping frontend fields to Vendor model fields
   const { storeName, ownerName, email, phone, address, description } = req.body;
+  
   try {
-    await Vendor.findByIdAndUpdate(req.user.vendorId, {
+    // Note: Vendor model provided does not have profilePic, so we don't upload it here.
+    await Vendor.findByIdAndUpdate(vendorId, {
       store_name: storeName,
       name: ownerName,
       email,
@@ -1016,7 +963,6 @@ const updateVendorProfile = async (req, res) => {
       store_location: address,
       description,
     });
-    // Update token if you want to return updated store_name in token; for now just return the response
     sendJson(res, { message: "Profile updated" });
   } catch (error) {
     sendError(res, "Update failed");
@@ -1024,9 +970,7 @@ const updateVendorProfile = async (req, res) => {
 };
 
 const deleteProduct = async (req, res) => {
-  if (!req.user || !req.user.vendorId)
-    return sendError(res, "Unauthorized", 401);
-
+  if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const productId = req.params.productId;
 
@@ -1090,9 +1034,7 @@ const deleteOrder = async (req, res) => {
 };
 
 const deleteSelectedOrders = async (req, res) => {
-  if (!req.user || !req.user.vendorId)
-    return sendError(res, "Unauthorized", 401);
-  const vendorId = req.user.vendorId;
+  if (!req.user) return sendError(res, "Unauthorized", 401);
   const { orderIds } = req.body;
 
   if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
@@ -1107,7 +1049,7 @@ const deleteSelectedOrders = async (req, res) => {
   }
 };
 
-// --- UPDATED: DASHBOARD FOR REACT (RETURNS JSON) ---
+// --- DASHBOARD (JSON) ---
 const getVendorDashboard = async (req, res) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId || req.user.eventManagerId;
@@ -1196,7 +1138,7 @@ const getVendorDashboard = async (req, res) => {
       },
     ]);
 
-    // 4. Monthly Stats for Percentage Change
+    // 4. Monthly Stats
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -1263,14 +1205,15 @@ const getVendorDashboard = async (req, res) => {
     sendError(res, "Server error");
   }
 };
+
 const vendorController = {
   serviceProviderLogin,
   logout,
-  storeSignup,
+  vendorSignup, 
   getVendorProfile,
   getVendorAnalytics,
   getVendorProducts,
-  submitProduct,
+  submitProduct, 
   updateProduct,
   getProductForEdit,
   getVendorOrders,

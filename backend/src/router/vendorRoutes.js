@@ -1,100 +1,102 @@
-// src/router/vendorRoutes.js (ESM)
 import express from "express";
-import vendorController from "../controller/vendorController.js"; // note the .js extension
+import vendorController from "../controller/vendorController.js"; 
 import protectRoute from "../middleware/authMiddleware.js";
+import upload from "../middleware/uploadMiddleware.js"; //
 
 const router = express.Router();
-
-// --- Authentication Routes ---
-router.post("/login", vendorController.serviceProviderLogin);
-router.post("/signup", vendorController.storeSignup);
-router.post("/logout", vendorController.logout);
-
-// --- Dashboard & Analytics ---
+router.post("/logout", vendorController.logout);// --- Dashboard & Analytics ---
 router.get(
   "/dashboard",
-  protectRoute(["store-manager", "eventManager"]),
+  protectRoute(["vendor", "eventManager"]), // Updated role
   vendorController.getVendorDashboard
 );
 router.get(
   "/profile",
-  protectRoute(["store-manager", "eventManager"]),
+  protectRoute(["vendor", "eventManager"]),
   vendorController.getVendorProfile
 );
 router.put(
   "/profile",
-  protectRoute(["store-manager", "eventManager"]),
+  protectRoute(["vendor", "eventManager"]),
   vendorController.updateVendorProfile
 );
 router.get(
   "/analytics",
-  protectRoute(["store-manager", "eventManager"]),
+  protectRoute(["vendor", "eventManager"]),
   vendorController.getVendorAnalytics
 );
 
 // --- Product Management ---
 router.get(
   "/products",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
   vendorController.getVendorProducts
 );
+
+// Added upload.array for images
 router.post(
   "/products",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
+  upload.array("product_images", 5), 
   vendorController.submitProduct
 );
+
 router.get(
   "/products/:productId",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
   vendorController.getProductForEdit
 );
+
+// Added upload.array for images
 router.put(
   "/products/:productId",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
+  upload.array("product_images", 5),
   vendorController.updateProduct
 );
+
 router.delete(
   "/products/:productId",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
   vendorController.deleteProduct
 );
 
 // --- Order Management ---
 router.get(
   "/orders",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
   vendorController.getVendorOrders
 );
 router.get(
   "/orders/:orderId",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
   vendorController.getOrderDetails
 );
 router.put(
   "/orders/:orderId/status",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
   vendorController.updateOrderStatus
 );
 router.delete(
   "/orders/:orderId",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
   vendorController.deleteOrder
 );
 router.post(
   "/orders/delete-batch",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
   vendorController.deleteSelectedOrders
 );
 
 // --- Customer Management ---
 router.get(
   "/customers",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
   vendorController.getVendorCustomers
 );
 router.get(
   "/customers/:customerId",
-  protectRoute(["store-manager"]),
+  protectRoute(["vendor"]),
   vendorController.getVendorCustomerDetails
 );
 

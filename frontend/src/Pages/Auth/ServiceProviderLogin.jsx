@@ -109,7 +109,7 @@ const ServiceProviderLogin = () => {
                     Select your role
                   </option>
                   <option value="event-manager">Event Manager</option>
-                  <option value="store-manager">Store Partner</option>
+                  <option value="storePartner">Store Partner</option>
                 </select>
               </div>
             </div>

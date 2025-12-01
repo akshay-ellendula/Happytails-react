@@ -12,6 +12,7 @@ const CustomerList = () => {
 
   useEffect(() => {
     axiosInstance.get("/vendors/customers").then((res) => {
+      console.log(res.data)
       if (res.data.success) setCustomers(res.data.customers);
       setLoading(false);
     });

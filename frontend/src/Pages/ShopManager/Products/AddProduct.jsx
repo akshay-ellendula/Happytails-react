@@ -29,20 +29,29 @@ const AddProduct = () => {
     newVars[i][e.target.name] = e.target.value;
     setVariants(newVars);
   };
-
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     const data = new FormData();
     Object.keys(formData).forEach((k) => data.append(k, formData[k]));
-    // Send variants as JSON string so server can parse and create variant documents
+    
+    // Stringify variants for the backend to parse
     data.append("variants", JSON.stringify(variants));
-    Array.from(files).forEach((f) => data.append("product_images", f));
+    
+    // Append images
+    if (files && files.length > 0) {
+        Array.from(files).forEach((f) => data.append("product_images", f));
+    }
 
     try {
-      await axiosInstance.post("/vendors/products", data);
+      // FIX: Add the headers object as the 3rd argument
+      await axiosInstance.post("/vendors/products", data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       navigate("/shop/products");
-      // eslint-disable-next-line no-unused-vars
     } catch (err) {
+      console.error("Upload error:", err.response?.data || err.message); // Better error logging
       alert("Error adding product");
     }
   };

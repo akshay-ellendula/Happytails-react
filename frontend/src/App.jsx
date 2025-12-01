@@ -4,6 +4,8 @@ import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import { CartProvider, useCart } from "./context/CartContext";
+import { Provider } from "react-redux"; // Move Provider import
+import { store } from "./store/store";
 
 // --- Pages: Public & General ---
 import HomePage from "./pages/Home/HomePage";
@@ -30,17 +32,15 @@ import MyOrdersPage from "./pages/MyOrdersPage/MyOrdersPage";
 import PaymentPage from "./pages/PaymentPage/PaymentPage";
 
 // --- Pages: Admin ---
-import AdminLoginPage from "./Pages/AdminLogin/AdminLoginPage";
+import AdminLoginPage from "./pages/AdminLogin/AdminLoginPage"; // Check capitalization here (pages vs Pages)
 import Dashboard from "./Pages/Admin/Dashboard";
 import Users from "./Pages/Admin/Users";
+import UserDetails from "./Pages/Admin/UserDetails";
 import EventManagers from "./Pages/Admin/EventManagers";
 import Events from "./Pages/Admin/Events";
 import Products from "./Pages/Admin/Products";
 import Orders from "./Pages/Admin/Orders";
 import Vendors from "./Pages/Admin/Vendors";
-import UserDetails from "./Pages/Admin/UserDetails";
-import { Provider } from "react-redux";
-import { store } from "./store/store";
 import VendorDetails from "./Pages/Admin/VendorDetails";
 
 // --- Pages: Service Providers ---
@@ -77,7 +77,6 @@ const ProtectedRoute = ({ children }) => {
 
 function AppRoutes() {
   return (
-    <Provider store={store}>
     <Routes>
       {/* --- Public Routes --- */}
       <Route path="/" element={<HomePage />} />
@@ -97,8 +96,7 @@ function AppRoutes() {
         path="/profile"
         element={
           <ProtectedRoute>
-            {" "}
-            <ProfilePage />{" "}
+            <ProfilePage />
           </ProtectedRoute>
         }
       />
@@ -106,8 +104,7 @@ function AppRoutes() {
         path="/my_orders"
         element={
           <ProtectedRoute>
-            {" "}
-            <MyOrdersPage />{" "}
+            <MyOrdersPage />
           </ProtectedRoute>
         }
       />
@@ -115,8 +112,7 @@ function AppRoutes() {
         path="/payment"
         element={
           <ProtectedRoute>
-            {" "}
-            <PaymentPage />{" "}
+            <PaymentPage />
           </ProtectedRoute>
         }
       />
@@ -141,19 +137,15 @@ function AppRoutes() {
         }
       />
 
-      {/* ------------------------------------------------------------------ */}
-      {/* 2. THE CONNECTED SHOP MANAGER ROUTES                               */}
-      {/* ------------------------------------------------------------------ */}
+      {/* --- Connected Shop Manager Routes --- */}
       <Route
         path="/shop"
         element={
-          // IMPORTANT: store partners in backend use role 'storePartner' so allow that here
-          <RoleBasedRoute allowedRoles={["storePartner", "admin"]}>
+          <RoleBasedRoute allowedRoles={["vendor", "admin"]}>
             <ShopManagerLayout />
           </RoleBasedRoute>
         }
       >
-        {/* Nested Routes - These load INSIDE the ShopManagerLayout */}
         <Route path="dashboard" element={<ShopDashboard />} />
         <Route path="products" element={<ProductList />} />
         <Route path="products/add" element={<AddProduct />} />
@@ -164,8 +156,6 @@ function AppRoutes() {
         <Route path="customers/:customerId" element={<CustomerDetails />} />
         <Route path="analytics" element={<ShopAnalytics />} />
         <Route path="profile" element={<ShopProfile />} />
-
-        {/* Default redirect to dashboard if they just type /shop */}
         <Route index element={<Navigate to="dashboard" replace />} />
       </Route>
 
@@ -176,8 +166,7 @@ function AppRoutes() {
         path="/admin/dashboard"
         element={
           <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Dashboard />{" "}
+            <Dashboard />
           </RoleBasedRoute>
         }
       />
@@ -185,17 +174,25 @@ function AppRoutes() {
         path="/admin/users"
         element={
           <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Users />{" "}
+            <Users />
           </RoleBasedRoute>
         }
       />
+      {/* ADDED: Protected User Details Route */}
+      <Route
+        path="/admin/users/:id"
+        element={
+          <RoleBasedRoute allowedRoles={["admin"]}>
+            <UserDetails />
+          </RoleBasedRoute>
+        }
+      />
+
       <Route
         path="/admin/event-managers"
         element={
           <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <EventManagers />{" "}
+            <EventManagers />
           </RoleBasedRoute>
         }
       />
@@ -203,8 +200,7 @@ function AppRoutes() {
         path="/admin/events"
         element={
           <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Events />{" "}
+            <Events />
           </RoleBasedRoute>
         }
       />
@@ -212,8 +208,7 @@ function AppRoutes() {
         path="/admin/products"
         element={
           <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Products />{" "}
+            <Products />
           </RoleBasedRoute>
         }
       />
@@ -221,8 +216,7 @@ function AppRoutes() {
         path="/admin/orders"
         element={
           <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Orders />{" "}
+            <Orders />
           </RoleBasedRoute>
         }
       />
@@ -230,14 +224,18 @@ function AppRoutes() {
         path="/admin/vendors"
         element={
           <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Vendors />{" "}
+            <Vendors />
           </RoleBasedRoute>
-        }     <Route path="/admin/users/:id" element={<UserDetails />} />
-     <Route path="/admin/vendors/:id" element={<VendorDetails />} />
-
-
-
+        }
+      />
+      {/* ADDED: Protected Vendor Details Route */}
+      <Route
+        path="/admin/vendors/:id"
+        element={
+          <RoleBasedRoute allowedRoles={["admin"]}>
+            <VendorDetails />
+          </RoleBasedRoute>
+        }
       />
 
       <Route
@@ -253,7 +251,6 @@ function AppRoutes() {
       <Route path="/404" element={<NotFound />} />
       <Route path="*" element={<Navigate to="/404" replace />} />
     </Routes>
-    </Provider>
   );
 }
 
@@ -273,7 +270,6 @@ function AppContent() {
   return (
     <>
       <AppRoutes />
-
       <CartSidebar
         isOpen={isCartOpen}
         setIsOpen={closeCart}
@@ -283,19 +279,22 @@ function AppContent() {
         removeItem={removeItem}
         handleCheckout={handleCheckout}
       />
-      <Toaster />
     </>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <AppContent />
-      </CartProvider>
-      <Toaster position="top-center" />
-    </AuthProvider>
+    // Moved Provider to the top level
+    <Provider store={store}>
+      <AuthProvider>
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
+        {/* Removed duplicate Toaster, kept one here */}
+        <Toaster position="top-center" />
+      </AuthProvider>
+    </Provider>
   );
 }
 

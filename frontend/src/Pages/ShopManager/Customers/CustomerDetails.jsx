@@ -12,6 +12,7 @@ const CustomerDetails = () => {
   useEffect(() => {
     axiosInstance.get(`/vendors/customers/${customerId}`).then((res) => {
       if (res.data.success) setData(res.data);
+      
       setLoading(false);
     });
   }, [customerId]);
