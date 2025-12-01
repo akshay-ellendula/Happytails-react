@@ -28,7 +28,7 @@ import MyOrdersPage from "./pages/MyOrdersPage/MyOrdersPage";
 import PaymentPage from "./pages/PaymentPage/PaymentPage";
 
 // --- Pages: Admin ---
-import AdminLoginPage from "./pages/AdminLogin/AdminLoginPage";
+import AdminLoginPage from "./Pages/AdminLogin/AdminLoginPage";
 import Dashboard from "./Pages/Admin/Dashboard";
 import Users from "./Pages/Admin/Users";
 import EventManagers from "./Pages/Admin/EventManagers";
@@ -36,6 +36,10 @@ import Events from "./Pages/Admin/Events";
 import Products from "./Pages/Admin/Products";
 import Orders from "./Pages/Admin/Orders";
 import Vendors from "./Pages/Admin/Vendors";
+import UserDetails from "./Pages/Admin/UserDetails";
+import { Provider } from "react-redux";
+import { store } from "./store/store";
+import VendorDetails from "./Pages/Admin/VendorDetails";
 
 // --- Pages: Service Providers ---
 import EventManagerPage from "./Pages/EventManager/EventManagerPage";
@@ -60,6 +64,7 @@ const ProtectedRoute = ({ children }) => {
 
 function AppRoutes() {
   return (
+    <Provider store={store}>
     <Routes>
       {/* --- Public Routes --- */}
       <Route path="/" element={<HomePage />} />
@@ -136,6 +141,10 @@ function AppRoutes() {
       <Route path="/admin/vendors" element={
         <RoleBasedRoute allowedRoles={['admin']}> <Vendors /> </RoleBasedRoute>
       } />
+     <Route path="/admin/users/:id" element={<UserDetails />} />
+     <Route path="/admin/vendors/:id" element={<VendorDetails />} />
+
+
 
       {/* Catch-all for Admin Root if needed */}
       <Route path="/admin/*" element={
@@ -150,6 +159,7 @@ function AppRoutes() {
       <Route path="*" element={<Navigate to="/404" replace />} />
 
     </Routes>
+    </Provider>
   );
 }
 

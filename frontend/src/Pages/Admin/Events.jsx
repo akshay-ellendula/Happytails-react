@@ -16,13 +16,17 @@ export default function Events() {
   const loadEvents = async () => {
     try {
       const res = await axiosInstance.get("/admin/events");
-      if (res.data.success) setEvents(res.data.events);
+      if (res.data.success) {
+        setEvents(res.data.data.events);
+        setStats(res.data.data.stats);
+      }
     } catch (err) {
       console.error("Error loading events:", err);
     }
   };
 
-  // Fetch stats
+  // Fetch stats - Removed as it is included in loadEvents
+  /*
   const loadStats = async () => {
     try {
       const res = await axiosInstance.get("/admin/event-stats");
@@ -31,6 +35,7 @@ export default function Events() {
       console.error("Error loading event stats:", err);
     }
   };
+  */
 
   const deleteEvent = async (id) => {
     if (!window.confirm("Are you sure you want to delete this event?")) return;
@@ -47,7 +52,7 @@ export default function Events() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      await Promise.all([loadEvents(), loadStats()]);
+      await loadEvents();
       setLoading(false);
     };
     fetchAll();
@@ -61,19 +66,38 @@ export default function Events() {
   });
 
   const columns = [
-    { label: "Event Name", key: "event_name" },
+    {
+      label: "ID",
+      key: "id",
+      render: (id) => `#${id}`,
+    },
+    { label: "Event Name", key: "title" },
     {
       label: "Manager",
-      key: "event_manager_id",
-      render: (val) => val?.name ?? "N/A",
+      key: "managerName",
+      render: (val) => val || "N/A",
     },
     {
       label: "Date",
       key: "date_time",
       render: (val) => (val ? new Date(val).toLocaleDateString() : "N/A"),
     },
-    { label: "Location", key: "city" },
-    { label: "Status", key: "status" },
+    { label: "Location", key: "venue" },
+    {
+      label: "Status",
+      key: "date_time",
+      render: (val) => {
+        const isUpcoming = new Date(val) > new Date();
+        return (
+          <span
+            className={`px-2 py-1 rounded-full text-xs text-white ${isUpcoming ? "bg-green-500" : "bg-gray-500"
+              }`}
+          >
+            {isUpcoming ? "Upcoming" : "Completed"}
+          </span>
+        );
+      },
+    },
     {
       label: "Action",
       key: "action",
@@ -82,7 +106,7 @@ export default function Events() {
           <Button
             className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded-md"
             onClick={() =>
-              (window.location.href = `/admin/events/${row._id}`)
+              (window.location.href = `/admin/events/${row.id}`)
             }
           >
             View
@@ -90,7 +114,7 @@ export default function Events() {
 
           <Button
             className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-md"
-            onClick={() => deleteEvent(row._id)}
+            onClick={() => deleteEvent(row.id)}
           >
             Delete
           </Button>

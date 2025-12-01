@@ -15,7 +15,7 @@ export default function Orders() {
   // Fetch order stats
   const loadStats = async () => {
     try {
-      const res = await axiosInstance.get("/admin/order-stats");
+      const res = await axiosInstance.get("/admin/orders/stats");
       if (res.data.success) setStats(res.data.stats);
     } catch (err) {
       console.error("Error fetching order stats:", err);
@@ -77,9 +77,8 @@ export default function Orders() {
       key: "status",
       render: (val) => (
         <span
-          className={`px-3 py-1 rounded-full text-white text-sm ${
-            statusColor[val] || "bg-gray-500"
-          }`}
+          className={`px-3 py-1 rounded-full text-white text-sm ${statusColor[val] || "bg-gray-500"
+            }`}
         >
           {val}
         </span>

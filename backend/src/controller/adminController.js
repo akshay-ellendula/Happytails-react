@@ -1,19 +1,46 @@
+import mongoose from 'mongoose';
 import Customer from '../models/customerModel.js';
 import Vendor from '../models/vendorModel.js';
 import { Product, ProductVariant, ProductImage } from '../models/productsModel.js';
 import { Order, OrderItem } from '../models/orderModel.js';
 import Event from '../models/eventModel.js';
 import EventManager from '../models/eventManagerModel.js';
-import Ticket from '../models/ticketModel.js'; 
+import Ticket from '../models/ticketModel.js';
 import jwt from 'jsonwebtoken';
 // Generate JWT token
 const generateToken = (payload) => {
-  return jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
+    return jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
 };
 
 // Verify JWT token
 const verifyToken = (token) => {
-  return jwt.verify(token, process.env.JWT_SECRET_KEY);
+    return jwt.verify(token, process.env.JWT_SECRET_KEY);
+};
+
+const adminLogin = (req, res) => {
+    const { admin_email, admin_password } = req.body;
+    const admin = { email: "admin@gmail.com", password: "admin123#" };
+
+    if (admin_email === admin.email && admin_password === admin.password) {
+        const token = generateToken({
+            email: admin_email,
+            role: 'admin',
+            id: 'admin'
+        });
+
+        res.cookie('jwt', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: "none",
+            secure: true,
+
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        res.json({ success: true, token });
+    } else {
+        res.json({ success: false, error: "Invalid email or password" });
+    }
 };
 
 const getUsers = async (req, res) => {
@@ -44,8 +71,8 @@ const getUser = async (req, res) => {
         if (!user) {
             return res.status(404).json({ success: false, message: 'Customer not found' });
         }
-        
-        const formattedAddress = user.address ? 
+
+        const formattedAddress = user.address ?
             `${user.address.houseNumber || ''}, ${user.address.streetNo || ''}, ${user.address.city || ''} - ${user.address.pincode || ''}`.trim().replace(/,\s*,\s*/g, ', ').replace(/^,\s*|,\s*$/g, '')
             : null;
 
@@ -94,7 +121,7 @@ const getUser = async (req, res) => {
             purchaseHistory,
             eventHistory: filteredEventHistory
         });
-        
+
     } catch (err) {
         console.error("Error in getUser:", err);
         res.status(500).json({ success: false, message: 'Server error' });
@@ -105,15 +132,15 @@ const updateUser = async (req, res) => {
     try {
         const userId = req.params.id;
         const { userName, phoneNumber, houseNumber, streetNo, city, pincode } = req.body;
-        
+
         const user_address = houseNumber || streetNo || city || pincode ? { houseNumber, streetNo, city, pincode } : undefined;
         const addressFieldsProvided = houseNumber || streetNo || city || pincode;
-        
+
         if (!userName) return res.status(400).json({ success: false, message: 'Name is required' });
         if (userName.length < 2) return res.status(400).json({ success: false, message: 'Name must be at least 2 characters' });
         if (phoneNumber && !/^\+91[6-9][0-9]{9}$/.test(phoneNumber) && !/^[0-9]{10}$/.test(phoneNumber)) return res.status(400).json({ success: false, message: 'Phone must be a valid 10-digit number or Indian number starting with +91' });
         if (addressFieldsProvided && (!houseNumber || !city || !pincode)) {
-             return res.status(400).json({ success: false, message: 'If updating address, House Number, City, and Pincode are required' });
+            return res.status(400).json({ success: false, message: 'If updating address, House Number, City, and Pincode are required' });
         }
 
         const user = await Customer.findById(userId);
@@ -246,8 +273,8 @@ const getProductCustomers = async (productId) => {
             { $unwind: '$order' },
             {
                 $lookup: {
-                    from: 'customers', 
-                    localField: 'order.customer_id', 
+                    from: 'customers',
+                    localField: 'order.customer_id',
                     foreignField: '_id',
                     as: 'Customer'
                 }
@@ -256,7 +283,7 @@ const getProductCustomers = async (productId) => {
             {
                 $project: {
                     _id: 0,
-                    userName: '$Customer.userName', 
+                    userName: '$Customer.userName',
                     email: '$Customer.email',
                     order_date: '$order.order_date',
                     quantity: '$quantity'
@@ -495,7 +522,7 @@ const getProductStats = async (req, res) => {
 const dashBoardStats = async (req, res) => {
     try {
         const now = new Date();
-        now.setUTCHours(0, 0, 0, 0); 
+        now.setUTCHours(0, 0, 0, 0);
         const today = new Date(now);
         const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
         const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -515,7 +542,7 @@ const dashBoardStats = async (req, res) => {
             { $lookup: { from: 'events', localField: 'eventId', foreignField: '_id', as: 'event' } },
             { $unwind: '$event' },
             // Group by OrderId/TicketId and sum the price field directly from the Ticket model
-            { $group: { _id: null, total: { $sum: '$price' } } } 
+            { $group: { _id: null, total: { $sum: '$price' } } }
         ]);
         const totalRevenueEventsValue = totalRevenueEvents.length > 0 ? totalRevenueEvents[0].total : 0;
 
@@ -523,7 +550,7 @@ const dashBoardStats = async (req, res) => {
 
         // Monthly Revenue Events
         const monthlyRevenueEvents = await Ticket.aggregate([
-            { $match: { purchaseDate: { $gte: monthAgo } } }, 
+            { $match: { purchaseDate: { $gte: monthAgo } } },
             { $lookup: { from: 'events', localField: 'eventId', foreignField: '_id', as: 'event' } },
             { $unwind: '$event' },
             { $group: { _id: null, total: { $sum: '$price' } } }
@@ -540,7 +567,7 @@ const dashBoardStats = async (req, res) => {
 
         // Weekly Revenue Events
         const weeklyRevenueEvents = await Ticket.aggregate([
-            { $match: { purchaseDate: { $gte: weekAgo } } }, 
+            { $match: { purchaseDate: { $gte: weekAgo } } },
             { $lookup: { from: 'events', localField: 'eventId', foreignField: '_id', as: 'event' } },
             { $unwind: '$event' },
             { $group: { _id: null, total: { $sum: '$price' } } }
@@ -557,7 +584,7 @@ const dashBoardStats = async (req, res) => {
 
         // Daily Revenue Events
         const dailyRevenueEvents = await Ticket.aggregate([
-            { $match: { purchaseDate: { $gte: today } } }, 
+            { $match: { purchaseDate: { $gte: today } } },
             { $lookup: { from: 'events', localField: 'eventId', foreignField: '_id', as: 'event' } },
             { $unwind: '$event' },
             { $group: { _id: null, total: { $sum: '$price' } } }
@@ -598,7 +625,7 @@ const getRevenueChartData = async (req, res) => {
         const months = [];
         const orderRevenueData = [];
         const eventRevenueData = [];
-        
+
         // Generate last 12 months
         for (let i = 11; i >= 0; i--) {
             const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -613,7 +640,7 @@ const getRevenueChartData = async (req, res) => {
                 { $group: { _id: null, total: { $sum: '$subtotal' } } }
             ]);
             const orderRevenueValue = orderRevenue.length > 0 ? orderRevenue[0].total : 0;
-            
+
             // Event Revenue using Ticket model (purchaseDate)
             const eventRevenue = await Ticket.aggregate([
                 { $match: { purchaseDate: { $gte: monthStart, $lte: monthEnd } } },
@@ -683,7 +710,7 @@ const getVendors = async (req, res) => {
 const getVendorStats = async (req, res) => {
     try {
         const now = new Date();
-        now.setUTCHours(0, 0, 0, 0); 
+        now.setUTCHours(0, 0, 0, 0);
         const today = new Date(now);
         const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
         const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -716,7 +743,7 @@ const getVendorStats = async (req, res) => {
         const totalRevenue = totalRevenueAgg.length > 0 ? totalRevenueAgg[0].totalRevenue * 0.1 : 0;
 
         const totalOrdersAgg = await OrderItem.aggregate([
-             {
+            {
                 $lookup: {
                     from: 'orders',
                     localField: 'order_id',
@@ -725,13 +752,13 @@ const getVendorStats = async (req, res) => {
                 }
             },
             { $unwind: '$order' },
-            { $group: { _id: '$order._id', orderCount: { $first: 1 } } }, 
+            { $group: { _id: '$order._id', orderCount: { $first: 1 } } },
             { $group: { _id: null, totalOrders: { $sum: '$orderCount' } } }
         ]);
         const totalOrders = totalOrdersAgg.length > 0 ? totalOrdersAgg[0].totalOrders : 0;
 
         const todaysOrdersAgg = await OrderItem.aggregate([
-             {
+            {
                 $lookup: {
                     from: 'orders',
                     localField: 'order_id',
@@ -741,13 +768,13 @@ const getVendorStats = async (req, res) => {
             },
             { $unwind: '$order' },
             { $match: { 'order.order_date': { $gte: today } } },
-            { $group: { _id: '$order._id', orderCount: { $first: 1 } } }, 
+            { $group: { _id: '$order._id', orderCount: { $first: 1 } } },
             { $group: { _id: null, todaysOrders: { $sum: '$orderCount' } } }
         ]);
         const todaysOrders = todaysOrdersAgg.length > 0 ? todaysOrdersAgg[0].todaysOrders : 0;
 
         const yesterdayOrdersAgg = await OrderItem.aggregate([
-             {
+            {
                 $lookup: {
                     from: 'orders',
                     localField: 'order_id',
@@ -764,7 +791,7 @@ const getVendorStats = async (req, res) => {
         const todaysOrdersChange = yesterdayOrders > 0 ? ((todaysOrders - yesterdayOrders) / yesterdayOrders) * 100 : (todaysOrders > 0 ? 100 : 0);
 
         const lastMonthAgg = await OrderItem.aggregate([
-             {
+            {
                 $lookup: {
                     from: 'orders',
                     localField: 'order_id',
@@ -774,12 +801,12 @@ const getVendorStats = async (req, res) => {
             },
             { $unwind: '$order' },
             { $match: { 'order.order_date': { $gte: monthAgo, $lt: today } } },
-            { 
-                $group: { 
-                    _id: '$order._id', 
-                    lastMonthCount: { $first: 1 }, 
-                    lastMonthSubtotal: { $first: '$order.subtotal' } 
-                } 
+            {
+                $group: {
+                    _id: '$order._id',
+                    lastMonthCount: { $first: 1 },
+                    lastMonthSubtotal: { $first: '$order.subtotal' }
+                }
             },
             { $group: { _id: null, lastMonthOrders: { $sum: '$lastMonthCount' }, lastMonthRevenue: { $sum: '$lastMonthSubtotal' } } }
         ]);
@@ -787,7 +814,7 @@ const getVendorStats = async (req, res) => {
         const lastMonthRevenue = lastMonthAgg.length > 0 ? lastMonthAgg[0].lastMonthRevenue * 0.1 : 0;
 
         const thisMonthAgg = await OrderItem.aggregate([
-             {
+            {
                 $lookup: {
                     from: 'orders',
                     localField: 'order_id',
@@ -797,18 +824,18 @@ const getVendorStats = async (req, res) => {
             },
             { $unwind: '$order' },
             { $match: { 'order.order_date': { $gte: monthAgo } } },
-            { 
-                $group: { 
-                    _id: '$order._id', 
-                    thisMonthCount: { $first: 1 }, 
-                    thisMonthSubtotal: { $first: '$order.subtotal' } 
-                } 
+            {
+                $group: {
+                    _id: '$order._id',
+                    thisMonthCount: { $first: 1 },
+                    thisMonthSubtotal: { $first: '$order.subtotal' }
+                }
             },
             { $group: { _id: null, thisMonthOrders: { $sum: '$thisMonthCount' }, thisMonthRevenue: { $sum: '$thisMonthSubtotal' } } }
         ]);
         const thisMonthOrders = thisMonthAgg.length > 0 ? thisMonthAgg[0].thisMonthOrders : 0;
         const thisMonthRevenue = thisMonthAgg.length > 0 ? thisMonthAgg[0].thisMonthRevenue * 0.1 : 0;
-        
+
         const totalGrowthPercent = lastMonthOrders > 0 ? ((thisMonthOrders - lastMonthOrders) / lastMonthOrders) * 100 : (thisMonthOrders > 0 ? 100 : 0);
         const revenueGrowthPercent = lastMonthRevenue > 0 ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : (thisMonthRevenue > 0 ? 100 : 0);
         const ordersGrowthPercent = lastMonthOrders > 0 ? ((thisMonthOrders - lastMonthOrders) / lastMonthOrders) * 100 : (thisMonthOrders > 0 ? 100 : 0);
@@ -897,7 +924,7 @@ const getVendorRevenueMetrics = async (req, res) => {
                         $sum: {
                             $cond: [
                                 { $gte: ['$order.order_date', today] },
-                                { $multiply: ['$order.subtotal', 0.92] }, 
+                                { $multiply: ['$order.subtotal', 0.92] },
                                 0
                             ]
                         }
@@ -969,8 +996,8 @@ const getVendorRevenueMetrics = async (req, res) => {
             },
             {
                 $group: {
-                    _id: '$month', 
-                    total_sales: { $sum: { $multiply: ['$subtotal', 0.92] } }, 
+                    _id: '$month',
+                    total_sales: { $sum: { $multiply: ['$subtotal', 0.92] } },
                     orders: { $sum: '$orderCount' }
                 }
             },
@@ -1017,7 +1044,7 @@ const getVendorProducts = async (req, res) => {
             },
             { $unwind: '$variants' },
             {
-                $group: { 
+                $group: {
                     _id: '$_id',
                     product_id: { $first: '$_id' },
                     product_name: { $first: '$product_name' },
@@ -1047,7 +1074,7 @@ const getVendorProducts = async (req, res) => {
 const getVendorTopCustomers = async (req, res) => {
     try {
         const vendorId = req.params.id;
-        const customers = await OrderItem.aggregate([ 
+        const customers = await OrderItem.aggregate([
             {
                 $lookup: {
                     from: 'products',
@@ -1069,8 +1096,8 @@ const getVendorTopCustomers = async (req, res) => {
             { $unwind: '$order' },
             {
                 $lookup: {
-                    from: 'customers', 
-                    localField: 'order.customer_id', 
+                    from: 'customers',
+                    localField: 'order.customer_id',
                     foreignField: '_id',
                     as: 'Customer'
                 }
@@ -1142,7 +1169,7 @@ const getVendor = async (req, res) => {
 const updateVendor = async (req, res) => {
     try {
         const vendorId = req.params.id;
-        const { name, contact_number, store_name, store_location } = req.body; 
+        const { name, contact_number, store_name, store_location } = req.body;
 
         if (!name) return res.status(400).json({ success: false, message: 'Name is required' });
         if (!/^[a-zA-Z\s]+$/.test(name)) return res.status(400).json({ success: false, message: 'Name must contain only letters and spaces' });
@@ -1485,7 +1512,7 @@ const deleteEventManager = async (req, res) => {
         // Delete associated events and tickets
         const events = await Event.find({ eventManagerId: managerId });
         const eventIds = events.map(e => e._id);
-        
+
         await Ticket.deleteMany({ eventId: { $in: eventIds } }); // Use Ticket model
         await Event.deleteMany({ eventManagerId: managerId });
 
@@ -1568,13 +1595,13 @@ const addProduct = async (req, res) => {
                 } catch (error) {
                     console.error("Cloudinary upload failed for product image:", error);
                     // Continue if one image fails, but log the error.
-                    continue; 
+                    continue;
                 }
-                
+
                 const productImage = new ProductImage({
                     product_id: savedProduct._id,
                     image_data: imageUrl,
-                    is_primary: index === 0 
+                    is_primary: index === 0
                 });
                 await productImage.save();
             }
@@ -1625,7 +1652,7 @@ const getProduct = async (req, res) => {
                     sku: v.sku
                 })),
                 images: images.map(img => ({
-                    image_data: img.image_data, 
+                    image_data: img.image_data,
                     is_primary: img.is_primary,
                 }))
             }
@@ -1702,12 +1729,12 @@ const updateProduct = async (req, res) => {
                     imageUrl = await uploadToCloudinary(file, 'product_images', [{ width: 800, height: 600, crop: 'limit' }]);
                 } catch (error) {
                     console.error("Cloudinary upload failed for product image:", error);
-                    continue; 
+                    continue;
                 }
-                
+
                 const productImage = new ProductImage({
                     product_id: productId,
-                    image_data: imageUrl, 
+                    image_data: imageUrl,
                     is_primary: index === 0
                 });
                 await productImage.save();
@@ -1746,8 +1773,8 @@ const getEventsData = async (req, res) => {
                 { $group: { _id: null, totalTickets: { $sum: '$numberOfTickets' } } }
             ]),
             Event.find({})
-                .populate({ 
-                    path: 'eventManagerId', 
+                .populate({
+                    path: 'eventManagerId',
                     model: 'EventManager',
                     select: 'userName'
                 })
@@ -1772,7 +1799,7 @@ const getEventsData = async (req, res) => {
                     total_tickets: event.total_tickets,
                     tickets_sold: event.tickets_sold,
                     managerName: event.eventManagerId ? event.eventManagerId.userName : 'N/A'
-                })) 
+                }))
             }
         });
 
@@ -1818,10 +1845,10 @@ const getEvent = async (req, res) => {
         const eventId = req.params.id;
         const event = await Event.findById(eventId).populate('eventManagerId', 'userName');
         if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
-        
+
         const thumbnail = event.images ? event.images.thumbnail : null;
         const banner = event.images ? event.images.banner : null;
-        
+
         res.json({
             success: true,
             event: {
@@ -1837,7 +1864,7 @@ const getEvent = async (req, res) => {
                 terms: null, // Missing in model
                 category: event.category,
                 date_time: event.date_time,
-                status: event.date_time > new Date() ? 'Upcoming' : 'Past', 
+                status: event.date_time > new Date() ? 'Upcoming' : 'Past',
                 total_tickets: event.total_tickets,
                 tickets_sold: event.tickets_sold,
                 location: event.location,
@@ -1858,9 +1885,9 @@ const getEventAttendees = async (req, res) => {
     try {
         const eventId = req.params.id;
         // Use Ticket model and populate Customer details
-        const attendees = await Ticket.find({ eventId: eventId }) 
+        const attendees = await Ticket.find({ eventId: eventId })
             .populate('customerId', 'userName email phoneNumber address')
-            .select('_id ticketId numberOfTickets purchaseDate status price petName petBreed petAge'); 
+            .select('_id ticketId numberOfTickets purchaseDate status price petName petBreed petAge');
 
         res.json({
             success: true,
@@ -1870,23 +1897,23 @@ const getEventAttendees = async (req, res) => {
                 const customerName = customer ? customer.userName : 'N/A';
                 const customerEmail = customer ? customer.email : 'N/A';
                 const customerPhone = customer ? customer.phoneNumber : 'N/A';
-                const customerAddress = customer && customer.address ? 
-                     `${customer.address.houseNumber || ''}, ${customer.address.city || ''}`.trim().replace(/,\s*,\s*/g, ', ').replace(/^,\s*|,\s*$/g, '')
-                     : 'N/A';
-                     
+                const customerAddress = customer && customer.address ?
+                    `${customer.address.houseNumber || ''}, ${customer.address.city || ''}`.trim().replace(/,\s*,\s*/g, ', ').replace(/^,\s*|,\s*$/g, '')
+                    : 'N/A';
+
                 return {
                     id: att._id.toString(),
                     ticketId: att.ticketId || 'N/A',
                     name: customerName,
                     phone: customerPhone,
                     email: customerEmail,
-                    address: customerAddress, 
+                    address: customerAddress,
                     seats: att.numberOfTickets,
                     // Use pet fields from the Ticket model
-                    with_pet: att.petName ? 'Yes' : 'No', 
+                    with_pet: att.petName ? 'Yes' : 'No',
                     pet_name: att.petName || 'N/A',
                     pet_breed: att.petBreed || 'N/A',
-                    pet_age: att.petAge || 'N/A', 
+                    pet_age: att.petAge || 'N/A',
                     registration_date: new Date(att.purchaseDate).toLocaleDateString(),
                     Customer: customer ? {
                         name: customer.userName,
@@ -1905,12 +1932,12 @@ const updateEvent = async (req, res) => {
     try {
         const eventId = req.params.id;
         const {
-            title, description, language, duration, ticketPrice, 
+            title, description, language, duration, ticketPrice,
             ageLimit, venue, category, date_time,
             total_tickets, location, phoneNumber,
-            existing_thumbnail, existing_banner 
+            existing_thumbnail, existing_banner
         } = req.body;
-        
+
         // Files from multer for thumbnail (req.files.thumbnail[0]) and banner (req.files.banner[0])
         const thumbnailFile = req.files && req.files['thumbnail'] ? req.files['thumbnail'][0] : null;
         const bannerFile = req.files && req.files['banner'] ? req.files['banner'][0] : null;
@@ -1919,11 +1946,11 @@ const updateEvent = async (req, res) => {
 
         const event = await Event.findById(eventId);
         if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
-        
+
         const updateData = {
-            title, description, language, duration, ticketPrice, 
+            title, description, language, duration, ticketPrice,
             ageLimit, venue, category, date_time,
-            total_tickets, location, phoneNumber 
+            total_tickets, location, phoneNumber
         };
 
         // --- CLOUDINARY INTEGRATION: Event Images (Thumbnail & Banner) ---
@@ -1937,7 +1964,7 @@ const updateEvent = async (req, res) => {
                 return res.status(500).json({ success: false, message: 'Failed to upload event thumbnail.' });
             }
         }
-        
+
         // Handle Banner
         let finalBanner = existing_banner || (event.images ? event.images.banner : null);
         if (bannerFile) {
@@ -1948,7 +1975,7 @@ const updateEvent = async (req, res) => {
                 return res.status(500).json({ success: false, message: 'Failed to upload event banner.' });
             }
         }
-        
+
         updateData.images = {
             thumbnail: finalThumbnail,
             banner: finalBanner
@@ -1968,8 +1995,8 @@ const getOrders = async (req, res) => {
         const orders = await Order.aggregate([
             {
                 $lookup: {
-                    from: 'customers', 
-                    localField: 'customer_id', 
+                    from: 'customers',
+                    localField: 'customer_id',
                     foreignField: '_id',
                     as: 'customer_details'
                 }
@@ -1979,7 +2006,7 @@ const getOrders = async (req, res) => {
                 $project: {
                     _id: 0,
                     orderId: '$_id',
-                    customerName: '$customer_details.userName', 
+                    customerName: '$customer_details.userName',
                     orderDate: '$order_date',
                     totalAmount: '$total_amount',
                     status: '$status'
@@ -2002,12 +2029,12 @@ const getOrderDetails = async (req, res) => {
         if (!order) {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
-        
+
         const customer = order.customer_id;
-        
-        const customerAddress = customer && customer.address ? 
-             `${customer.address.houseNumber || ''}, ${customer.address.streetNo || ''}, ${customer.address.city || ''} - ${customer.address.pincode || ''}`.trim().replace(/,\s*,\s*/g, ', ').replace(/^,\s*|,\s*$/g, '')
-             : 'N/A';
+
+        const customerAddress = customer && customer.address ?
+            `${customer.address.houseNumber || ''}, ${customer.address.streetNo || ''}, ${customer.address.city || ''} - ${customer.address.pincode || ''}`.trim().replace(/,\s*,\s*/g, ', ').replace(/^,\s*|,\s*$/g, '')
+            : 'N/A';
 
         const orderItems = await OrderItem.find({ order_id: orderId })
             .populate({
@@ -2026,13 +2053,13 @@ const getOrderDetails = async (req, res) => {
                 status: order.status,
                 orderDate: order.order_date,
                 totalAmount: order.total_amount,
-                paymentMethod: 'Credit Card', 
+                paymentMethod: 'Credit Card',
                 paymentLastFour: order.payment_last_four || 'N/A',
                 customer: {
-                    name: customer ? customer.userName : 'N/A', 
+                    name: customer ? customer.userName : 'N/A',
                     email: customer ? customer.email : 'N/A',
-                    phone: customer ? customer.phoneNumber || 'N/A' : 'N/A', 
-                    address: customerAddress 
+                    phone: customer ? customer.phoneNumber || 'N/A' : 'N/A',
+                    address: customerAddress
                 },
                 items: orderItems.map(item => ({
                     productId: item.product_id ? item.product_id._id : 'N/A',
@@ -2091,7 +2118,7 @@ const getEventRevenue = async (req, res) => {
             {
                 $group: {
                     _id: null,
-                    totalSales: { $sum: '$price' } 
+                    totalSales: { $sum: '$price' }
                 }
             }
         ]);
@@ -2104,7 +2131,7 @@ const getEventRevenue = async (req, res) => {
             {
                 $group: {
                     _id: null,
-                    thisMonthSales: { $sum: '$price' } 
+                    thisMonthSales: { $sum: '$price' }
                 }
             }
         ]);
@@ -2116,7 +2143,7 @@ const getEventRevenue = async (req, res) => {
             {
                 $group: {
                     _id: null,
-                    lastMonthSales: { $sum: '$price' } 
+                    lastMonthSales: { $sum: '$price' }
                 }
             }
         ]);
