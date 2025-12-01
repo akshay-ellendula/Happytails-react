@@ -20,6 +20,7 @@ import UserDetails from "./Pages/Admin/UserDetails";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
 import VendorDetails from "./Pages/Admin/VendorDetails";
+import EventManagerDetails from "./Pages/Admin/EventManagerDetails";
 
 
 
@@ -59,6 +60,7 @@ function AppRoutes() {
      <Route path="/admin/vendors" element={<Vendors />} />
      <Route path="/admin/users/:id" element={<UserDetails />} />
      <Route path="/admin/vendors/:id" element={<VendorDetails />} />
+     <Route path="/admin/event-managers/:id" element={<EventManagerDetails />} />
 
 
 
