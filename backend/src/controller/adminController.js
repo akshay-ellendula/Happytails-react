@@ -1631,7 +1631,8 @@ const getProduct = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid product ID' });
         }
 
-        const product = await Product.findById(productId);
+        // Fetch Product and populate vendor_id to get vendor details (Shop Owner, Email)
+        const product = await Product.findById(productId).populate('vendor_id').lean();
         if (!product) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
@@ -1639,27 +1640,41 @@ const getProduct = async (req, res) => {
         const variants = await ProductVariant.find({ product_id: productId });
         const images = await ProductImage.find({ product_id: productId });
 
+        // 1. Determine the primary image URL (FIX for image display)
+        const primaryImage = images.find(img => img.is_primary) || images[0];
+        const imageUrl = primaryImage ? primaryImage.image_data : null;
+
+        // 2. Get main price/stock/sku from the first variant (assumed main display variant)
+        const mainVariant = variants[0];
+        
+        // 3. Extract Vendor details for the frontend
+        const vendorDetails = product.vendor_id ? {
+            store_name: product.vendor_id.store_name,
+            email: product.vendor_id.email
+        } : null;
+
+
         res.json({
             success: true,
             product: {
-                id: product._id,
+                id: product._id.toString(),
                 product_name: product.product_name,
                 product_category: product.product_category,
                 product_type: product.product_type,
-                stock_status: product.stock_status,
                 product_description: product.product_description,
-                variants: variants.map(v => ({
-                    size: v.size,
-                    color: v.color,
-                    regular_price: v.regular_price,
-                    sale_price: v.sale_price,
-                    stock_quantity: v.stock_quantity,
-                    sku: v.sku
-                })),
-                images: images.map(img => ({
-                    image_data: img.image_data,
-                    is_primary: img.is_primary,
-                }))
+                created_at: product.created_at,
+                
+                // Fields mapped to top-level for ProductDetails.jsx consumption
+                image: imageUrl, // <--- FIX: This is the URL used by the <img> tag
+                regular_price: mainVariant?.regular_price,
+                stock_quantity: mainVariant?.stock_quantity,
+                sku: mainVariant?.sku || product.sku,
+                brand: product.brand || null,
+                vendor: vendorDetails, // <--- FIX: Vendor details for Shop Owner/Email
+                
+                // Nested data (retained for completeness/editing forms)
+                variants: variants,
+                images: images
             }
         });
     } catch (err) {
