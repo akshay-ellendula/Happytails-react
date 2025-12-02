@@ -154,6 +154,7 @@ export const AuthProvider = ({ children }) => {
     signout,
     updateUser,
   };
+  
 
   return (
     <AuthContext.Provider value={value}>

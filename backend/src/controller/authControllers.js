@@ -289,48 +289,28 @@ export const adminSignup = async (req, res) => {
 // @route   POST /api/auth/adminSignin
 // @access  Public
 export const adminSignin = async (req, res) => {
-    const { email, password } = req.body;
+     const { admin_email, admin_password } = req.body;
+    const admin = { email: "admin@gmail.com", password: "admin123#" };
 
-    try {
-        if (!email || !password) {
-            return res.status(400).json({ message: "All fields are required" });
-        }
-
-        const admin = await Admin.findOne({ email });
-        if (!admin) {
-            return res.status(404).json({ message: "Email is not registered" });
-        }
-
-        const isMatch = await admin.comparePassword(password);
-        if (!isMatch) {
-            return res.status(401).json({ message: "Invalid email or password" });
-        }
-
-        const token = jwt.sign({ adminId: admin._id, role: 'admin' }, process.env.JWT_SECRET_KEY, {
-            expiresIn: '30min'
+    if (admin_email === admin.email && admin_password === admin.password) {
+        const token = generateToken({
+            email: admin_email,
+            role: 'admin',
+            id: 'admin'
         });
 
         res.cookie('jwt', token, {
-            maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: "strict",
-            secure: process.env.NODE_ENV === 'production'
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: "none",
+            secure: true,
+
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
 
-        // ✅ FIX: Return the user object so AuthContext can update state
-        res.status(200).json({ 
-            success: true,
-            user: {
-                adminId: admin._id,
-                userName: admin.userName,
-                email: admin.email,
-                role: 'admin'
-            }
-        });
-
-    } catch (error) {
-        console.error("Error in adminSignin controller:", error);
-        res.status(500).json({ message: "Internal Server Error" });
+        res.json({ success: true, token });
+    } else {
+        res.json({ success: false, error: "Invalid email or password" });
     }
 };
 
