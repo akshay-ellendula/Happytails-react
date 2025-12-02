@@ -20,11 +20,11 @@ function AuthPage() {
   // Redirect based on role if user is already authenticated
   useEffect(() => {
     if (user) {
-      if (user.role === 'customer') navigate('/');
-      else if (user.role === 'eventManager') navigate('/eventManager');
-      else if (user.role === 'storePartner') navigate('/store');
-      else if (user.role === 'admin') navigate('/admin/dashboard');
-      else navigate('/'); // Fallback
+      if (user.role === "customer") navigate("/");
+      else if (user.role === "eventManager") navigate("/eventManager");
+      else if (user.role === "storePartner") navigate("/store");
+      else if (user.role === "admin") navigate("/admin/dashboard");
+      else navigate("/"); // Fallback
     }
   }, [user, navigate]);
 
@@ -69,16 +69,16 @@ function AuthPage() {
     if (!validateForm(true)) {
       return;
     }
-    
+
     // Explicitly pass 'customer' role
-    const result = await signin(loginInput, 'customer');
-    
+    const result = await signin(loginInput, "customer");
+
     if (result && result.success) {
-      toast.success('Login successful!');
+      toast.success("Login successful!");
       // Navigation handled by useEffect
     } else {
-      console.log('Signin failed:', result);
-      toast.error(result?.error || 'Login failed');
+      console.log("Signin failed:", result);
+      toast.error(result?.error || "Login failed");
     }
   };
 
@@ -89,25 +89,23 @@ function AuthPage() {
     }
 
     // Explicitly pass 'customer' role
-    const result = await signup(signupInput, 'customer');
+    const result = await signup(signupInput, "customer");
 
     if (result && result.success) {
-      toast.success('Registration successful!');
+      toast.success("Registration successful!");
       // Navigation handled by useEffect
     } else {
-      console.log('Signup failed:', result);
-      toast.error(result?.error || 'Signup failed');
+      console.log("Signup failed:", result);
+      toast.error(result?.error || "Signup failed");
     }
   };
 
   const handleForgotPassword = (e) => {
     e.preventDefault();
     const email = loginInput.email.trim();
-    if (!email || !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
-      toast.error("Please enter your Gmail address first");
-      return;
-    }
-    toast.success("Password reset link sent!");
+    // If valid, redirect to forgot password page
+    // We pass the email in state so it can be pre-filled if you want to update ForgotPassword page later
+    navigate("/forgot-password", { state: { email } });
   };
 
   return (

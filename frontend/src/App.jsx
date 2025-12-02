@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from "react-router";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider, useCart } from "./context/CartContext";
+import ForgotPassword from "./pages/Auth/ForgotPassword"; // Check casing of 'pages' vs 'Pages'
+import ResetPassword from "./pages/Auth/ResetPassword";
 
 // --- Pages: Public & General ---
 import HomePage from "./pages/Home/HomePage";
@@ -79,6 +81,8 @@ function AppRoutes() {
       <Route path="/events" element={<EventsPage />} />
       <Route path="/event/:id" element={<EventDetailPage />} />
       <Route path="/partnerRegistrataion" element={<PartnerRegistration />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
       
       {/* --- Auth Routes --- */}
       <Route path="/login" element={<AuthPage />} /> {/* Customer Login */}
