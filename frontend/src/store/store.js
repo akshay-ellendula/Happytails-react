@@ -4,6 +4,7 @@ import vendorsReducer from "./vendorsSlice";
 import eventManagersReducer from "./eventManagersSlice";
 import eventsReducer from './eventsSlice';
 import productsReducer from './productsSlice';
+import ordersReducer from './ordersSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,5 +13,6 @@ export const store = configureStore({
     eventManagers: eventManagersReducer,
     events: eventsReducer,
     products: productsReducer,
+    orders: ordersReducer,
   },
 });
