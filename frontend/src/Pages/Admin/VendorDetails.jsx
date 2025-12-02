@@ -278,22 +278,22 @@ export default function VendorDetails() {
 
                             <div className="p-4 border rounded">
                                 <p className="text-sm text-gray-500">Today's Revenue</p>
-                                <p className="text-xl font-semibold">${revenue?.today_revenue?.toFixed(2) || "0.00"}</p>
+                                <p className="text-xl font-semibold">₹{revenue?.today_revenue?.toFixed(2) || "0.00"}</p>
                             </div>
 
                             <div className="p-4 border rounded">
                                 <p className="text-sm text-gray-500">Weekly Revenue</p>
-                                <p className="text-xl font-semibold">${revenue?.weekly_revenue?.toFixed(2) || "0.00"}</p>
+                                <p className="text-xl font-semibold">₹{revenue?.weekly_revenue?.toFixed(2) || "0.00"}</p>
                             </div>
 
                             <div className="p-4 border rounded">
                                 <p className="text-sm text-gray-500">Monthly Revenue</p>
-                                <p className="text-xl font-semibold">${revenue?.monthly_revenue?.toFixed(2) || "0.00"}</p>
+                                <p className="text-xl font-semibold">₹{revenue?.monthly_revenue?.toFixed(2) || "0.00"}</p>
                             </div>
 
                             <div className="p-4 border rounded">
                                 <p className="text-sm text-gray-500">Quarterly Revenue</p>
-                                <p className="text-xl font-semibold">${revenue?.quarterly_revenue?.toFixed(2) || "0.00"}</p>
+                                <p className="text-xl font-semibold">₹{revenue?.quarterly_revenue?.toFixed(2) || "0.00"}</p>
                             </div>
 
                         </div>
@@ -321,9 +321,9 @@ export default function VendorDetails() {
                                 {Array.isArray(products) && products.length > 0 ? (
                                     products.map((p, i) => (
                                         <tr key={i} className="border-b hover:bg-gray-50">
-                                            <td className="p-2">{p._id || p.id}</td>
-                                            <td className="p-2">{p.name}</td>
-                                            <td className="p-2">${p.price}</td>
+                                            <td className="p-2">{p.product_id}</td>
+                                            <td className="p-2">{p.product_name}</td>
+                                            <td className="p-2">₹{p.price}</td>
                                             <td className="p-2">{p.stock}</td>
                                         </tr>
                                     ))

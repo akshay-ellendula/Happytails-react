@@ -24,7 +24,13 @@ const EditModal = ({ isOpen, onClose, user, onSave }) => {
     }, [user]);
 
     const handleSave = () => {
-        onSave({ name, email, phone });
+        onSave({
+            userName: name,
+            phoneNumber: phone,
+            name,
+            email,
+            phone
+        });
     };
 
     if (!isOpen) return null;
