@@ -78,10 +78,19 @@ export default function MyOrdersPage() {
     const item = order.items[0];
     let imageSrc = "";
 
+    // frontend/src/Pages/MyOrdersPage/MyOrdersPage.jsx
+
     if (item?.image_data) {
-      if (item.image_data.startsWith("data:")) imageSrc = item.image_data;
-      else if (!item.image_data.startsWith("/images/"))
+      if (
+        item.image_data.startsWith("data:") ||
+        item.image_data.startsWith("http")
+      ) {
+        imageSrc = item.image_data;
+      } else if (!item.image_data.startsWith("/images/")) {
         imageSrc = `data:image/jpeg;base64,${item.image_data}`;
+      } else {
+        imageSrc = item.image_data; // fallback for local /images/ paths
+      }
     }
 
     return (
