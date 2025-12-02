@@ -63,7 +63,7 @@ export default function Events() {
   const columns = [
     {
       label: "ID",
-      key: "_id",
+      key: "id",
       render: (id) => {
         // SAFELY shorten the ID – fallback if id is missing
         return id ? `#${String(id).slice(-8)}` : "#N/A";

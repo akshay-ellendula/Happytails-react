@@ -1765,14 +1765,23 @@ const logout = (req, res) => {
     });
     res.json({ success: true, message: 'Logged out successfully' });
 };
+
+// adminController.js
+
 const getEventsData = async (req, res) => {
     try {
+        const now = new Date();
+        
         const [
             totalEvents,
+            upcomingEvents, // Count events with date_time >= now
+            completedEvents, // Count events with date_time < now
             ticketAggregation,
             events
         ] = await Promise.all([
             Event.countDocuments(),
+            Event.countDocuments({ date_time: { $gte: now } }), 
+            Event.countDocuments({ date_time: { $lt: now } }),   
             Ticket.aggregate([
                 { $group: { _id: null, totalTickets: { $sum: '$numberOfTickets' } } }
             ]),
@@ -1783,7 +1792,7 @@ const getEventsData = async (req, res) => {
                     select: 'userName email companyName profilePic'
                 })
                 .sort({ date_time: -1 })
-                .lean() // ← IMPORTANT: use .lean() so we can modify the objects
+                .lean()
         ]);
 
         const ticketsSold = ticketAggregation.length > 0 
@@ -1792,9 +1801,9 @@ const getEventsData = async (req, res) => {
 
         // Transform events: replace _id → id (string) for frontend consistency
         const formattedEvents = events.map(event => {
-            const obj = { ...event }; // copy
-            obj.id = obj._id.toString();   // ← This is the key fix
-            delete obj._id;                // ← Remove MongoDB's _id
+            const obj = { ...event };
+            obj.id = obj._id.toString();   
+            delete obj._id;                
             return {
                 id: obj.id,
                 title: obj.title,
@@ -1803,7 +1812,7 @@ const getEventsData = async (req, res) => {
                 total_tickets: obj.total_tickets,
                 tickets_sold: obj.tickets_sold,
                 managerName: obj.eventManagerId?.userName || 'N/A',
-                event_manager_id: obj.eventManagerId // keep full manager object if needed elsewhere
+                event_manager_id: obj.eventManagerId
             };
         });
 
@@ -1812,6 +1821,8 @@ const getEventsData = async (req, res) => {
             data: {
                 stats: {
                     totalEvents,
+                    upcomingEvents, // <-- CORRECTED STAT
+                    completedEvents, // <-- CORRECTED STAT
                     ticketsSold
                 },
                 events: formattedEvents
