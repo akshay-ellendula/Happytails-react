@@ -291,18 +291,6 @@ export default function TrackOrderPage() {
                     </div>
                 </div>
 
-                {/* 5. Help Section */}
-                <div className="bg-gray-50 rounded-2xl p-6 border border-dashed border-gray-300 text-center">
-                    <HelpCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <h4 className="font-bold text-[#1a1a1a]">Need Help?</h4>
-                    <p className="text-xs text-gray-500 mb-4">
-                        Having trouble with your order? Our support team is here to help.
-                    </p>
-                    <button className="bg-white border border-gray-300 text-[#1a1a1a] px-4 py-2 rounded-full text-sm font-bold hover:bg-black hover:text-white transition-colors w-full">
-                        Contact Support
-                    </button>
-                </div>
-
             </div>
         </div>
       </div>

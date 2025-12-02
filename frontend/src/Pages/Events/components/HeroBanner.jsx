@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Calendar, MapPin } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 
 const HeroBanner = ({ events }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -67,28 +67,30 @@ const HeroBanner = ({ events }) => {
             {/* Date with Calendar Icon */}
             <div className="flex items-center justify-center lg:justify-start text-[#1a1a1a] text-sm font-semibold mb-2">
               <Calendar className="w-4 h-4 mr-2" />
-              <span>{featuredEvent.date || 'Date TBA'}</span>
+              <span>{featuredEvent.date || "Date TBA"}</span>
             </div>
-            
+
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] mb-4 leading-tight">
-              {featuredEvent.title || 'Untitled Event'}
+              {featuredEvent.title || "Untitled Event"}
             </h1>
-            
+
             {/* Venue with MapPin Icon */}
             <div className="flex items-center justify-center lg:justify-start text-[#1a1a1a] text-base sm:text-lg mb-6">
               <MapPin className="w-4 h-4 mr-2" />
-              <span>{featuredEvent.venue || 'Venue TBA'}</span>
+              <span>{featuredEvent.venue || "Venue TBA"}</span>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
               <span className="text-[#1a1a1a] font-bold text-lg">
-              {featuredEvent.price === 0 ? "Free Entry" : `₹${featuredEvent.price} onwards`}
+                {featuredEvent.price === 0
+                  ? "Free Entry"
+                  : `${featuredEvent.price} onwards`}
               </span>
-              <button 
+              <button
                 onClick={handleEventClick}
                 className="bg-[#effe8b] text-[#1a1a1a] font-bold px-8 py-3 rounded-full hover:bg-[#e6f572] transition transform hover:scale-105 text-sm sm:text-base whitespace-nowrap shadow-md border-2 border-black"
               >
-                {featuredEvent.buttonText || 'Learn More'}
+                {featuredEvent.buttonText || "Learn More"}
               </button>
             </div>
 
@@ -109,19 +111,23 @@ const HeroBanner = ({ events }) => {
           {/* Image Carousel Section */}
           <div className="w-full lg:w-auto mb-8 lg:mb-0 order-1 lg:order-2 relative">
             <div className="relative mx-auto lg:mx-0">
-              <div 
+              <div
                 onClick={handleEventClick}
                 className="w-full max-w-md lg:w-72 xl:w-80 h-64 sm:h-80 lg:h-80 xl:h-96 bg-white rounded-3xl shadow-2xl overflow-hidden lg:transform lg:rotate-3 relative cursor-pointer hover:shadow-2xl transition-shadow"
               >
                 {/* Image with fallback */}
                 <div className="absolute inset-0">
                   <img
-                    src={featuredEvent.bannerImg || featuredEvent.img || '/images/default-event.jpg'}
-                    alt={featuredEvent.title || 'Event'}
+                    src={
+                      featuredEvent.bannerImg ||
+                      featuredEvent.img ||
+                      "/images/default-event.jpg"
+                    }
+                    alt={featuredEvent.title || "Event"}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
+                      e.target.style.display = "none";
+                      e.target.nextSibling.style.display = "flex";
                     }}
                   />
                 </div>

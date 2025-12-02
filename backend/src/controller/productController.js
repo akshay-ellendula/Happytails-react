@@ -271,11 +271,11 @@ const checkout = async (req, res) => {
 
 
 // --- processPayment (UPDATED) ---
+// --- processPayment (FIXED) ---
 const processPayment = async (req, res) => {
     try {
-        // UPDATED: Read token from cookie
         const checkoutToken = req.cookies.checkout_session;
-        const { cardNumber, expiryDate, cvv } = req.body; // You would use these to call a real payment gateway
+        const { cardNumber, expiryDate, cvv } = req.body; 
 
         if (!checkoutToken) {
             return res.status(401).json({ success: false, message: 'Checkout session expired or missing token.' });
@@ -286,13 +286,10 @@ const processPayment = async (req, res) => {
         let customerID;
 
         try {
-            // FIXED: Use process.env.JWT_SECRET_KEY directly
             const decoded = jwt.verify(checkoutToken, process.env.JWT_SECRET_KEY);
-
             orderTotals = decoded.orderTotals;
-            cleanCart = decoded.cleanCart; // UPDATED: Use 'cleanCart'
+            cleanCart = decoded.cleanCart; 
             customerID = decoded.customerId;
-
         } catch (err) {
             console.error('JWT validation failed:', err.message);
             res.clearCookie('checkout_session');
@@ -302,9 +299,7 @@ const processPayment = async (req, res) => {
             });
         }
 
-        // UPDATED: Validate 'cleanCart'
         if (!cleanCart || !orderTotals || !cardNumber) {
-            console.error('Missing values for payment processing');
             return res.status(400).json({
                 success: false,
                 message: 'Unable to fetch Cart or payment details'
@@ -314,59 +309,71 @@ const processPayment = async (req, res) => {
         // Basic card validation (SIMULATION)
         const cleanCardNumber = cardNumber.replace(/\s/g, '');
         if (cleanCardNumber.length !== 16 || isNaN(cleanCardNumber)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid card number'
-            });
+            return res.status(400).json({ success: false, message: 'Invalid card number' });
         }
-        // Add expiry (MM/YY format, future date) and CVC (3-4 digits) validation here
-
         const paymentLastFour = cleanCardNumber.slice(-4);
 
         // --- Database Transaction ---
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
-            // Create Order document
+            // 1. Create Order document
+            // NOTE: We do NOT put vendor_id here, because an order might have items from multiple vendors.
             const order = await Order.create([{
-                customer_id: customerID, // Use customerID from token
+                customer_id: customerID, 
                 order_date: new Date(),
                 status: 'Pending', 
                 subtotal: orderTotals.subtotal,
                 total_amount: orderTotals.total,
-                payment_last_four: paymentLastFour
+                payment_last_four: paymentLastFour,
             }], { session });
 
-            // Create OrderItem documents
-            // UPDATED: Use 'cleanCart'
-            const orderItems = cleanCart.map(item => ({
-                order_id: order[0]._id,
-                product_id: item.product_id, 
-                variant_id: item.variant_id, 
-                product_name: item.product_name,
-                quantity: item.quantity,
-                price: item.price, 
-                size: item.size,
-                color: item.color
-            }));
-            await OrderItem.insertMany(orderItems, { session });
+            // 2. Prepare Order Items (FIXED SECTION)
+            const orderItems = [];
 
-            // UPDATED: Update product variant stock quantity
+            // We iterate using a for-loop so we can await the Product database call
             for (const item of cleanCart) {
+                // Fetch the actual product to get the trusted vendor_id
+                const product = await Product.findById(item.product_id).session(session);
+
+                if (!product) {
+                    throw new Error(`Product not found: ${item.product_name}`);
+                }
+
+                // Push to array with the correct vendor_id
+                orderItems.push({
+                    order_id: order[0]._id,
+                    product_id: item.product_id, 
+                    variant_id: item.variant_id, 
+                    
+                    // 👇 THIS FIXES THE ERROR 👇
+                    vendor_id: product.vendor_id, 
+                    
+                    product_name: item.product_name,
+                    quantity: item.quantity,
+                    price: item.price, 
+                    size: item.size,
+                    color: item.color
+                });
+
+                // 3. Update Stock inside the same loop
                 const updateResult = await ProductVariant.updateOne(
                     { _id: item.variant_id, stock_quantity: { $gte: item.quantity } }, 
                     { $inc: { stock_quantity: -item.quantity } },
                     { session }
                 );
                 if (updateResult.matchedCount === 0 || updateResult.modifiedCount === 0) {
-                     throw new Error(`Insufficient stock for ${item.product_name} (${item.size || ''} ${item.color || ''})`);
+                     throw new Error(`Insufficient stock for ${item.product_name}`);
                 }
             }
+
+            // 4. Insert all items at once
+            await OrderItem.insertMany(orderItems, { session });
 
             // Commit transaction
             await session.commitTransaction();
             
-            res.clearCookie('checkout_session'); // Clear cookie on success
+            res.clearCookie('checkout_session');
             
             return res.json({
                 success: true,
@@ -382,7 +389,6 @@ const processPayment = async (req, res) => {
         } finally {
             session.endSession();
         }
-        // --- End Transaction ---
 
     } catch (err) {
         console.error('Payment processing error:', err);

@@ -1,48 +1,50 @@
 // pages/PartnerRegistration/components/StorePartnerForm.jsx
-import React, { useState } from 'react';
-import { Link } from 'react-router';
-import { toast } from 'react-hot-toast';
-import { axiosInstance } from '../../../utils/axios';
-import FormInput from './FormInput';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { toast } from "react-hot-toast";
+// axiosInstance no longer used here; using AuthContext.signup
+import { useAuth } from "../../../hooks/useAuth";
+import FormInput from "./FormInput";
 
 const StorePartnerForm = ({ loading, setLoading, navigate }) => {
   const [formData, setFormData] = useState({
-    userName: '',
-    contactnumber: '',
-    email: '',
-    password: '',
-    confirmpassword: '',
-    storename: '',
-    storelocation: '',
-    termsandconditions: false
+    userName: "",
+    contactnumber: "",
+    email: "",
+    password: "",
+    confirmpassword: "",
+    storename: "",
+    storelocation: "",
+    termsandconditions: false,
   });
+  const { signup } = useAuth();
 
   const [errors, setErrors] = useState({});
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     // Special handling for contact number to restrict input
-    if (name === 'contactnumber') {
+    if (name === "contactnumber") {
       // Remove any non-numeric characters
-      const numericValue = value.replace(/\D/g, '');
-      
+      const numericValue = value.replace(/\D/g, "");
+
       // Limit to 10 digits
       if (numericValue.length <= 10) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          [name]: numericValue
+          [name]: numericValue,
         }));
       }
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : value
+        [name]: type === "checkbox" ? checked : value,
       }));
     }
-    
+
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -53,37 +55,37 @@ const StorePartnerForm = ({ loading, setLoading, navigate }) => {
     const contactRegex = /^[6-9]\d{9}$/;
 
     if (!formData.userName.trim() || formData.userName.trim().length < 2) {
-      newErrors.userName = 'Name must be at least 2 characters';
+      newErrors.userName = "Name must be at least 2 characters";
     }
 
     if (!contactRegex.test(formData.contactnumber)) {
-      newErrors.contactnumber = 'Contact number must be 10 digits and start with 6, 7, 8, or 9';
+      newErrors.contactnumber =
+        "Contact number must be 10 digits and start with 6, 7, 8, or 9";
     }
 
     if (!emailRegex.test(formData.email)) {
-      newErrors.email = 'Please enter a valid Gmail address';
+      newErrors.email = "Please enter a valid Gmail address";
     }
 
     if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     if (formData.password !== formData.confirmpassword) {
-      newErrors.confirmpassword = 'Passwords do not match';
+      newErrors.confirmpassword = "Passwords do not match";
     }
 
     if (!formData.storename.trim()) {
-      newErrors.storename = 'Store name is required';
+      newErrors.storename = "Store name is required";
     }
 
     if (!formData.storelocation.trim()) {
-      newErrors.storelocation = 'Store location is required';
+      newErrors.storelocation = "Store location is required";
     }
 
     if (!formData.termsandconditions) {
-      newErrors.termsandconditions = 'You must accept the terms and conditions';
+      newErrors.termsandconditions = "You must accept the terms and conditions";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -91,21 +93,33 @@ const StorePartnerForm = ({ loading, setLoading, navigate }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      toast.error('Please fix the errors in the form');
+      toast.error("Please fix the errors in the form");
       return;
     }
 
     setLoading(true);
     try {
-      const { confirmpassword,  ...submitData } = formData;
-      const response = await axiosInstance.post('/auth/storeSignup', submitData);
-      
-      if (response.data.success) {
-        toast.success('Store partner registration successful!');
-        setTimeout(() => navigate('/'), 2000);
+      // Map userName -> name for vendor endpoint and call AuthContext.signup
+      const submitData = {
+        userName: formData.userName,
+        contactnumber: formData.contactnumber,
+        email: formData.email,
+        password: formData.password,
+        confirmpassword: formData.confirmpassword,
+        storename: formData.storename,
+        storelocation: formData.storelocation,
+      };
+      console.log(submitData)
+      const result = await signup(submitData, "storePartner");
+      if (result.success) {
+        toast.success("Store partner registration successful!");
+        setTimeout(() => navigate("/shop"), 1500);
+      } else {
+        toast.error(result.error || "Registration failed");
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Registration failed';
+      const errorMessage =
+        error.response?.data?.message || "Registration failed";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -113,12 +127,12 @@ const StorePartnerForm = ({ loading, setLoading, navigate }) => {
   };
 
   const formFields = [
-    { name: 'userName', label: 'Full Name *', type: 'text' },
-    { name: 'contactnumber', label: 'Contact Number *', type: 'tel' },
-    { name: 'email', label: 'Email Address *', type: 'email' },
-    { name: 'storename', label: 'Store Name *', type: 'text' },
-    { name: 'password', label: 'Password *', type: 'password' },
-    { name: 'confirmpassword', label: 'Confirm Password *', type: 'password' },
+    { name: "userName", label: "Full Name *", type: "text" },
+    { name: "contactnumber", label: "Contact Number *", type: "tel" },
+    { name: "email", label: "Email Address *", type: "email" },
+    { name: "storename", label: "Store Name *", type: "text" },
+    { name: "password", label: "Password *", type: "password" },
+    { name: "confirmpassword", label: "Confirm Password *", type: "password" },
   ];
 
   return (
@@ -127,7 +141,9 @@ const StorePartnerForm = ({ loading, setLoading, navigate }) => {
         <div className="w-16 h-16 bg-yellow-400 rounded-2xl border-2 border-black flex items-center justify-center mx-auto mb-4">
           <span className="text-xl">🏪</span>
         </div>
-        <h2 className="text-3xl font-bold text-[#1a1a1a] mb-2">Store Partner Registration</h2>
+        <h2 className="text-3xl font-bold text-[#1a1a1a] mb-2">
+          Store Partner Registration
+        </h2>
         <p className="text-gray-600">Fill in your details to get started</p>
       </div>
 
@@ -143,7 +159,7 @@ const StorePartnerForm = ({ loading, setLoading, navigate }) => {
             onChange={handleInputChange}
           />
         ))}
-        
+
         {/* Store Location */}
         <div className="md:col-span-2">
           <FormInput
@@ -167,18 +183,18 @@ const StorePartnerForm = ({ loading, setLoading, navigate }) => {
               className="mt-1 w-5 h-5 text-[#1a1a1a] border-gray-300 rounded focus:ring-[#1a1a1a]"
             />
             <label className="text-sm text-gray-700">
-              I have read and agree to the{' '}
-              <Link 
-                to="/terms-and-conditions" 
+              I have read and agree to the{" "}
+              <Link
+                to="/terms-and-conditions"
                 className="text-[#1a1a1a] hover:underline font-semibold"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 Terms & Conditions
-              </Link>
-              {' '}and{' '}
-              <Link 
-                to="/privacy-policy" 
+              </Link>{" "}
+              and{" "}
+              <Link
+                to="/privacy-policy"
                 className="text-[#1a1a1a] hover:underline font-semibold"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -189,7 +205,9 @@ const StorePartnerForm = ({ loading, setLoading, navigate }) => {
             </label>
           </div>
           {errors.termsandconditions && (
-            <div className="text-red-500 text-sm mt-1">{errors.termsandconditions}</div>
+            <div className="text-red-500 text-sm mt-1">
+              {errors.termsandconditions}
+            </div>
           )}
         </div>
       </div>
@@ -199,7 +217,7 @@ const StorePartnerForm = ({ loading, setLoading, navigate }) => {
         disabled={loading}
         className="w-full mt-6 py-4 bg-[#1a1a1a] text-white rounded-xl font-semibold text-lg hover:bg-[#1a1a1a]/90 transition-colors disabled:opacity-50"
       >
-        {loading ? 'Registering...' : 'Complete Store Registration'}
+        {loading ? "Registering..." : "Complete Store Registration"}
       </button>
     </form>
   );

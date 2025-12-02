@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { axiosInstance } from "../../utils/axios.js";
 import Header from "../../components/Header";
@@ -10,7 +10,7 @@ import BillingDetails from "./components/BillingDetails";
 import CheckoutModal from "./components/CheckoutModal";
 
 const BookingPage = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
@@ -126,7 +126,9 @@ const BookingPage = () => {
       }, 3000);
     } catch (error) {
       console.error("Booking failed:", error);
-      toast.error(error.response?.data?.message || "Booking failed. Please try again.");
+      toast.error(
+        error.response?.data?.message || "Booking failed. Please try again."
+      );
     }
   };
 

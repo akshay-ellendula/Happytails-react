@@ -1,20 +1,18 @@
-import Customer from '../models/customerModel.js'
+import Customer from '../models/customerModel.js';
 import jwt from 'jsonwebtoken';
 import EventManager from '../models/eventManagerModel.js';
-import Admin from '../models/adminModel.js'
-import StorePartner from '../models/storePartnerModel.js';
+import Admin from '../models/adminModel.js';
+import Vendor from '../models/vendorModel.js'; //
+import bcrypt from 'bcryptjs'; // Added for password hashing
 
-
-//@dec signup  for customer
-//@route post /api/auth/signup
-//@access public
+// @desc    Signup for customer
+// @route   POST /api/auth/signup
+// @access  Public
 export const signup = async (req, res) => {
-
     const { userName, email, password } = req.body;
     try {
-
         if (!userName || !email || !password) {
-            return res.status(404).json({ message: "all fields are requires" })
+            return res.status(404).json({ message: "All fields are required" });
         }
 
         const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
@@ -23,32 +21,31 @@ export const signup = async (req, res) => {
         }
 
         if (password.length < 6) {
-            return res.status(403).json({ message: "Password Must have 6 characters" })
+            return res.status(403).json({ message: "Password Must have 6 characters" });
         }
 
-        const oldCustomer = await Customer.findOne({ email })
+        const oldCustomer = await Customer.findOne({ email });
 
         if (oldCustomer) {
-            return res.status(409).json({ message: "email is all ready registered" })
+            return res.status(409).json({ message: "Email is already registered" });
         }
 
         const randomGen = Math.floor(Math.random() * 100) + 1;
-        const profilePic = `https://avatar-api-theta.vercel.app/${randomGen}.png`
+        const profilePic = `https://avatar-api-theta.vercel.app/${randomGen}.png`;
 
         const customer = await Customer.create({ userName, email, password, profilePic });
 
         const token = jwt.sign({ customerId: customer._id, role: 'customer' }, process.env.JWT_SECRET_KEY, {
             expiresIn: '30min'
-        })
+        });
 
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
             sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
-        })
+        });
         
-        // UPDATED: Return user info
         res.status(201).json({ 
             success: true,
             user: {
@@ -60,28 +57,28 @@ export const signup = async (req, res) => {
             }
         });
     } catch (error) {
-        console.log("something went wrong in signup controller", error)
+        console.log("Something went wrong in signup controller", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 }
-//@dec signin for customer
-//@route post /api/auth/signin
-//@access public
+
+// @desc    Signin for customer
+// @route   POST /api/auth/signin
+// @access  Public
 export const signin = async (req, res) => {
     const { email, password } = req.body;
     try {
-
         if (!email || !password) {
-            return res.status(404).json({ "message": "all fields are requires" })
+            return res.status(404).json({ "message": "All fields are required" });
         }
 
         const customer = await Customer.findOne({ email });
         if (!customer) {
-            return res.status(404).json({ message: "email is not register" });
+            return res.status(404).json({ message: "Email is not registered" });
         }
 
         if (!customer.isActive) {
-            return res.status(403).json({ message: "your Account is disabled" })
+            return res.status(403).json({ message: "Your Account is disabled" });
         }
 
         const isMatch = await customer.matchPassword(password);
@@ -91,16 +88,15 @@ export const signin = async (req, res) => {
 
         const token = jwt.sign({ customerId: customer._id, role: 'customer' }, process.env.JWT_SECRET_KEY, {
             expiresIn: '30min'
-        })
+        });
 
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
             sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
-        })
+        });
 
-        // UPDATED: Return user info
         res.status(200).json({ 
             success: true,
             user: {
@@ -110,28 +106,28 @@ export const signin = async (req, res) => {
                 profilePic: customer.profilePic,
                 role: 'customer'
             }
-        })
+        });
     } catch (error) {
-        console.log("something went wrong in signin controller", error)
+        console.log("Something went wrong in signin controller", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 }
-//@dec logout 
-//@route /api/auth/logout
-//@access customer,eventManager
+
+// @desc    Logout 
+// @route   /api/auth/logout
+// @access  Public
 export const logout = (req, res) => {
     res.clearCookie("jwt");
     res.status(200).json({ success: true, message: "Logout successful" });
 }
-//@dec signup for eventManager
-//@route post /api/auth/eventManagerSignup
-//@access public
+
+// @desc    Signup for eventManager
+// @route   POST /api/auth/eventManagerSignup
+// @access  Public
 export const eventManagersignup = async (req, res) => {
-    // FIX: Destructure all fields sent from the frontend form
     const { userName, email, password, contactnumber, companyname, location } = req.body;
     
     try {
-        // Basic validation
         if (!userName || !email || !password || !contactnumber || !companyname || !location) {
             return res.status(400).json({ message: "All fields are required" });
         }
@@ -153,57 +149,50 @@ export const eventManagersignup = async (req, res) => {
         const randomGen = Math.floor(Math.random() * 100) + 1;
         const profilePic = `https://avatar-api-theta.vercel.app/${randomGen}.png`;
 
-        // FIX: Create EventManager using all fields.
-        // Note: Ensure your Mongoose model has 'companyName' (camelCase) or 'companyname' (lowercase).
-        // If your model uses camelCase, map it here: companyName: companyname
         const eventManager = await EventManager.create({
             userName,
             email,
             password,
             profilePic,
-            phoneNumber: contactnumber, // Mapping frontend 'contactnumber' to model 'phoneNumber'
-            companyName: companyname,   // Mapping frontend 'companyname' to model 'companyName' (assumed model field)
-            // location is typically part of profile or address, if not in model schema, it won't be saved unless schema is updated.
-            // Assuming schema is flexible or updated. If schema lacks 'location', add it.
+            phoneNumber: contactnumber,
+            companyName: companyname,
         });
 
         const token = jwt.sign({ eventManagerId: eventManager._id, role: 'eventManager' }, process.env.JWT_SECRET_KEY, {
             expiresIn: '30min'
         });
 
-        // FIX: Changed sameSite to 'Lax' for better compatibility during redirects
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: "lax", // changed to lowercase 'lax' just to be safe standard
+            sameSite: "lax",
             secure: process.env.NODE_ENV === 'production'
         });
 
         res.status(201).json({ success: true });
     } catch (error) {
-        console.log("something went wrong in signup controller", error);
+        console.log("Something went wrong in signup controller", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 }
 
-//@dec signin for eventManager
-//@route post /api/auth/eventManagerSignin
-//@access public
+// @desc    Signin for eventManager
+// @route   POST /api/auth/eventManagerSignin
+// @access  Public
 export const eventManagersignin = async (req, res) => {
     const { email, password } = req.body;
     try {
-
         if (!email || !password) {
-            return res.status(404).json({ "message": "all fields are requires" })
+            return res.status(404).json({ "message": "All fields are required" });
         }
 
         const eventManager = await EventManager.findOne({ email });
         if (!eventManager) {
-            return res.status(404).json({ message: "email is not register" });
+            return res.status(404).json({ message: "Email is not registered" });
         }
 
         if (!eventManager.isActive) {
-            return res.status(403).json({ message: "your Account is disabled" })
+            return res.status(403).json({ message: "Your Account is disabled" });
         }
 
         const isMatch = await eventManager.matchPassword(password);
@@ -211,18 +200,16 @@ export const eventManagersignin = async (req, res) => {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
-
         const token = jwt.sign({ eventManagerId: eventManager._id, role: 'eventManager' }, process.env.JWT_SECRET_KEY, {
             expiresIn: '30min'
-        })
+        });
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
             sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
-        })
+        });
 
-        // UPDATED: Return user info
         res.status(200).json({ 
             success: true,
             user: {
@@ -232,12 +219,13 @@ export const eventManagersignin = async (req, res) => {
                 profilePic: eventManager.profilePic,
                 role: 'eventManager'
             }
-        })
+        });
     } catch (error) {
-        console.log("something went wrong in eventManager signin controller", error)
+        console.log("Something went wrong in eventManager signin controller", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 }
+
 // @desc    Signup for admin
 // @route   POST /api/auth/adminSignup
 // @access  Public
@@ -276,14 +264,13 @@ export const adminSignup = async (req, res) => {
             secure: process.env.NODE_ENV === 'production'
         });
 
-        res.status(201).json({ success: true }); // Admin signup probably doesn't need to return user data
+        res.status(201).json({ success: true });
 
     } catch (error) {
         console.error("Error in adminSignup controller:", error);
         res.status(500).json({ message: "Internal Server Error" });
     }
 };
-// ... existing imports
 
 // @desc    Signin for admin
 // @route   POST /api/auth/adminSignin
@@ -314,11 +301,9 @@ export const adminSignin = async (req, res) => {
     }
 };
 
-// ... existing code
-// Add this to your auth controller
-//@dec verify auth status
-//@route GET /api/auth/verify
-//@access public
+// @desc    Verify auth status
+// @route   GET /api/auth/verify
+// @access  Public
 export const verifyAuth = async (req, res) => {
     try {
         const token = req.cookies.jwt;
@@ -339,13 +324,21 @@ export const verifyAuth = async (req, res) => {
                 userData.email = user.email;
                 userData.userName = user.userName;
                 userData.profilePic = user.profilePic;
-                userData.phoneNumber = user.phoneNumber; // <-- MODIFICATION
-                userData.address = user.address;       // <-- MODIFICATION
+                userData.phoneNumber = user.phoneNumber; 
+                userData.address = user.address;       
             }
         } else if (decoded.role === 'eventManager') {
-            user = await EventManager.findById(decoded.eventManagerId); // FIX: use eventManagerId here
+            user = await EventManager.findById(decoded.eventManagerId);
         } else if (decoded.role === 'admin') {
-            user = await Admin.findById(decoded.adminId); // FIX: use adminId here
+            user = await Admin.findById(decoded.adminId);
+        } else if (decoded.role === 'vendor') { // UPDATED: Check for vendor
+            user = await Vendor.findById(decoded.vendorId);
+            if (user) {
+                userData.vendorId = user._id;
+                userData.email = user.email;
+                userData.userName = user.name; // Map 'name' to 'userName' for consistency if needed
+                userData.storename = user.store_name;
+            }
         }
 
         if (!user) {
@@ -355,7 +348,7 @@ export const verifyAuth = async (req, res) => {
 
         res.status(200).json({
             authenticated: true,
-            user: userData // UPDATED: Send user data
+            user: userData
         });
     } catch (error) {
         console.log("JWT verification failed:", error);
@@ -364,12 +357,11 @@ export const verifyAuth = async (req, res) => {
     }
 }
 
-// @desc    Register store partner
-// @route   POST /api/auth/storeSignup
+// @desc    Register vendor (formerly store partner)
+// @route   POST /api/auth/vendorSignup
 // @access  Public
 export const storePartnerSignup = async (req, res) => {
     const { userName, email, password, contactnumber, storename, storelocation } = req.body;
-
     try {
         // Validation
         if (!userName || !email || !password || !contactnumber || !storename || !storelocation) {
@@ -380,39 +372,39 @@ export const storePartnerSignup = async (req, res) => {
         }
 
         // Check if email already exists
-        const existingStorePartner = await StorePartner.findOne({ email });
-        if (existingStorePartner) {
+        const existingVendor = await Vendor.findOne({ email });
+        if (existingVendor) {
             return res.status(409).json({
                 success: false,
                 message: "Email is already registered"
             });
         }
 
-        const oldStoreName = await StorePartner.findOne({storename});
-        if(oldStoreName){
-            return res.status(409).json({message : "All Ready  Store name has Taken"})
+        // Check if store name already exists
+        const existingStore = await Vendor.findOne({ store_name: storename });
+        if (existingStore) {
+            return res.status(409).json({ message: "Store name is already taken" });
         }
 
-        // Generate random profile picture
-        const randomGen = Math.floor(Math.random() * 100) + 1;
-        const profilePic = `https://avatar-api-theta.vercel.app/${randomGen}.png`;
+        // Hash Password
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create store partner
-        const storePartner = await StorePartner.create({
-            userName,
+        // Create vendor
+        const vendor = await Vendor.create({
+            name: userName, // Map userName to name
             email,
-            password,
-            contactnumber,
-            storename,
-            storelocation,
-            profilePic
+            password: hashedPassword,
+            contact_number: contactnumber, // Map contactnumber to contact_number
+            store_name: storename, // Map storename to store_name
+            store_location: storelocation, // Map storelocation to store_location
+            description: ""
         });
 
         // Generate JWT token
         const token = jwt.sign(
             {
-                storePartnerId: storePartner._id,
-                role: 'storePartner',
+                vendorId: vendor._id,
+                role: 'vendor', // Changed role to 'vendor'
             },
             process.env.JWT_SECRET_KEY,
             { expiresIn: '30min' }
@@ -426,29 +418,29 @@ export const storePartnerSignup = async (req, res) => {
             secure: process.env.NODE_ENV === 'production'
         });
 
-        // UPDATED: Return user data
         res.status(201).json({ 
             success: true,
             user: {
-                storePartnerId: storePartner._id,
-                email: storePartner.email,
-                userName: storePartner.userName,
-                storename: storePartner.storename,
-                role: 'storePartner'
+                vendorId: vendor._id,
+                email: vendor.email,
+                userName: vendor.name,
+                storename: vendor.store_name,
+                role: 'vendor'
             }
         });
 
     }
     catch (error) {
-        console.log("Error in store partner signup:", error);
+        console.log("Error in vendor signup:", error);
         res.status(500).json({
             success: false,
             message: "Internal server error"
         });
     }
 };
-// @desc    Login store partner
-// @route   POST /api/auth/storeSignin
+
+// @desc    Login vendor (formerly store partner)
+// @route   POST /api/auth/vendorSignin
 // @access  Public
 export const storePartnerSignin = async (req, res) => {
     const { email, password } = req.body;
@@ -461,22 +453,16 @@ export const storePartnerSignin = async (req, res) => {
             });
         }
 
-        const storePartner = await StorePartner.findOne({ email });
-        if (!storePartner) {
+        const vendor = await Vendor.findOne({ email });
+        if (!vendor) {
             return res.status(404).json({
                 success: false,
                 message: "Email is not registered"
             });
         }
 
-        if (!storePartner.isActive) {
-            return res.status(403).json({
-                success: false,
-                message: "Your account is disabled. Please contact support."
-            });
-        }
-
-        const isMatch = await storePartner.matchPassword(password);
+        // Verify password
+        const isMatch = await bcrypt.compare(password, vendor.password);
         if (!isMatch) {
             return res.status(401).json({
                 success: false,
@@ -487,8 +473,8 @@ export const storePartnerSignin = async (req, res) => {
         // Generate JWT token
         const token = jwt.sign(
             {
-                storePartnerId: storePartner._id,
-                role: 'storePartner',
+                vendorId: vendor._id,
+                role: 'vendor',
             },
             process.env.JWT_SECRET_KEY,
             { expiresIn: '30min' }
@@ -502,20 +488,19 @@ export const storePartnerSignin = async (req, res) => {
             secure: process.env.NODE_ENV === 'production'
         });
 
-        // UPDATED: Renamed 'data' to 'user' for consistency
         res.status(200).json({
             success: true,
             message: "Login successful",
             user: {
-                storePartnerId: storePartner._id,
-                userName: storePartner.userName,
-                email: storePartner.email,
-                storename: storePartner.storename,
-                role: 'storePartner'
+                vendorId: vendor._id,
+                userName: vendor.name,
+                email: vendor.email,
+                storename: vendor.store_name,
+                role: 'vendor'
             }
         });
     } catch (error) {
-        console.log("Error in store partner signin:", error);
+        console.log("Error in vendor signin:", error);
         res.status(500).json({
             success: false,
             message: "Internal server error"

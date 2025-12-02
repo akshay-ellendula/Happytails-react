@@ -152,9 +152,9 @@ const PetEvents = () => {
             <div className="md:col-span-3 text-lg text-gray-600 py-20">No upcoming events available.</div>
         )}
       </div>
-      
+
       <div className="text-center mt-10">
-        <Link 
+        <Link
           to="/events"
           className="inline-block px-8 py-3 text-lg text-white bg-[#1a1a1a] border-2 border-[#1a1a1a] rounded-full transition-all duration-300 hover:bg-transparent hover:text-[#1a1a1a] font-semibold"
         >

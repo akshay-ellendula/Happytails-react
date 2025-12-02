@@ -10,7 +10,230 @@ import {
   deleteEvent,
   clearSelectedEvent,
 } from "../../store/eventsSlice";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
+
+/* ----------------- Edit Modal ----------------- */
+const EditModal = ({ isOpen, onClose, event, onSave }) => {
+  const [formData, setFormData] = useState({
+    title: "",
+    category: "",
+    venue: "",
+    location: "", // City
+    phoneNumber: "", // Contact
+    date_time: "",
+    ticketPrice: 0,
+    total_tickets: 0,
+    description: "",
+    instructions: "",
+    language: "",
+    duration: "",
+    ageLimit: "",
+  });
+
+  useEffect(() => {
+    if (event) {
+      setFormData({
+        title: event.title || "",
+        category: event.category || "",
+        venue: event.venue || "",
+        location: event.location || "",
+        phoneNumber: event.contact_number || "", // Map contact_number to phoneNumber
+        date_time: event.date_time ? new Date(event.date_time).toISOString().slice(0, 16) : "",
+        ticketPrice: event.ticketPrice || 0,
+        total_tickets: event.total_tickets || 0,
+        description: event.description || "",
+        instructions: event.instructions || "",
+        language: event.language || "",
+        duration: event.duration || "",
+        ageLimit: event.ageLimit || "",
+      });
+    }
+  }, [event]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
+          <h2 className="text-xl font-bold text-gray-800">Edit Event Basic Details</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* Manager (Read-Only) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Manager</label>
+            <input
+              type="text"
+              value={event?.eventManagerId?.userName || "N/A"}
+              disabled
+              className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <input
+                type="text"
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* Venue */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Venue</label>
+              <input
+                type="text"
+                name="venue"
+                value={formData.venue}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* City */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* Contact */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+              <input
+                type="text"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <hr className="my-4" />
+          <h3 className="text-lg font-semibold text-gray-700">Other Details</h3>
+
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Date Time */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+              <input
+                type="datetime-local"
+                name="date_time"
+                value={formData.date_time}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+
+            {/* Ticket Price */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ticket Price (₹)</label>
+              <input
+                type="number"
+                name="ticketPrice"
+                value={formData.ticketPrice}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                min="0"
+              />
+            </div>
+
+            {/* Total Tickets */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Total Tickets</label>
+              <input
+                type="number"
+                name="total_tickets"
+                value={formData.total_tickets}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                min="0"
+              />
+            </div>
+            {/* Language */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+              <input
+                type="text"
+                name="language"
+                value={formData.language}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows="3"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -25,25 +248,7 @@ const EventDetails = () => {
     error,
   } = useSelector((state) => state.events);
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    about: "",
-    language: "",
-    duration: "",
-    ticketPrice: 0,
-    ageLimit: "",
-    venue: "",
-    category: "",
-    dateTime: "",
-    totalTickets: 0,
-    city: "",
-    contactNumber: "",
-    instructions: "",
-    terms: "",
-    thumbnail: null,
-    banner: null,
-  });
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Fetch data on mount
   useEffect(() => {
@@ -54,34 +259,7 @@ const EventDetails = () => {
     return () => dispatch(clearSelectedEvent());
   }, [dispatch, id]);
 
-  // Populate form when event loads
-  useEffect(() => {
-    if (event) {
-      const dateTimeLocal = event.date_time
-        ? new Date(event.date_time).toISOString().slice(0, 16)
-        : "";
-      setFormData({
-        name: event.title || "",
-        about: event.description || "",
-        language: event.language || "",
-        duration: event.duration || "",
-        ticketPrice: event.ticketPrice || 0,
-        ageLimit: event.ageLimit || "",
-        venue: event.venue || "",
-        category: event.category || "",
-        dateTime: dateTimeLocal,
-        totalTickets: event.total_tickets || 0,
-        city: event.location || "",
-        contactNumber: event.contact_number || "",
-        instructions: event.instructions || "",
-        terms: event.terms || "",
-        thumbnail: null,
-        banner: null,
-      });
-    }
-  }, [event]);
-
-  // SAFE CALCULATIONS – NO MORE CRASHES
+  // SAFE CALCULATIONS
   const ticketsSold = Number(event?.tickets_sold) || 0;
   const ticketPrice = Number(event?.ticketPrice) || 0;
   const totalTickets = Number(event?.total_tickets) || 0;
@@ -90,30 +268,29 @@ const EventDetails = () => {
     ? (ticketsSold * ticketPrice * 0.94).toFixed(2)
     : "0.00";
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
+  const handleUpdate = async (formData) => {
     const data = new FormData();
-    data.append("title", formData.name);
-    data.append("description", formData.about);
+    data.append("title", formData.title);
+    data.append("description", formData.description);
     data.append("language", formData.language);
     data.append("duration", formData.duration);
     data.append("ticketPrice", formData.ticketPrice);
     data.append("ageLimit", formData.ageLimit);
     data.append("venue", formData.venue);
     data.append("category", formData.category);
-    data.append("date_time", new Date(formData.dateTime).toISOString());
-    data.append("total_tickets", formData.totalTickets);
-    data.append("location", formData.city);
-    data.append("contact_number", formData.contactNumber);
+    data.append("date_time", new Date(formData.date_time).toISOString());
+    data.append("total_tickets", formData.total_tickets);
+    data.append("location", formData.location);
+    data.append("phoneNumber", formData.phoneNumber);
     data.append("instructions", formData.instructions);
-    data.append("terms", formData.terms);
-    if (formData.thumbnail) data.append("thumbnail", formData.thumbnail);
-    if (formData.banner) data.append("banner", formData.banner);
+
+    // Note: Image upload is not included in this basic edit modal as per request, 
+    // but existing images are preserved by backend logic if not provided.
 
     const result = await dispatch(updateEvent({ id, formData: data }));
     if (updateEvent.fulfilled.match(result)) {
       alert("Event updated successfully!");
-      setIsEditing(false);
+      setIsEditModalOpen(false);
       dispatch(fetchEventDetails(id));
     } else {
       alert(result.payload || "Update failed");
@@ -153,27 +330,6 @@ const EventDetails = () => {
 
   if (!event) return <div className="p-10 text-center text-2xl">Event not found</div>;
 
-  // Edit Mode
-  if (isEditing) {
-    return (
-      <div className="max-w-5xl mx-auto p-6 bg-gray-100 min-h-screen">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-[#6495ed] mb-6">Edit Event</h2>
-          <form onSubmit={handleUpdate} className="space-y-6">
-            {/* Your existing form fields here */}
-            <button type="submit" className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700">
-              Save Changes
-            </button>
-            <button type="button" onClick={() => setIsEditing(false)} className="px-6 py-3 bg-gray-500 text-white rounded hover:bg-gray-600 ml-4">
-              Cancel
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // View Mode
   return (
     <div className="max-w-5xl mx-auto p-6 bg-gray-100 min-h-screen font-sans text-gray-800">
       {/* Header */}
@@ -182,7 +338,7 @@ const EventDetails = () => {
           ← Back to Events
         </button>
         <div className="space-x-3">
-          <button onClick={() => setIsEditing(true)} className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          <button onClick={() => setIsEditModalOpen(true)} className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             Edit Event
           </button>
           <button onClick={handleDelete} className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700">
@@ -283,6 +439,13 @@ const EventDetails = () => {
           </div>
         )}
       </div>
+
+      <EditModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        event={event}
+        onSave={handleUpdate}
+      />
     </div>
   );
 };

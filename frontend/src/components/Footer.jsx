@@ -1,7 +1,7 @@
 // components/Footer.jsx
-import React from 'react';
-import { Link } from 'react-router';
-import { Twitter, Instagram, Facebook, Youtube } from 'lucide-react';
+import React from "react";
+import { Link } from "react-router-dom";
+import { Twitter, Instagram, Facebook, Youtube } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -9,31 +9,75 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
           <div>
-            <h3 className="text-white font-bold text-lg sm:text-xl mb-3 sm:mb-4">🐾 HappyTails</h3>
+            <h3 className="text-white font-bold text-lg sm:text-xl mb-3 sm:mb-4">
+              🐾 HappyTails
+            </h3>
             <p className="text-white text-xs sm:text-sm">
-              Your ultimate destination for discovering amazing pet events and connecting with the pet-loving community.
+              Your ultimate destination for discovering amazing pet events and
+              connecting with the pet-loving community.
             </p>
           </div>
           <div>
-            <h4 className="text-white font-bold mb-3 sm:mb-4 text-sm sm:text-base">Quick Links</h4>
+            <h4 className="text-white font-bold mb-3 sm:mb-4 text-sm sm:text-base">
+              Quick Links
+            </h4>
             <ul className="space-y-2 text-white text-xs sm:text-sm">
-              <li><Link to="/" className="hover:text-[#effe8b] transition">About Us</Link></li>
-              <li><Link to="/events" className="hover:text-[#effe8b] transition">Pet Events</Link></li>
-              <li><Link to="/pet_accessory" className="hover:text-[#effe8b] transition">Adoption</Link></li>
-              <li><Link to="/" className="hover:text-[#effe8b] transition">Blog</Link></li>
+              <li>
+                <Link to="/" className="hover:text-[#effe8b] transition">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link to="/events" className="hover:text-[#effe8b] transition">
+                  Pet Events
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/pet_accessory"
+                  className="hover:text-[#effe8b] transition"
+                >
+                  Adoption
+                </Link>
+              </li>
+              <li>
+                <Link to="/" className="hover:text-[#effe8b] transition">
+                  Blog
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
-            <h4 className="text-white font-bold mb-3 sm:mb-4 text-sm sm:text-base">Support</h4>
+            <h4 className="text-white font-bold mb-3 sm:mb-4 text-sm sm:text-base">
+              Support
+            </h4>
             <ul className="space-y-2 text-white text-xs sm:text-sm">
-              <li><Link to="/" className="hover:text-[#effe8b] transition">Terms & Conditions</Link></li>
-              <li><Link to="/" className="hover:text-[#effe8b] transition">Privacy Policy</Link></li>
-              <li><Link to="/" className="hover:text-[#effe8b] transition">Contact Us</Link></li>
-              <li><Link to="/" className="hover:text-[#effe8b] transition">FAQ</Link></li>
+              <li>
+                <Link to="/" className="hover:text-[#effe8b] transition">
+                  Terms & Conditions
+                </Link>
+              </li>
+              <li>
+                <Link to="/" className="hover:text-[#effe8b] transition">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/" className="hover:text-[#effe8b] transition">
+                  Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link to="/" className="hover:text-[#effe8b] transition">
+                  FAQ
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
-            <h4 className="text-white font-bold mb-3 sm:mb-4 text-sm sm:text-base">List Your Event</h4>
+            <h4 className="text-white font-bold mb-3 sm:mb-4 text-sm sm:text-base">
+              List Your Event
+            </h4>
             <p className="text-white text-xs sm:text-sm mb-3 sm:mb-4">
               Organize a pet event? List it on HappyTails!
             </p>

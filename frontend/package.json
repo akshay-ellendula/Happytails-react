@@ -12,7 +12,7 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.0",
     "@tailwindcss/vite": "^4.1.13",
-    "axios": "^1.12.2",
+    "axios": "^1.13.2",
     "chart.js": "^4.5.1",
     "lucide": "^0.546.0",
     "lucide-react": "^0.546.0",
@@ -22,8 +22,8 @@
     "react-hot-toast": "^2.6.0",
     "react-redux": "^9.2.0",
     "react-router": "^7.9.4",
-    "recharts": "^3.3.0",
     "react-router-dom": "^7.9.6",
+    "recharts": "^3.3.0",
     "tailwindcss": "^4.1.13"
   },
   "devDependencies": {

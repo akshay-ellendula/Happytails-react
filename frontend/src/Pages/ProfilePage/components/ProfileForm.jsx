@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../hooks/useAuth";
 import { axiosInstance } from "../../../utils/axios";
 
 export default function ProfileForm() {
   const [editMode, setEditMode] = useState(false);
-  const { user, updateUser } = useAuth(); 
+  const { user, updateUser } = useAuth();
 
   // MODIFIED: Initialize state with defaults again.
   const [profile, setProfile] = useState({
@@ -15,11 +15,10 @@ export default function ProfileForm() {
     houseNumber: "",
     streetNo: "",
     city: "",
-    pincode: ""
+    pincode: "",
   });
-  
+
   const [newImageFile, setNewImageFile] = useState(null);
-  
 
   // ADDED THIS EFFECT: This syncs the component's state
   // with the user context whenever the user object changes (e.g., after login).
@@ -27,17 +26,17 @@ export default function ProfileForm() {
     console.log("ProfileForm render: user =", user);
     if (user) {
       setProfile({
-        name: user.userName ,
+        name: user.userName,
         email: user.email,
         phone: user.phoneNumber || "",
         profilePic: user.profilePic || "/icons/profile-circle-svgrepo-com.svg",
         houseNumber: user.address?.houseNumber || "",
         streetNo: user.address?.streetNo || "",
         city: user.address?.city || "",
-        pincode: user.address?.pincode || ""
+        pincode: user.address?.pincode || "",
       });
     }
-  },[user]); // This effect runs when the component mounts AND when 'user' changes.
+  }, [user]); // This effect runs when the component mounts AND when 'user' changes.
 
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -48,7 +47,8 @@ export default function ProfileForm() {
     if (file) {
       setNewImageFile(file);
       const reader = new FileReader();
-      reader.onload = () => setProfile({ ...profile, profilePic: reader.result });
+      reader.onload = () =>
+        setProfile({ ...profile, profilePic: reader.result });
       reader.readAsDataURL(file);
     }
   };
@@ -82,7 +82,9 @@ export default function ProfileForm() {
       return;
     }
 
-    if (!user || !user.customerId) {
+    const customerId = user?.customerId || user?._id || user?.id;
+    if (!user || !customerId) {
+      console.warn("ProfileForm: Missing user or customerId", user);
       alert("Could not find user ID. Please log in again.");
       return;
     }
@@ -100,13 +102,15 @@ export default function ProfileForm() {
         formData.append("profilePic", newImageFile);
       }
 
-      const response = await axiosInstance.put(`/public/${user.customerId}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      // Let axios set Content-Type with boundary for multipart
+      const response = await axiosInstance.put(
+        `/public/${customerId}`,
+        formData
+      );
 
       if (response.data.success) {
         alert("Profile updated successfully!");
-        updateUser(response.data.user); 
+        updateUser(response.data.user);
         setEditMode(false);
         setNewImageFile(null);
       } else {
@@ -114,7 +118,9 @@ export default function ProfileForm() {
       }
     } catch (error) {
       console.error("Profile update error:", error);
-      alert("An error occurred: " + (error.response?.data?.message || error.message));
+      alert(
+        "An error occurred: " + (error.response?.data?.message || error.message)
+      );
     }
   };
 
@@ -131,7 +137,7 @@ export default function ProfileForm() {
         houseNumber: user.address?.houseNumber || "",
         streetNo: user.address?.streetNo || "",
         city: user.address?.city || "",
-        pincode: user.address?.pincode || ""
+        pincode: user.address?.pincode || "",
       });
     }
   };
@@ -140,7 +146,11 @@ export default function ProfileForm() {
     <>
       {/* Profile Picture */}
       <div className="mb-12">
-        <div className={`relative w-32 h-32 group ${editMode ? "cursor-pointer" : ""}`}>
+        <div
+          className={`relative w-32 h-32 group ${
+            editMode ? "cursor-pointer" : ""
+          }`}
+        >
           <div className="w-32 h-32 rounded-full border-4 border-dark overflow-hidden">
             <img
               src={profile.profilePic}
@@ -151,9 +161,24 @@ export default function ProfileForm() {
           {editMode && (
             <>
               <div className="absolute inset-0 flex items-center justify-center bg-dark/50 rounded-full border-4 border-dashed border-dark">
-                <svg className="w-12 h-12 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                <svg
+                  className="w-12 h-12 text-primary"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
                 </svg>
               </div>
               <input
@@ -165,25 +190,71 @@ export default function ProfileForm() {
             </>
           )}
         </div>
-        {editMode && <p className="text-sm text-gray-600 mt-3">Click to change profile picture</p>}
+        {editMode && (
+          <p className="text-sm text-gray-600 mt-3">
+            Click to change profile picture
+          </p>
+        )}
       </div>
 
       {/* Profile Fields */}
       <div className="grid md:grid-cols-2 gap-8 mb-8">
-        <InputField label="Name" name="name" value={profile.name} editMode={editMode} onChange={handleChange} />
-        <InputField label="Email" name="email" value={profile.email} editMode={editMode} onChange={handleChange} />
+        <InputField
+          label="Name"
+          name="name"
+          value={profile.name}
+          editMode={editMode}
+          onChange={handleChange}
+        />
+        <InputField
+          label="Email"
+          name="email"
+          value={profile.email}
+          editMode={editMode}
+          onChange={handleChange}
+        />
       </div>
 
       <div className="grid md:grid-cols-2 gap-8 mb-12">
-        <InputField label="Phone" name="phone" value={profile.phone} editMode={editMode} onChange={handleChange} />
-        <InputField label="House Number" name="houseNumber" value={profile.houseNumber} editMode={editMode} onChange={handleChange} />
+        <InputField
+          label="Phone"
+          name="phone"
+          value={profile.phone}
+          editMode={editMode}
+          onChange={handleChange}
+        />
+        <InputField
+          label="House Number"
+          name="houseNumber"
+          value={profile.houseNumber}
+          editMode={editMode}
+          onChange={handleChange}
+        />
       </div>
       <div className="grid md:grid-cols-2 gap-8 mb-12">
-        <InputField label="Street / Area" name="streetNo" value={profile.streetNo} editMode={editMode} onChange={handleChange} />
-        <InputField label="City" name="city" value={profile.city} editMode={editMode} onChange={handleChange} />
+        <InputField
+          label="Street / Area"
+          name="streetNo"
+          value={profile.streetNo}
+          editMode={editMode}
+          onChange={handleChange}
+        />
+        <InputField
+          label="City"
+          name="city"
+          value={profile.city}
+          editMode={editMode}
+          onChange={handleChange}
+        />
       </div>
       <div className="grid md:grid-cols-2 gap-8 mb-12">
-        <InputField label="Pincode" name="pincode" value={profile.pincode} editMode={editMode} onChange={handleChange} />
+        <InputField
+          label="Pincode"
+          name="pincode"
+          value={profile.pincode}
+          editMode={editMode}
+          onChange={handleChange}
+        />
       </div>
 
       {/* Buttons: Edit outside, Save/Cancel inside form */}
@@ -218,23 +289,34 @@ export default function ProfileForm() {
   );
 }
 
-function InputField({ label, name, value, onChange, editMode, readOnly = false }) {
+function InputField({
+  label,
+  name,
+  value,
+  onChange,
+  editMode,
+  readOnly = false,
+}) {
   return (
     <div>
-      <label className="block text-dark text-base font-medium mb-2">{label}:</label>
+      <label className="block text-dark text-base font-medium mb-2">
+        {label}:
+      </label>
       {!editMode ? (
         <span className="block text-dark text-xl font-bold">
           {value || `Enter ${label}`}
         </span>
       ) : (
         <input
-          type={name === 'phone' || name === 'pincode' ? 'tel' : 'text'}
+          type={name === "phone" || name === "pincode" ? "tel" : "text"}
           name={name}
           value={value}
           onChange={onChange}
           readOnly={readOnly}
           className={`w-full px-4 py-3 border-2 rounded-lg bg-primary/20 text-dark text-lg font-medium focus:outline-none focus:ring-2 ${
-            readOnly ? "border-gray-300 bg-gray-100 cursor-not-allowed" : "border-dark focus:ring-dark"
+            readOnly
+              ? "border-gray-300 bg-gray-100 cursor-not-allowed"
+              : "border-dark focus:ring-dark"
           }`}
         />
       )}

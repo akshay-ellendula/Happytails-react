@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import { PawPrint } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router";
+import { useAuth } from "../../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import AuthForm from "./components/AuthForm";
 
 function AuthPage() {
@@ -22,7 +22,7 @@ function AuthPage() {
     if (user) {
       if (user.role === "customer") navigate("/");
       else if (user.role === "eventManager") navigate("/eventManager");
-      else if (user.role === "storePartner") navigate("/store");
+      else if (user.role === "storePartner") navigate("/shop");
       else if (user.role === "admin") navigate("/admin/dashboard");
       else navigate("/"); // Fallback
     }

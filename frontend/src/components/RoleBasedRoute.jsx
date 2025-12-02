@@ -1,7 +1,7 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router';
-import { useAuth } from '../context/AuthContext';
-import { Loader2 } from 'lucide-react';
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { Loader2 } from "lucide-react";
 
 const RoleBasedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -16,11 +16,19 @@ const RoleBasedRoute = ({ children, allowedRoles }) => {
   }
 
   // 1. Not Logged In -> Redirect to Login
-  // We redirect to Service Login if the user was trying to access a service route, 
+  // We redirect to Service Login if the user was trying to access a service route,
   // otherwise default to Customer Login.
   if (!user) {
-    const isServiceRoute = location.pathname.includes('eventManager') || location.pathname.includes('store');
-    return <Navigate to={isServiceRoute ? "/service-login" : "/login"} state={{ from: location }} replace />;
+    const isServiceRoute =
+      location.pathname.includes("eventManager") ||
+      location.pathname.includes("store");
+    return (
+      <Navigate
+        to={isServiceRoute ? "/service-login" : "/login"}
+        state={{ from: location }}
+        replace
+      />
+    );
   }
 
   // 2. Logged In but Wrong Role -> Redirect to 404 or Home
