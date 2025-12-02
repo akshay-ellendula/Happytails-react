@@ -1914,7 +1914,7 @@ const getEventAttendees = async (req, res) => {
         // Use Ticket model and populate Customer details
         const attendees = await Ticket.find({ eventId: eventId })
             .populate('customerId', 'userName email phoneNumber address')
-            .select('_id ticketId numberOfTickets purchaseDate status price petName petBreed petAge');
+            .select('_id ticketId numberOfTickets purchaseDate status price petName petBreed petAge'); //
 
         res.json({
             success: true,
@@ -1931,17 +1931,20 @@ const getEventAttendees = async (req, res) => {
                 return {
                     id: att._id.toString(),
                     ticketId: att.ticketId || 'N/A',
-                    name: customerName,
+                    // 👇 FIXES: Align keys with EventDetails.jsx expectations
+                    customerName: customerName,         // FIX: Renamed 'name' to 'customerName'
                     phone: customerPhone,
-                    email: customerEmail,
+                    customerEmail: customerEmail,       // FIX: Renamed 'email' to 'customerEmail'
                     address: customerAddress,
-                    seats: att.numberOfTickets,
+                    numberOfTickets: att.numberOfTickets, // FIX: Renamed 'seats' to 'numberOfTickets'
+                    
                     // Use pet fields from the Ticket model
                     with_pet: att.petName ? 'Yes' : 'No',
                     pet_name: att.petName || 'N/A',
                     pet_breed: att.petBreed || 'N/A',
                     pet_age: att.petAge || 'N/A',
-                    registration_date: new Date(att.purchaseDate).toLocaleDateString(),
+                    // FIX: Return raw purchaseDate for frontend formatting (to avoid 'Invalid Date')
+                    purchaseDate: att.purchaseDate,     
                     Customer: customer ? {
                         name: customer.userName,
                         email: customer.email,
