@@ -42,7 +42,7 @@ export const signup = async (req, res) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
         });
         
@@ -93,7 +93,7 @@ export const signin = async (req, res) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
         });
 
@@ -206,7 +206,7 @@ export const eventManagersignin = async (req, res) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
         });
 
@@ -260,7 +260,7 @@ export const adminSignup = async (req, res) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
         });
 
@@ -300,7 +300,7 @@ export const adminSignin = async (req, res) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
         });
 
@@ -433,7 +433,7 @@ export const storePartnerSignup = async (req, res) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
         });
 
@@ -503,7 +503,7 @@ export const storePartnerSignin = async (req, res) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            sameSite: "strict",
             secure: process.env.NODE_ENV === 'production'
         });
 
