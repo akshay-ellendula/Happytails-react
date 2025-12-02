@@ -158,7 +158,7 @@ function AppRoutes() {
         <Route path="products/add" element={<AddProduct />} />
         <Route path="products/edit/:productId" element={<EditProduct />} />
         <Route path="orders" element={<OrderList />} />
-        <Route path="orders/:orderId" element={<OrderDetails />} />
+        <Route path="orders/:orderId" element={<ManagerOrderDetails/>} />
         <Route path="customers" element={<CustomerList />} />
         <Route path="customers/:customerId" element={<CustomerDetails />} />
         <Route path="analytics" element={<ShopAnalytics />} />
