@@ -173,93 +173,62 @@ const deleteUser = async (req, res) => {
     }
 };
 
-const getProductData = async (productId) => {
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-        return null;
-    }
-
+const getProductData = async (req, res) => {
     try {
-        const product = await Product.aggregate([
-            { $match: { _id: new mongoose.Types.ObjectId(productId) } },
+        const productId = req.params.id;
+
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(400).json({ success: false, message: 'Invalid product ID' });
+        }
+
+        const metrics = await OrderItem.aggregate([
+            { $match: { product_id: new mongoose.Types.ObjectId(productId) } },
             {
                 $lookup: {
-                    from: 'vendors',
-                    localField: 'vendor_id',
+                    from: 'orders',
+                    localField: 'order_id',
                     foreignField: '_id',
-                    as: 'vendor'
+                    as: 'order'
                 }
             },
-            { $unwind: '$vendor' },
+            { $unwind: '$order' },
             {
-                $lookup: {
-                    from: 'productvariants',
-                    localField: '_id',
-                    foreignField: 'product_id',
-                    as: 'variants'
-                }
-            },
-            { $unwind: '$variants' },
-            {
-                $lookup: {
-                    from: 'productimages',
-                    localField: '_id',
-                    foreignField: 'product_id',
-                    as: 'images'
+                $group: {
+                    _id: null,
+                    totalSales: { $sum: '$quantity' },
+                    // Calculate total revenue before admin cut
+                    totalRevenue: { $sum: { $multiply: ['$quantity', '$price'] } },
+                    uniqueCustomers: { $addToSet: '$order.customer_id' }
                 }
             },
             {
                 $project: {
                     _id: 0,
-                    id: '$_id',
-                    product_name: 1,
-                    product_category: 1,
-                    product_type: 1,
-                    product_description: 1,
-                    stock_status: 1,
-                    created_at: 1,
-                    sku: '$variants.sku',
-                    regular_price: '$variants.regular_price',
-                    sale_price: '$variants.sale_price',
-                    stock_quantity: '$variants.stock_quantity',
-                    vendor: {
-                        store_name: '$vendor.store_name',
-                        email: '$vendor.email'
-                    },
-                    image: {
-                        $ifNull: [
-                            { $arrayElemAt: [{ $filter: { input: '$images', as: 'img', cond: { $eq: ['$$img.is_primary', true] } } }, 0] },
-                            { $arrayElemAt: ['$images', 0] }
-                        ]
-                    }
-                }
-            },
-            {
-                $project: {
-                    id: 1,
-                    product_name: 1,
-                    product_category: 1,
-                    product_type: 1,
-                    product_description: 1,
-                    stock_status: 1,
-                    created_at: 1,
-                    sku: 1,
-                    regular_price: 1,
-                    sale_price: 1,
-                    stock_quantity: 1,
-                    vendor: 1,
-                    image: { $ifNull: ['$image.image_data', null] }
+                    totalSales: 1,
+                    // Applying 94% retention rate for vendor revenue based on your shared information
+                    revenue: { $multiply: ['$totalRevenue', 0.94] }, 
+                    uniqueCustomers: { $size: '$uniqueCustomers' }
                 }
             }
         ]);
-        return product.length > 0 ? product[0] : null;
+
+        const result = metrics.length > 0 ? metrics[0] : { totalSales: 0, revenue: 0, uniqueCustomers: 0 };
+        
+        res.json({ success: true, metrics: result });
     } catch (err) {
-        console.error('Error in getProductData:', err);
-        throw err;
+        console.error('Error in getProductData for metrics:', err);
+        res.status(500).json({ success: false, message: 'Failed to load product metrics' });
     }
 };
 
-const getProductCustomers = async (productId) => {
+const getProductCustomers = async (req, res) => {
     try {
+        const productId = req.params.id;
+
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(400).json({ success: false, message: 'Invalid product ID' });
+        }
+
         const customers = await OrderItem.aggregate([
             { $match: { product_id: new mongoose.Types.ObjectId(productId) } },
             {
@@ -283,19 +252,19 @@ const getProductCustomers = async (productId) => {
             {
                 $project: {
                     _id: 0,
-                    userName: '$Customer.userName',
-                    email: '$Customer.email',
-                    order_date: '$order.order_date',
-                    quantity: '$quantity'
+                    order_id: '$order._id',
+                    customer_name: '$Customer.userName', // Changed to match frontend expectation
+                    quantity: 1,
+                    date: '$order.order_date', // Date object for frontend processing
                 }
             },
-            { $sort: { order_date: -1 } }
+            { $sort: { date: -1 } }
         ]);
 
-        return customers;
+        res.json({ success: true, customers }); 
     } catch (err) {
         console.error('Error in getProductCustomers:', err);
-        throw err;
+        res.status(500).json({ success: false, message: 'Failed to load product customers' });
     }
 };
 

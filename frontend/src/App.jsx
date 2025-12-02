@@ -22,6 +22,7 @@ import { store } from "./store/store";
 import VendorDetails from "./Pages/Admin/VendorDetails";
 import EventManagerDetails from "./Pages/Admin/EventManagerDetails";
 import EventDetails from './Pages/Admin/EventDetails';
+import ProductDetails from './Pages/Admin/ProductDetails';
 
 
 
@@ -63,7 +64,7 @@ function AppRoutes() {
      <Route path="/admin/vendors/:id" element={<VendorDetails />} />
      <Route path="/admin/event-managers/:id" element={<EventManagerDetails />} />
     <Route path="/admin/events/:id" element={<EventDetails />} />
-
+     <Route path="/admin/products/:id" element={<ProductDetails />} />
 
 
 
