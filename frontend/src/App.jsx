@@ -30,6 +30,8 @@ import PartnerRegistration from "./Pages/PartnerRegistration/PartnerRegistration
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
 import MyOrdersPage from "./pages/MyOrdersPage/MyOrdersPage";
 import PaymentPage from "./pages/PaymentPage/PaymentPage";
+import MyEventsPage from "./pages/MyEventsPage/MyEventsPage";
+import TrackOrderPage from "./pages/TrackOrderPage/TrackOrderPage";
 
 // --- Pages: Admin ---
 import AdminLoginPage from "./pages/AdminLogin/AdminLoginPage"; // Check capitalization here (pages vs Pages)
@@ -42,6 +44,10 @@ import Products from "./Pages/Admin/Products";
 import Orders from "./Pages/Admin/Orders";
 import Vendors from "./Pages/Admin/Vendors";
 import VendorDetails from "./Pages/Admin/VendorDetails";
+import EventManagerDetails from "./Pages/Admin/EventManagerDetails";
+import EventDetails from './Pages/Admin/EventDetails';
+import ProductDetails from './Pages/Admin/ProductDetails';
+import OrderDetails from './Pages/Admin/OrderDetails';
 
 // --- Pages: Service Providers ---
 import EventManagerPage from "./Pages/EventManager/EventManagerPage";
@@ -116,7 +122,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-
+      <Route path="/my_events" element={<ProtectedRoute> <MyEventsPage /> </ProtectedRoute>} />
+      <Route path="/track-order/:orderId" element={<ProtectedRoute> <TrackOrderPage /> </ProtectedRoute>} />
       {/* --- Protected: Booking --- */}
       <Route
         path="/booking"
@@ -161,88 +168,39 @@ function AppRoutes() {
 
       {/* --- Protected: Admin --- */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
+      
+      <Route path="/admin/dashboard" element={
+        <RoleBasedRoute allowedRoles={['admin']}> <Dashboard /> </RoleBasedRoute>
+      } />
+      <Route path="/admin/users" element={
+        <RoleBasedRoute allowedRoles={['admin']}> <Users /> </RoleBasedRoute>
+      } />
+      <Route path="/admin/event-managers" element={
+        <RoleBasedRoute allowedRoles={['admin']}> <EventManagers /> </RoleBasedRoute>
+      } />
+      <Route path="/admin/events" element={
+        <RoleBasedRoute allowedRoles={['admin']}> <Events /> </RoleBasedRoute>
+      } />
+      <Route path="/admin/products" element={
+        <RoleBasedRoute allowedRoles={['admin']}> <Products /> </RoleBasedRoute>
+      } />
+      <Route path="/admin/orders" element={
+        <RoleBasedRoute allowedRoles={['admin']}> <Orders /> </RoleBasedRoute>
+      } />
+      <Route path="/admin/vendors" element={
+        <RoleBasedRoute allowedRoles={['admin']}> <Vendors /> </RoleBasedRoute>
+      } />
+     <Route path="/admin/users/:id" element={<UserDetails />} />
+     <Route path="/admin/vendors/:id" element={<VendorDetails />} />
+     <Route path="/admin/event-managers/:id" element={<EventManagerDetails />} />
+    <Route path="/admin/events/:id" element={<EventDetails />} />
+     <Route path="/admin/products/:id" element={<ProductDetails />} />
+     <Route path="/admin/orders/:id" element={<OrderDetails />} />
 
-      <Route
-        path="/admin/dashboard"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            <Dashboard />
-          </RoleBasedRoute>
-        }
-      />
-      <Route
-        path="/admin/users"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            <Users />
-          </RoleBasedRoute>
-        }
-      />
-      {/* ADDED: Protected User Details Route */}
-      <Route
-        path="/admin/users/:id"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            <UserDetails />
-          </RoleBasedRoute>
-        }
-      />
-
-      <Route
-        path="/admin/event-managers"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            <EventManagers />
-          </RoleBasedRoute>
-        }
-      />
-      <Route
-        path="/admin/events"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            <Events />
-          </RoleBasedRoute>
-        }
-      />
-      <Route
-        path="/admin/products"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            <Products />
-          </RoleBasedRoute>
-        }
-      />
-      <Route
-        path="/admin/orders"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            <Orders />
-          </RoleBasedRoute>
-        }
-      />
-      <Route
-        path="/admin/vendors"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            <Vendors />
-          </RoleBasedRoute>
-        }
-      />
-      {/* ADDED: Protected Vendor Details Route */}
-      <Route
-        path="/admin/vendors/:id"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            <VendorDetails />
-          </RoleBasedRoute>
-        }
-      />
-
-      <Route
-        path="/admin/*"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            <Navigate to="/admin/dashboard" replace />
+      {/* Catch-all for Admin Root if needed */}
+      <Route path="/admin/*" element={
+          <RoleBasedRoute allowedRoles={['admin']}>
+             <Navigate to="/admin/dashboard" replace />
           </RoleBasedRoute>
         }
       />
