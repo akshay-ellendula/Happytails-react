@@ -5,7 +5,7 @@ import { axiosInstance } from "../../../utils/axios";
 import { Printer, Package, Truck, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
-const OrderDetails = () => {
+const ManagerOrderDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
@@ -318,4 +318,4 @@ const OrderDetails = () => {
   );
 };
 
-export default OrderDetails;
+export default ManagerOrderDetails;

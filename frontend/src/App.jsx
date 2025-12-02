@@ -57,7 +57,7 @@ import ProductList from "./Pages/ShopManager/Products/ProductList";
 import AddProduct from "./Pages/ShopManager/Products/AddProduct";
 import EditProduct from "./Pages/ShopManager/Products/EditProduct";
 import OrderList from "./Pages/ShopManager/Orders/OrderList";
-import OrderDetails from "./Pages/ShopManager/Orders/OrderDetails";
+import ManagerOrderDetails from "./pages/ShopManager/Orders/ManagerOrderDetails";
 import CustomerList from "./Pages/ShopManager/Customers/CustomerList";
 import CustomerDetails from "./Pages/ShopManager/Customers/CustomerDetails";
 import ShopAnalytics from "./Pages/ShopManager/Analytics/ShopAnalytics";
