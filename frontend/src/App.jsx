@@ -42,6 +42,10 @@ import UserDetails from "./Pages/Admin/UserDetails";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
 import VendorDetails from "./Pages/Admin/VendorDetails";
+import EventManagerDetails from "./Pages/Admin/EventManagerDetails";
+import EventDetails from './Pages/Admin/EventDetails';
+import ProductDetails from './Pages/Admin/ProductDetails';
+import OrderDetails from './Pages/Admin/OrderDetails';
 
 // --- Pages: Service Providers ---
 import EventManagerPage from "./Pages/EventManager/EventManagerPage";
@@ -146,8 +150,10 @@ function AppRoutes() {
       } />
      <Route path="/admin/users/:id" element={<UserDetails />} />
      <Route path="/admin/vendors/:id" element={<VendorDetails />} />
-
-
+     <Route path="/admin/event-managers/:id" element={<EventManagerDetails />} />
+    <Route path="/admin/events/:id" element={<EventDetails />} />
+     <Route path="/admin/products/:id" element={<ProductDetails />} />
+     <Route path="/admin/orders/:id" element={<OrderDetails />} />
 
       {/* Catch-all for Admin Root if needed */}
       <Route path="/admin/*" element={
