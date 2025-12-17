@@ -603,7 +603,7 @@ export const resetPassword = async (req, res) => {
             resetPasswordToken,
             resetPasswordExpire: { $gt: Date.now() },
         });
-
+        console.log(user);
         if (!user) {
             return res.status(400).json({ message: "Invalid Token" });
         }

@@ -198,6 +198,8 @@ function AppRoutes() {
     <Route path="/admin/events/:id" element={<EventDetails />} />
      <Route path="/admin/products/:id" element={<ProductDetails />} />
      <Route path="/admin/orders/:id" element={<OrderDetails />} />
+     <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
       {/* Catch-all for Admin Root if needed */}
       <Route path="/admin/*" element={
