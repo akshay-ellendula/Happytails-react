@@ -1071,21 +1071,13 @@ const getVendorDashboard = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(vendorId)) {
       return sendError(res, "Invalid Vendor ID", 400);
     }
-    const vendorObjectId = new mongoose.Types.ObjectId(vendorId);
-
-    console.log('=== DASHBOARD DEBUG ===');
-    console.log('Vendor ID:', vendorId);
-    console.log('Vendor ObjectId:', vendorObjectId);
-    
+    const vendorObjectId = new mongoose.Types.ObjectId(vendorId);    
     // Check if OrderItems exist for this vendor
     const orderItemsCount = await OrderItem.countDocuments({ vendor_id: vendorObjectId });
-    console.log('OrderItems found for vendor:', orderItemsCount);
     
     if (orderItemsCount === 0) {
-      console.log('WARNING: No order items found for this vendor');
       // Check if vendor_id is stored as string instead of ObjectId
       const orderItemsAsString = await OrderItem.countDocuments({ vendor_id: vendorId });
-      console.log('OrderItems with vendor_id as string:', orderItemsAsString);
     }
 
     // 1. Total Revenue & Products Sold (All Time)
@@ -1212,10 +1204,6 @@ const getVendorDashboard = async (req, res) => {
       if (previous === 0) return current > 0 ? 100 : 0;
       return ((current - previous) / previous) * 100;
     };
-
-    console.log('Total Stats Result:', totalStats);
-    console.log('New Orders Result:', newOrdersStats);
-    console.log('Recent Orders Count:', recentOrders.length);
 
     const stats = {
       totalRevenue: (totalStats[0]?.totalRevenue || 0).toFixed(2),

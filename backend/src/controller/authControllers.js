@@ -276,28 +276,54 @@ export const adminSignup = async (req, res) => {
 // @route   POST /api/auth/adminSignin
 // @access  Public
 export const adminSignin = async (req, res) => {
-     const { admin_email, admin_password } = req.body;
-    const admin = { email: "admin@gmail.com", password: "admin123#" };
+    try {
+        // 1. Get credentials from request body
+        const { email, password } = req.body;
 
-    if (admin_email === admin.email && admin_password === admin.password) {
-        const token = generateToken({
-            email: admin_email,
-            role: 'admin',
-            id: 'admin'
-        });
+        // 2. Define the admin (In a real app, this might come from a DB)
+        const admin = { 
+            _id: "admin_root_001", // Added _id so jwt.sign works
+            email: "admin@gmail.com", 
+            password: "admin123#" 
+        };
 
-        res.cookie('jwt', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: "none",
-            secure: true,
+        // 3. Validate credentials
+        if (email === admin.email && password === admin.password) {
+            
+            // 4. Generate Token using your specific syntax
+            const token = jwt.sign(
+                { adminId: admin._id, role: 'admin' }, 
+                process.env.JWT_SECRET_KEY, 
+                { expiresIn: '30min' }
+            );
 
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
+            // 5. Set the Cookie
+            res.cookie('jwt', token, {
+                httpOnly: true,
+                secure: true, // Required for sameSite: "none"
+                sameSite: "none",
+                maxAge: 30 * 60 * 1000 // Match token expiry (30 mins)
+            });
 
-        res.json({ success: true, token });
-    } else {
-        res.json({ success: false, error: "Invalid email or password" });
+            // 6. Return the user object so Frontend AuthContext doesn't crash
+            return res.status(200).json({ 
+                success: true, 
+                user: { 
+                    id: admin._id, 
+                    email: admin.email, 
+                    role: 'admin' 
+                } 
+            });
+
+        } else {
+            return res.status(401).json({ 
+                success: false, 
+                message: "Invalid email or password" 
+            });
+        }
+    } catch (error) {
+        console.error("Admin Signin Error:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };
 
