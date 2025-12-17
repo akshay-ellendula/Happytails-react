@@ -13,9 +13,18 @@ const HeroSection = ({ event, onBookTickets }) => {
     });
   };
 
-  // Check if event is sold out
+  // --- LOGIC UPDATES START ---
+  
+  // 1. Check if event is sold out
   const ticketsLeft = event.total_tickets - event.tickets_sold;
   const isSoldOut = ticketsLeft === 0;
+
+  // 2. Check if event date has passed (Booking Closed)
+  const eventDate = new Date(event.date_time);
+  const currentDate = new Date();
+  const isExpired = eventDate < currentDate;
+
+  // --- LOGIC UPDATES END ---
 
   return (
     <section className="bg-white py-8">
@@ -30,17 +39,20 @@ const HeroSection = ({ event, onBookTickets }) => {
                 alt={event.title}
                 className="w-full h-full object-cover"
               />
-              {isSoldOut && (
+              
+              {/* Overlays for status */}
+              {isSoldOut ? (
                 <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
                   <span className="bg-red-600 text-white px-6 py-3 rounded-full font-bold text-lg">
                     SOLD OUT
                   </span>
                 </div>
-              )}
-              {!isSoldOut && ticketsLeft < 10 && (
-                <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                  Only {ticketsLeft} left!
-                </div>
+              ) : (
+                ticketsLeft < 10 && (
+                  <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                    Only {ticketsLeft} left!
+                  </div>
+                )
               )}
             </div>
           </div>
@@ -66,7 +78,8 @@ const HeroSection = ({ event, onBookTickets }) => {
                 <MapPin className="w-5 h-5 mr-3 text-[#1a1a1a]" />
                 <span className="font-medium">{event.venue}</span>
               </div>
-              {!isSoldOut && ticketsLeft > 0 && (
+              
+              {!isSoldOut && !isExpired && ticketsLeft > 0 && (
                 <div className="flex items-center text-green-600">
                   <span className="text-sm font-semibold">
                     {ticketsLeft} tickets available
@@ -83,22 +96,30 @@ const HeroSection = ({ event, onBookTickets }) => {
                     {event.ticketPrice === 0 ? 'Free Entry' : `₹${event.ticketPrice} onwards`}
                   </p>
                 </div>
+                
+                {/* Updated Button Logic */}
                 <button 
                   onClick={onBookTickets}
-                  disabled={isSoldOut}
+                  disabled={isSoldOut || isExpired}
                   className={`font-bold px-8 py-3 rounded-full transition transform hover:scale-105 ${
-                    isSoldOut 
-                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                      : 'bg-[#1a1a1a] text-white hover:bg-gray-800'
+                    isExpired
+                        ? 'bg-gray-400 text-white cursor-not-allowed' // Style for Expired
+                        : isSoldOut 
+                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed' // Style for Sold Out
+                            : 'bg-[#1a1a1a] text-white hover:bg-gray-800' // Style for Active
                   }`}
                 >
-                  {isSoldOut 
-                    ? 'SOLD OUT' 
-                    : (event.ticketPrice === 0 ? 'REGISTER NOW' : 'BOOK TICKETS')
+                  {isExpired 
+                    ? 'Booking Closed'
+                    : isSoldOut 
+                        ? 'SOLD OUT' 
+                        : (event.ticketPrice === 0 ? 'REGISTER NOW' : 'BOOK TICKETS')
                   }
                 </button>
               </div>
-              {!isSoldOut && ticketsLeft > 0 && ticketsLeft <= 20 && (
+
+              {/* Progress bar only if active and low stock */}
+              {!isSoldOut && !isExpired && ticketsLeft > 0 && ticketsLeft <= 20 && (
                 <div className="mt-4">
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
