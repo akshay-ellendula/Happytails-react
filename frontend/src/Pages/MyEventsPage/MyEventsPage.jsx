@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, MapPin, Ticket, Loader2, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Ticket, Loader2, ArrowRight, Download } from "lucide-react";
 import { axiosInstance } from "../../utils/axios";
 import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
 import Sidebar from "../../components/Sidebar";
 import Footer from "../../components/Footer";
+import jsPDF from "jspdf";
 
 export default function MyEventsPage() {
   const [tickets, setTickets] = useState([]);
@@ -41,6 +42,202 @@ export default function MyEventsPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  // Helper to load image for PDF (Handles QR Code & Event Thumbnails)
+  const loadImage = (url) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.src = url;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = (e) => {
+        console.warn("Could not load image for PDF:", url);
+        resolve(null); // Return null so PDF generation doesn't break
+      };
+    });
+  };
+
+  const downloadTicket = async (ticket, event) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // --- THEME COLORS ---
+    const colorDark = [26, 26, 26];    // #1a1a1a
+    const colorLime = [239, 254, 139]; // #effe8b
+    const colorGray = [100, 100, 100];
+
+    // --- 1. HEADER BRANDING ---
+    // Dark background strip
+    doc.setFillColor(...colorDark);
+    doc.rect(0, 0, pageWidth, 40, "F");
+
+    // "HappyTails" Logo/Text
+    doc.setTextColor(...colorLime);
+    doc.setFontSize(28);
+    doc.setFont("helvetica", "bold");
+    doc.text("HappyTails", 20, 28);
+
+    // "Entry Ticket" Subtitle
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "normal");
+    doc.text("OFFICIAL ENTRY TICKET", pageWidth - 20, 28, { align: "right" });
+
+    // Accent Line
+    doc.setDrawColor(...colorLime);
+    doc.setLineWidth(2);
+    doc.line(0, 41, pageWidth, 41);
+
+    // --- 2. MAIN TICKET CARD ---
+    // Draw a rounded box mimicking the UI cards
+    const cardY = 60;
+    const cardHeight = 140;
+    
+    doc.setDrawColor(...colorDark);
+    doc.setLineWidth(1);
+    doc.roundedRect(15, cardY, pageWidth - 30, cardHeight, 5, 5, "S");
+
+    // --- 3. EVENT TITLE & DETAILS (Left Side) ---
+    doc.setTextColor(...colorDark);
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    
+    // Title wraps if too long
+    const titleLines = doc.splitTextToSize(event.title, 110);
+    doc.text(titleLines, 25, cardY + 20);
+    
+    let currentY = cardY + 20 + (titleLines.length * 10);
+
+    // Date & Venue
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...colorGray);
+    doc.text("DATE & TIME", 25, currentY + 10);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...colorDark);
+    doc.text(formatDate(event.date_time), 25, currentY + 18);
+
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...colorGray);
+    doc.text("VENUE", 25, currentY + 30);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...colorDark);
+    const venueLines = doc.splitTextToSize(`${event.venue}, ${event.location}`, 100);
+    doc.text(venueLines, 25, currentY + 38);
+
+    // Ticket Details Table-ish layout
+    const detailsY = currentY + 55;
+    
+    // Grid Lines for details
+    doc.setDrawColor(230, 230, 230);
+    doc.line(25, detailsY, 130, detailsY); // Top line
+    doc.line(25, detailsY + 25, 130, detailsY + 25); // Bottom line
+
+    // Columns: Type, Qty, Price
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...colorGray);
+    doc.text("TICKET ID", 25, detailsY + 8);
+    doc.text("QUANTITY", 80, detailsY + 8);
+    doc.text("PRICE", 110, detailsY + 8);
+
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...colorDark);
+    doc.text(ticket.ticketId, 25, detailsY + 18);
+    doc.text(`${ticket.numberOfTickets}`, 80, detailsY + 18);
+    doc.text(`Rs. ${ticket.price}`, 110, detailsY + 18);
+
+    // --- 4. QR CODE AREA (Right Side) ---
+    // Right panel background
+    doc.setFillColor(250, 250, 250);
+    doc.roundedRect(pageWidth - 75, cardY + 5, 55, cardHeight - 10, 3, 3, "F");
+
+    try {
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${ticket.ticketId}`;
+        const qrImage = await loadImage(qrUrl);
+        if (qrImage) {
+            doc.addImage(qrImage, "PNG", pageWidth - 72.5, cardY + 20, 50, 50);
+        }
+    } catch (err) {
+        console.error("QR Load Error");
+    }
+
+    doc.setFontSize(10);
+    doc.setTextColor(...colorGray);
+    doc.text("Scan at entry", pageWidth - 48, cardY + 75, { align: "center" });
+
+    // Status Badge
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    if (ticket.status) {
+        doc.setTextColor(0, 150, 0); // Green
+        doc.text("CONFIRMED", pageWidth - 48, cardY + 90, { align: "center" });
+    } else {
+        doc.setTextColor(200, 0, 0); // Red
+        doc.text("CANCELLED", pageWidth - 48, cardY + 90, { align: "center" });
+    }
+    
+    // Booking Name
+    doc.setFontSize(9);
+    doc.setTextColor(...colorGray);
+    doc.setFont("helvetica", "normal");
+    doc.text("Booked by:", pageWidth - 48, cardY + 105, { align: "center" });
+    doc.setTextColor(...colorDark);
+    doc.setFont("helvetica", "bold");
+    doc.text(ticket.contactName || "Guest", pageWidth - 48, cardY + 112, { align: "center" });
+
+    // --- 5. INSTRUCTIONS ---
+    const instY = cardY + cardHeight + 20;
+    
+    // Yellow Warning Strip
+    doc.setFillColor(...colorLime);
+    doc.rect(15, instY, 5, 45, "F"); // Small vertical strip
+
+    doc.setFontSize(14);
+    doc.setTextColor(...colorDark);
+    doc.setFont("helvetica", "bold");
+    doc.text("Important Instructions", 25, instY + 6);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60, 60, 60);
+
+    const instructions = [
+        "Please present this ticket (digital or printed) at the entrance.",
+        "Valid government ID proof is mandatory for verification.",
+        "Gates open 30 minutes prior to the event start time.",
+        "Alcohol and illegal substances are strictly prohibited.",
+        "Tickets are non-transferable and non-refundable."
+    ];
+
+    let lineY = instY + 16;
+    instructions.forEach((text) => {
+        doc.text(`• ${text}`, 25, lineY);
+        lineY += 7;
+    });
+
+    // --- 6. FOOTER ---
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, pageHeight - 20, pageWidth - 20, pageHeight - 20);
+    
+    doc.setFontSize(9);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Ticket Generated on ${new Date().toLocaleDateString()}`, 20, pageHeight - 12);
+    doc.text("www.happytails.com", pageWidth - 20, pageHeight - 12, { align: "right" });
+
+    doc.save(`${ticket.ticketId}_Ticket.pdf`);
   };
 
   return (
@@ -120,13 +317,22 @@ export default function MyEventsPage() {
                             </div>
                           </div>
 
-                          <div className="mt-4">
+                          <div className="mt-4 flex flex-wrap gap-3">
                             <Link 
                               to={`/event/${event._id}`}
                               className="inline-flex items-center text-[#1a1a1a] font-bold hover:underline"
                             >
                               View Event Details <ArrowRight className="w-4 h-4 ml-1" />
                             </Link>
+
+                            {/* Download Button */}
+                            <button
+                                onClick={() => downloadTicket(ticket, event)}
+                                className="inline-flex items-center px-4 py-2 text-sm font-bold text-white bg-[#1a1a1a] rounded-lg hover:bg-gray-800 transition-colors"
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                Download Ticket
+                            </button>
                           </div>
                         </div>
 

@@ -1,0 +1,8 @@
+main Ui update up to veda
+1. implement wishlist
+2. send emails to customer tickets and also order status
+3. add payment api stripe/razorpay
+4. google login and create account 
+upto veda
+4. chat option to customer and vendor
+5. chat option for customer to event eventManager
