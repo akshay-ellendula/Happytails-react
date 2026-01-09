@@ -17,32 +17,6 @@ const verifyToken = (token) => {
     return jwt.verify(token, process.env.JWT_SECRET_KEY);
 };
 
-const adminLogin = (req, res) => {
-    const { admin_email, admin_password } = req.body;
-    const admin = { email: "admin@gmail.com", password: "admin123#" };
-
-    if (admin_email === admin.email && admin_password === admin.password) {
-        const token = generateToken({
-            email: admin_email,
-            role: 'admin',
-            id: 'admin'
-        });
-
-        res.cookie('jwt', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: "none",
-            secure: true,
-
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
-
-        res.json({ success: true, token });
-    } else {
-        res.json({ success: false, error: "Invalid email or password" });
-    }
-};
-
 const getUsers = async (req, res) => {
     try {
         const users = await Customer.find()

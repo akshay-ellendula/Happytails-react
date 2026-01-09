@@ -278,37 +278,37 @@ export const adminSignup = async (req, res) => {
 // @desc    Signin for admin
 // @route   POST /api/auth/adminSignin
 // @access  Public
+// Find the adminSignin function and replace the res.cookie part:
+
 export const adminSignin = async (req, res) => {
     try {
-        // 1. Get credentials from request body
         const { email, password } = req.body;
 
-        // 2. Define the admin (In a real app, this might come from a DB)
         const admin = { 
-            _id: "admin_root_001", // Added _id so jwt.sign works
+            _id: "admin_root_001", 
             email: "admin@gmail.com", 
             password: "admin123#" 
         };
 
-        // 3. Validate credentials
         if (email === admin.email && password === admin.password) {
             
-            // 4. Generate Token using your specific syntax
             const token = jwt.sign(
                 { adminId: admin._id, role: 'admin' }, 
                 process.env.JWT_SECRET_KEY, 
-                { expiresIn: '30min' }
+                { expiresIn: "7days" }
             );
 
-            // 5. Set the Cookie
+            // --- FIX START ---
+            // Changed secure to be dynamic and sameSite to 'strict' or 'lax'
+            // to allow it to work on localhost (HTTP).
             res.cookie('jwt', token, {
                 httpOnly: true,
-                secure: true, // Required for sameSite: "none"
-                sameSite: "none",
-                maxAge: 30 * 60 * 1000 // Match token expiry (30 mins)
+                secure: process.env.NODE_ENV === 'production', // False on localhost
+                sameSite: "strict", // Matches your other controllers
+                maxAge: 30 * 60 * 1000 
             });
+            // --- FIX END ---
 
-            // 6. Return the user object so Frontend AuthContext doesn't crash
             return res.status(200).json({ 
                 success: true, 
                 user: { 
@@ -330,6 +330,9 @@ export const adminSignin = async (req, res) => {
     }
 };
 
+// @desc    Verify auth status
+// @route   GET /api/auth/verify
+// @access  Public
 // @desc    Verify auth status
 // @route   GET /api/auth/verify
 // @access  Public
@@ -358,14 +361,29 @@ export const verifyAuth = async (req, res) => {
             }
         } else if (decoded.role === 'eventManager') {
             user = await EventManager.findById(decoded.eventManagerId);
+            if(user) {
+                userData.eventManagerId = user._id;
+                // Add other fields if needed
+            }
         } else if (decoded.role === 'admin') {
-            user = await Admin.findById(decoded.adminId);
-        } else if (decoded.role === 'vendor') { // UPDATED: Check for vendor
+            // FIX: Check for hardcoded admin ID first to avoid invalid ObjectId error
+            if (decoded.adminId === "admin_root_001") {
+                user = {
+                    _id: "admin_root_001",
+                    email: "admin@gmail.com",
+                    userName: "Admin", // Fallback name
+                    role: "admin"
+                };
+            } else {
+                // Only query DB if it's NOT the hardcoded admin
+                user = await Admin.findById(decoded.adminId);
+            }
+        } else if (decoded.role === 'vendor') {
             user = await Vendor.findById(decoded.vendorId);
             if (user) {
                 userData.vendorId = user._id;
                 userData.email = user.email;
-                userData.userName = user.name; // Map 'name' to 'userName' for consistency if needed
+                userData.userName = user.name;
                 userData.storename = user.store_name;
             }
         }
@@ -373,6 +391,12 @@ export const verifyAuth = async (req, res) => {
         if (!user) {
             res.clearCookie("jwt");
             return res.status(200).json({ authenticated: false });
+        }
+
+        // If it was the hardcoded admin, manually attach data since 'user' isn't a Mongoose doc
+        if (decoded.role === 'admin' && decoded.adminId === "admin_root_001") {
+            userData.adminId = user._id;
+            userData.email = user.email;
         }
 
         res.status(200).json({
