@@ -3,7 +3,10 @@ import jwt from 'jsonwebtoken';
 import EventManager from '../models/eventManagerModel.js';
 import Admin from '../models/adminModel.js';
 import Vendor from '../models/vendorModel.js'; //
-import bcrypt from 'bcryptjs'; // Added for password hashing
+import bcrypt from 'bcryptjs'; 
+import crypto from 'crypto';
+import sendEmail from '../utils/sendEmail.js';
+
 
 // @desc    Signup for customer
 // @route   POST /api/auth/signup
@@ -533,38 +536,44 @@ export const storePartnerSignin = async (req, res) => {
         });
     }
 };
-// ... existing imports
-import crypto from 'crypto';
-import sendEmail from '../utils/sendEmail.js';
-
-// ... existing signup/signin code ...
-
 // @desc    Forgot Password
 // @route   POST /api/auth/forgotpassword
 // @access  Public
 export const forgotPassword = async (req, res) => {
-    const { email } = req.body;
+    const { email, role } = req.body; // Retrieve role from frontend
 
     try {
-        const user = await Customer.findOne({ email });
+        let user;
+        // Select Model based on role
+        if (role === 'eventManager') {
+            user = await EventManager.findOne({ email });
+        } else if (role === 'vendor') {
+            user = await Vendor.findOne({ email });
+        } else {
+            // Default to Customer
+            user = await Customer.findOne({ email });
+        }
 
         if (!user) {
-            return res.status(404).json({ message: "Email could not be sent" });
+            return res.status(404).json({ message: "Email not found" });
         }
 
         // Get Reset Token
         const resetToken = user.getResetPasswordToken();
 
+        // Save only the token fields (skipping standard validation if needed)
         await user.save({ validateBeforeSave: false });
 
-        // Create Reset URL
-        // NOTE: Ensure this matches your Frontend Route
-        const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+        // Create Reset URL with role as a query parameter
+        // Ensure this matches your Frontend Route: http://localhost:5173/reset-password/:resetToken
+        const resetUrl = `http://localhost:5173/reset-password/${resetToken}?role=${role}`;
 
         const message = `
-            <h1>You have requested a password reset</h1>
+            <h1>Password Reset Request</h1>
+            <p>You have requested a password reset for your <strong>${role || 'customer'}</strong> account.</p>
             <p>Please go to this link to reset your password:</p>
             <a href=${resetUrl} clicktracking=off>${resetUrl}</a>
+            <p>This link expires in 10 minutes.</p>
         `;
 
         try {
@@ -578,12 +587,12 @@ export const forgotPassword = async (req, res) => {
         } catch (error) {
             user.resetPasswordToken = undefined;
             user.resetPasswordExpire = undefined;
-            console.log(error)
             await user.save({ validateBeforeSave: false });
 
             return res.status(500).json({ message: "Email could not be sent" });
         }
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -592,33 +601,60 @@ export const forgotPassword = async (req, res) => {
 // @route   PUT /api/auth/resetpassword/:resetToken
 // @access  Public
 export const resetPassword = async (req, res) => {
-    // Get hashed token
+    // Get role from query parameters (e.g., ?role=eventManager)
+    const { role } = req.query;
+    
     const resetPasswordToken = crypto
         .createHash("sha256")
         .update(req.params.resetToken)
         .digest("hex");
 
     try {
-        const user = await Customer.findOne({
+        let Model;
+        if (role === 'eventManager') {
+            Model = EventManager;
+        } else if (role === 'vendor') {
+            Model = Vendor;
+        } else {
+            Model = Customer;
+        }
+
+        const user = await Model.findOne({
             resetPasswordToken,
             resetPasswordExpire: { $gt: Date.now() },
         });
-        console.log(user);
+
         if (!user) {
-            return res.status(400).json({ message: "Invalid Token" });
+            return res.status(400).json({ message: "Invalid or expired Token" });
         }
 
+        // Update password
         user.password = req.body.password;
+        
+        // Clear token fields
         user.resetPasswordToken = undefined;
         user.resetPasswordExpire = undefined;
 
+        // Hash password: 
+        // Note: For 'Customer' and 'EventManager' your pre('save') hook handles hashing.
+        // For 'Vendor', ensure you manually hash it here IF you don't have a pre-save hook, 
+        // OR add a pre-save hook to Vendor model similar to others.
+        // Assuming you added pre('save') to Vendor as well or use bcrypt here:
+        if (role === 'vendor' && !user.schema.paths.password.options.type) { 
+            // Fallback if no pre-save hook exists for Vendor (based on your previous file it didn't have hash logic in pre-save)
+            // Ideally, add the pre-save hook to Vendor model as shown in step 1.
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(req.body.password, salt);
+        }
+
         await user.save();
 
-        res.status(201).json({
+        res.status(200).json({
             success: true,
             data: "Password Reset Success",
         });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: error.message });
     }
 };

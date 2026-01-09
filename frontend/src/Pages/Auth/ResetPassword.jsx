@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'; // Added useSearchParams
 import { axiosInstance } from '../../utils/axios';
 import { toast } from 'react-hot-toast';
 import projectLogo from '../../assets/projectLogo.png';
 
 const ResetPassword = () => {
-    // FIX: Using 'resetToken' to match the route definition in App.jsx
-    const { resetToken } = useParams(); 
+    const { resetToken } = useParams();
+    const [searchParams] = useSearchParams(); // Hook to read query params
     const navigate = useNavigate();
     
+    // Get role from URL (?role=eventManager)
+    const role = searchParams.get("role") || "customer"; 
+
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -26,9 +29,19 @@ const ResetPassword = () => {
 
         setLoading(true);
         try {
-            await axiosInstance.put(`/auth/resetpassword/${resetToken}`, { password });
+            // Pass the role in the query string to the backend
+            await axiosInstance.put(`/auth/resetpassword/${resetToken}?role=${role}`, { password });
+            
             toast.success("Password reset successful! Please login.");
-            navigate("/login");
+            
+            // Redirect based on role
+            if (role === 'customer') {
+                navigate("/login");
+            } else {
+                // Both Event Managers and Store Partners use the service provider login page
+                navigate("/service-provider-login"); 
+            }
+            
         } catch (error) {
             console.error(error);
             toast.error(error.response?.data?.message || "Invalid or expired token");
@@ -37,15 +50,13 @@ const ResetPassword = () => {
     };
 
     return (
-        // Updated: Using your theme color #effe8b and font-outfit
         <div className="min-h-screen bg-[#effe8b] font-outfit flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                {/* Logo Section */}
                 <div className="flex justify-center mb-6">
                     <img 
                         src={projectLogo} 
                         alt="Happy Tails Logo" 
-                        className="h-24 w-auto drop-shadow-md" // Increased size slightly for emphasis
+                        className="h-24 w-auto drop-shadow-md"
                     />
                 </div>
                 
@@ -53,7 +64,7 @@ const ResetPassword = () => {
                     Reset Password
                 </h2>
                 <p className="mt-2 text-center text-sm text-gray-700">
-                    Enter your new password below.
+                    Enter your new password for your <strong>{role === 'vendor' ? 'Store Partner' : role}</strong> account.
                 </p>
             </div>
 
@@ -106,28 +117,6 @@ const ResetPassword = () => {
                             </button>
                         </div>
                     </form>
-
-                    <div className="mt-6">
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-300" />
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-white text-gray-500">
-                                    Or
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 text-center">
-                            <Link 
-                                to="/login" 
-                                className="font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
-                            >
-                                Back to Login
-                            </Link>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

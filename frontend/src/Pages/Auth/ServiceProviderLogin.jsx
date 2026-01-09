@@ -24,29 +24,31 @@ const ServiceProviderLogin = () => {
 
     setLoading(true);
 
-    // 1. Map dropdown value to AuthContext keys
     const roleKey =
       formData.role === "event-manager" ? "eventManager" : "storePartner";
 
-    // 2. Call signin
     const result = await signin(
       {
         email: formData.email,
         password: formData.password,
       },
       roleKey
-    ); // Pass the correct role key
+    );
 
     setLoading(false);
 
     if (result.success) {
       toast.success("Login successful!");
-      // 3. Redirect based on role
       if (roleKey === "eventManager") navigate("/eventManager");
       else if (roleKey === "storePartner") navigate("/shop");
     } else {
       toast.error(result.error || "Login failed");
     }
+  };
+
+  // Fixed the function to use formData and navigate correctly
+  const handleForgotPassword = () => {
+    navigate("/forgot-password");
   };
 
   return (
@@ -80,6 +82,7 @@ const ServiceProviderLogin = () => {
                 className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#effe8b] focus:ring-2 focus:ring-[#effe8b]"
               />
             </div>
+
             <div className="flex flex-col gap-2">
               <label className="text-sm font-semibold text-gray-600">
                 Password
@@ -92,7 +95,18 @@ const ServiceProviderLogin = () => {
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-[#effe8b] focus:ring-2 focus:ring-[#effe8b]"
               />
+              {/* Added Forgot Password Link Here */}
+              <div className="flex justify-end mt-1">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-sm font-medium text-indigo-600 hover:text-indigo-500 hover:underline transition-colors"
+                >
+                  Forgot Password?
+                </button>
+              </div>
             </div>
+
             <div className="flex flex-col gap-2">
               <label className="text-sm font-semibold text-gray-600">
                 Role
