@@ -34,10 +34,10 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/pet_accessory"
+                  to="/service-login"
                   className="hover:text-[#effe8b] transition"
                 >
-                  Adoption
+                  Serivce Login
                 </Link>
               </li>
               <li>
