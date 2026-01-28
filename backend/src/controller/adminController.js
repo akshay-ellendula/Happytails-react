@@ -17,7 +17,7 @@ const verifyToken = (token) => {
     return jwt.verify(token, process.env.JWT_SECRET_KEY);
 };
 
-const getUsers = async (req, res) => {
+const getUsers = async (req, res ,next) => {
     try {
         const users = await Customer.find()
             .select('_id userName email createdAt')
@@ -32,11 +32,11 @@ const getUsers = async (req, res) => {
             }))
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err)
     }
 };
 
-const getUser = async (req, res) => {
+const getUser = async (req, res,next) => {
     try {
         const userId = req.params.id;
         const user = await Customer.findById(userId)
@@ -98,11 +98,11 @@ const getUser = async (req, res) => {
 
     } catch (err) {
         console.error("Error in getUser:", err);
-        res.status(500).json({ success: false, message: 'Server error' });
+       next(err);
     }
 };
 
-const updateUser = async (req, res) => {
+const updateUser = async (req, res,next) => {
     try {
         const userId = req.params.id;
         const { userName, phoneNumber, houseNumber, streetNo, city, pincode } = req.body;
@@ -130,11 +130,11 @@ const updateUser = async (req, res) => {
         );
         res.json({ success: true, message: 'Customer updated successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to update Customer' });
-    }
+       next(err);
+      }
 };
 
-const deleteUser = async (req, res) => {
+const deleteUser = async (req, res,next) => {
     try {
         const userId = req.params.id;
         const user = await Customer.findById(userId);
@@ -143,11 +143,11 @@ const deleteUser = async (req, res) => {
         await Customer.deleteOne({ _id: userId });
         res.json({ success: true, message: 'Customer deleted successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to delete Customer' });
-    }
+       next(err);
+      }
 };
 
-const getProductData = async (req, res) => {
+const getProductData = async (req, res,next) => {
     try {
         const productId = req.params.id;
 
@@ -191,11 +191,11 @@ const getProductData = async (req, res) => {
         res.json({ success: true, metrics: result });
     } catch (err) {
         console.error('Error in getProductData for metrics:', err);
-        res.status(500).json({ success: false, message: 'Failed to load product metrics' });
-    }
+       next(err);
+      }
 };
 
-const getProductCustomers = async (req, res) => {
+const getProductCustomers = async (req, res,next) => {
     try {
         const productId = req.params.id;
 
@@ -238,11 +238,11 @@ const getProductCustomers = async (req, res) => {
         res.json({ success: true, customers }); 
     } catch (err) {
         console.error('Error in getProductCustomers:', err);
-        res.status(500).json({ success: false, message: 'Failed to load product customers' });
-    }
+       next(err);
+      }
 };
 
-const getProducts = async (req, res) => {
+const getProducts = async (req, res,next) => {
     try {
         const products = await Product.aggregate([
             {
@@ -292,11 +292,11 @@ const getProducts = async (req, res) => {
         res.json({ success: true, products });
     } catch (err) {
         console.error('Error fetching products:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+       next(err);
+     }
 };
 
-const getUserStats = async (req, res) => {
+const getUserStats = async (req, res,next) => {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -313,11 +313,11 @@ const getUserStats = async (req, res) => {
             stats: { total, monthly, weekly, daily }
         });
     } catch (err) {
-        res.status(500).json({ success: false });
-    }
+      next(err);
+     }
 };
 
-const getProductStats = async (req, res) => {
+const getProductStats = async (req, res,next) => {
     try {
         const today = new Date();
         const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -458,11 +458,11 @@ const getProductStats = async (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+         next(err);
+      }
 };
 
-const dashBoardStats = async (req, res) => {
+const dashBoardStats = async (req, res,next) => {
     try {
         const now = new Date();
         now.setUTCHours(0, 0, 0, 0);
@@ -557,11 +557,11 @@ const dashBoardStats = async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching dashboard stats:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+        next(err);
+     }
 };
 
-const getRevenueChartData = async (req, res) => {
+const getRevenueChartData = async (req, res,next) => {
     try {
         const now = new Date();
         now.setUTCHours(0, 0, 0, 0);
@@ -605,11 +605,11 @@ const getRevenueChartData = async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching revenue chart data:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+        next(err);
+      }
 };
 
-const adminGetUsers = async (req, res) => {
+const adminGetUsers = async (req, res,next) => {
     try {
         const users = await Customer.find()
             .select('_id userName email createdAt')
@@ -625,11 +625,10 @@ const adminGetUsers = async (req, res) => {
             }))
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+        next(err);  }
 };
 
-const getVendors = async (req, res) => {
+const getVendors = async (req, res,next) => {
     try {
         const vendors = await Vendor.find()
             .select('_id name email store_name store_location created_at')
@@ -646,8 +645,8 @@ const getVendors = async (req, res) => {
             }))
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+        next(err);
+       }
 };
 
 const getVendorStats = async (req, res) => {
