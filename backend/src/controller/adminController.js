@@ -649,7 +649,7 @@ const getVendors = async (req, res,next) => {
        }
 };
 
-const getVendorStats = async (req, res) => {
+const getVendorStats = async (req, res,next) => {
     try {
         const now = new Date();
         now.setUTCHours(0, 0, 0, 0);
@@ -797,11 +797,10 @@ const getVendorStats = async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching vendor stats:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+        next(err);  }
 };
 
-const adminGetVendors = async (req, res) => {
+const adminGetVendors = async (req, res,next) => {
     try {
         const vendors = await Vendor.find()
             .select('_id name email created_at')
@@ -817,11 +816,11 @@ const adminGetVendors = async (req, res) => {
             }))
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+       next(err);
+      }
 };
 
-const getVendorRevenueMetrics = async (req, res) => {
+const getVendorRevenueMetrics = async (req, res,next) => {
     try {
         const vendorId = req.params.id;
         if (!mongoose.Types.ObjectId.isValid(vendorId)) {
@@ -967,11 +966,11 @@ const getVendorRevenueMetrics = async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching vendor revenue metrics:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+        next(err);
+     }
 };
 
-const getVendorProducts = async (req, res) => {
+const getVendorProducts = async (req, res,next) => {
     try {
         const vendorId = req.params.id;
         const products = await Product.aggregate([
@@ -1009,11 +1008,10 @@ const getVendorProducts = async (req, res) => {
         res.json({ success: true, products });
     } catch (err) {
         console.error('Error fetching vendor products:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+       next(err); }
 };
 
-const getVendorTopCustomers = async (req, res) => {
+const getVendorTopCustomers = async (req, res,next) => {
     try {
         const vendorId = req.params.id;
         const customers = await OrderItem.aggregate([
@@ -1079,11 +1077,11 @@ const getVendorTopCustomers = async (req, res) => {
         ]);
         res.json({ success: true, customers });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+     next(err);
     }
 };
 
-const getVendor = async (req, res) => {
+const getVendor = async (req, res,next) => {
     try {
         const vendorId = req.params.id;
         const vendor = await Vendor.findById(vendorId)
@@ -1104,11 +1102,11 @@ const getVendor = async (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+       next(err);
     }
 };
 
-const updateVendor = async (req, res) => {
+const updateVendor = async (req, res,next) => {
     try {
         const vendorId = req.params.id;
         const { name, contact_number, store_name, store_location } = req.body;
@@ -1129,11 +1127,10 @@ const updateVendor = async (req, res) => {
         );
         res.json({ success: true, message: 'Vendor updated successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to update vendor' });
-    }
+        next(err); }
 };
 
-const deleteVendor = async (req, res) => {
+const deleteVendor = async (req, res,next) => {
     try {
         const vendorId = req.params.id;
         const vendor = await Vendor.findById(vendorId);
@@ -1150,13 +1147,12 @@ const deleteVendor = async (req, res) => {
 
         res.json({ success: true, message: 'Vendor deleted successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+        next(err); }
 };
 
 
 // GET: Stats for Event Managers list page
-const getEventManagerStats = async (req, res) => {
+const getEventManagerStats = async (req, res,next) => {
     try {
         const total = await EventManager.countDocuments({ isActive: true });
         const lastMonth = new Date();
@@ -1200,22 +1196,21 @@ const getEventManagerStats = async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching event manager stats:", error);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
+       next(err);
+     }
 };
 
-const getTotalEvents = async (req, res) => {
+const getTotalEvents = async (req, res,next) => {
     try {
         const total = await Event.countDocuments();
         res.json({ success: true, total: total || 0 });
     } catch (err) {
         console.error('Error fetching total events:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+        next(err);  }
 };
 
 // GET: Single Event Manager Details
-const getEventManager = async (req, res) => {
+const getEventManager = async (req, res,next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1241,12 +1236,11 @@ const getEventManager = async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching event manager:", error);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
+     next(err); }
 };
 
 // GET: All Event Managers (for the list page)
-const getEventManagers = async (req, res) => {
+const getEventManagers = async (req, res,next) => {
     try {
         const managers = await EventManager.find({ isActive: true })
             .select("-password")
@@ -1265,12 +1259,11 @@ const getEventManagers = async (req, res) => {
         res.json({ success: true, eventManagers });
     } catch (error) {
         console.error("Error fetching event managers:", error);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
+        next(err);}
 };
 
 // GET: Metrics for Event Manager Details Page
-const getEventManagerMetrics = async (req, res) => {
+const getEventManagerMetrics = async (req, res,next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1339,12 +1332,11 @@ const getEventManagerMetrics = async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching metrics:", error);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
+        next(err);  }
 };
 
 // GET: Upcoming Events
-const getUpcomingEvents = async (req, res) => {
+const getUpcomingEvents = async (req, res,next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1372,12 +1364,12 @@ const getUpcomingEvents = async (req, res) => {
         res.json({ success: true, events: formatted });
     } catch (error) {
         console.error("Error fetching upcoming events:", error);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
+       next(err);
+     }
 };
 
 // GET: Past Events
-const getPastEvents = async (req, res) => {
+const getPastEvents = async (req, res,next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1402,8 +1394,7 @@ const getPastEvents = async (req, res) => {
         res.json({ success: true, events: formatted });
     } catch (error) {
         console.error("Error fetching past events:", error);
-        res.status(500).json({ success: false, message: "Server error" });
-    }
+        next(err); }
 };
 
 // PUT: Update Event Manager
