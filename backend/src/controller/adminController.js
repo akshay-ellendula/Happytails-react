@@ -12,6 +12,7 @@ const generateToken = (payload) => {
     return jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
 };
 
+
 // Verify JWT token
 const verifyToken = (token) => {
     return jwt.verify(token, process.env.JWT_SECRET_KEY);
@@ -2214,12 +2215,12 @@ export {
     updateEvent,
     getEventRevenue,
 
-    // admin-orders.ejs, admin-order-details.ejs
+    // admin-orders.ejs , admin-order-details.ejs
     getOrders,
     getOrderDetails,
     getOrderStats,
 
-    // admin-dashboard.ejs
+    //admin-dashboard.ejs
     dashBoardStats,
     getRevenueChartData,
 };
