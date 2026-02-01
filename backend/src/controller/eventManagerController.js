@@ -5,19 +5,19 @@ import uploadToCloudinary from '../utils/cloudinaryUploader.js';
 //@desc  Fetch all eventManagers from the database
 //@route   GET /api/eventManagers
 //@access admin
-export const getEventManagers = async (req, res) => {
+export const getEventManagers = async (req, res, next) => {
     try {
         const eventManager = await EventManager.find({});
         res.status(200).json(eventManager);
     } catch (error) {
         console.log("something went wrong in geteventManagers controller", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error)
     }
 }
 //@desc  Fetch a single eventManager by ID
 //@route  GET /api/eventManagers/:id
 //@access Admin
-export const geteventManager = async (req, res) => {
+export const geteventManager = async (req, res, next) => {
     const { id: eventManagerId } = req.params;
     try {
         const eventManager = await EventManager.findById(eventManagerId);
@@ -27,13 +27,13 @@ export const geteventManager = async (req, res) => {
         res.status(200).json(eventManager);
     } catch (error) {
         console.log("something went wrong in geteventManagerById controller", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 }
 //@decs  modify a eventManager by ID
 //@route PUT /api/eventManagers/:id
 //@access admin,eventManager
-export const putEventManager = async (req, res) => {
+export const putEventManager = async (req, res, next) => {
     const { id: eventManagerId } = req.params;
     try {
 
@@ -70,13 +70,13 @@ export const putEventManager = async (req, res) => {
         res.status(201).json({ success: true });
 
     } catch (error) {
-        console.log("something went worng in updateEventManager controller  ", error)
+       next(error); // Pass error to error handling middleware
     }
 }
 //@desc  delete a eventManager by ID
 //@route   DELETE /api/eventManagers/:id
 //@access Admin
-export const deleteEventManager = async (req, res) => {
+export const deleteEventManager = async (req, res, next) => {
     const { id: eventManagerId } = req.params;
     try {
         const eventManager = await EventManager.findById(eventManagerId);
@@ -87,13 +87,13 @@ export const deleteEventManager = async (req, res) => {
         res.status(200).json({ success: true, message: 'eventManager deleted successfully' });
     } catch (error) {
         console.log("something went wrong in deleteeventManager controller", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 }
 //@desc change Active status of eventManager
 //@route PUT /api/eventManagers/changeStatus/:id
 //@access Admin
-export const changeActiveStatus = async (req, res) => {
+export const changeActiveStatus = async (req, res, next) => {
     const { id: eventManagerId } = req.params;
     try {
         const eventManager = await EventManager.findById(eventManagerId);
@@ -105,13 +105,13 @@ export const changeActiveStatus = async (req, res) => {
         res.status(200).json({ success: true, message: 'eventManager status updated successfully' });
     } catch (error) {
         console.log("something went wrong in changeActiveStatus controller", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 }
 //@dec get all eventAttendees of this event manager
 //@route get /api/eventManagers/eventsAttendees/
 //@access eventManager,admin
-export const getEventsAttendees = async (req, res) => {
+export const getEventsAttendees = async (req, res, next) => {
     const eventManagerId = req.user.eventManagerId;
     try {
         // Step 1: Get all events created by the event manager
@@ -128,13 +128,13 @@ export const getEventsAttendees = async (req, res) => {
         res.status(200).json(eventAttendees);
     } catch (error) {
         console.error("Error in getEventAttendees controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 }
 //@dec get eventAttened list
 //@route get /api/events/attendees/:id
 //@access eventManager,Admin
-export const getEventAttendees = async (req, res) => {
+export const getEventAttendees = async (req, res, next) => {
     const { id: eventId } = req.params;
     try {
         const event = await Event.findById(eventId);
@@ -161,28 +161,27 @@ export const getEventAttendees = async (req, res) => {
         
     } catch (error) {
         console.log("Something went Wrong in getEventAttendees :", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 }
 
 //@dec get all events created by this event manager
 //@route get /api/eventManagers/events/
 //@access eventManager,admin
-export const getEventManagerEvents = async (req, res) => {
+export const getEventManagerEvents = async (req, res, next) => {
     const eventManagerId = req.user.eventManagerId;
     try {
         const events = await Event.find({ eventManagerId });
-        console.log(events)
         res.status(200).json(events);
     } catch (error) {
         console.error("Error in getEventManagerEvents controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 }
 //@dec get revenue of this event manager
 //@route get /api/eventManagers/revenue/
 //@access eventManager,admin
-export const getEventManagerRevenue = async (req, res) => {
+export const getEventManagerRevenue = async (req, res, next) => {
     const eventManagerId = req.user.eventManagerId;
     try {
         // Step 1: Get all events created by the event manager
@@ -198,13 +197,13 @@ export const getEventManagerRevenue = async (req, res) => {
         res.status(200).json(totalRevenue);
     } catch (error) {
         console.error("Error in getEventManagerRevenue controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 }
 //@desc Change password
 //@route PUT /api/event-manager/change-password
 //@access Event Manager
-export const changePassword = async (req, res) => {
+export const changePassword = async (req, res, next) => {
     try {
         const eventManagerId = req.user.eventManagerId;
         const { currentPassword, newPassword } = req.body;
@@ -237,13 +236,13 @@ export const changePassword = async (req, res) => {
 
     } catch (error) {
         console.log("Error in changePassword controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 };
 //@desc Get my profile
 //@route GET /api/eventManagers/profile/me
 //@access Event Manager
-export const getMyProfile = async (req, res) => {
+export const getMyProfile = async (req, res, next) => {
     try {
         const eventManagerId = req.user.eventManagerId;
         const eventManager = await EventManager.findById(eventManagerId).select('-password');
@@ -255,14 +254,14 @@ export const getMyProfile = async (req, res) => {
         res.status(200).json(eventManager);
     } catch (error) {
         console.log("Error in getMyProfile controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 };
 
 //@desc Update my profile
 //@route PUT /api/eventManagers/profile/me
 //@access Event Manager
-export const updateMyProfile = async (req, res) => {
+export const updateMyProfile = async (req, res, next) => {
     try {
         const eventManagerId = req.user.eventManagerId;
         
@@ -321,6 +320,6 @@ export const updateMyProfile = async (req, res) => {
 
     } catch (error) {
         console.log("Error in updateMyProfile controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 };
