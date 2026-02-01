@@ -64,7 +64,7 @@ const EditProduct = () => {
     const data = new FormData();
     Object.keys(formData).forEach((k) => data.append(k, formData[k]));
     data.append("variants", JSON.stringify(variants));
-    
+
     // Append deleted images IDs
     deletedImages.forEach((id) => data.append("deletedImages", id));
 
@@ -81,6 +81,19 @@ const EditProduct = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this product?"))
+      return;
+    try {
+      await axiosInstance.delete(`/vendors/products/${productId}`);
+      toast.success("Product deleted");
+      navigate("/shop/products");
+    } catch (err) {
+      toast.error("Error deleting product");
+      console.error(err);
+    }
+  };
+
   if (loading) return <div className="p-8 text-center">Loading Product...</div>;
 
   return (
@@ -92,11 +105,13 @@ const EditProduct = () => {
         ← Back to Products
       </button>
       <h1 className="text-2xl font-bold mb-6 text-gray-800">Edit Product</h1>
-      
+
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Product Name
+            </label>
             <input
               name="product_name"
               value={formData.product_name}
@@ -105,9 +120,11 @@ const EditProduct = () => {
               required
             />
           </div>
-          
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
             <select
               name="product_category"
               value={formData.product_category}
@@ -125,7 +142,9 @@ const EditProduct = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Pet Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Pet Type
+            </label>
             <select
               name="product_type"
               value={formData.product_type}
@@ -140,7 +159,9 @@ const EditProduct = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Stock Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Stock Status
+            </label>
             <select
               name="stock_status"
               value={formData.stock_status}
@@ -154,7 +175,9 @@ const EditProduct = () => {
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description
+          </label>
           <textarea
             name="product_description"
             value={formData.product_description}
@@ -243,7 +266,7 @@ const EditProduct = () => {
 
         <div className="mb-8">
           <h3 className="text-lg font-bold mb-3 text-gray-800">Images</h3>
-          
+
           {/* Existing Images */}
           <div className="flex gap-4 mb-4 flex-wrap">
             {existingImages.map((img) => (
@@ -265,7 +288,9 @@ const EditProduct = () => {
           </div>
 
           {/* New Images Input */}
-          <label className="block text-sm font-medium text-gray-700 mb-1">Add New Images (Max 4 total)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Add New Images (Max 4 total)
+          </label>
           <input
             type="file"
             multiple
@@ -294,6 +319,13 @@ const EditProduct = () => {
             className="bg-white text-gray-700 border border-gray-300 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
           >
             Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
+          >
+            Delete Product
           </button>
         </div>
       </form>

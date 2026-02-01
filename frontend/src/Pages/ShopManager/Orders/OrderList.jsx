@@ -26,8 +26,25 @@ const OrderList = () => {
       const res = await axiosInstance.put(`/vendors/orders/${orderId}/status`, {
         status: newStatus,
       });
-      // Update the order in list with new data (including timeline)
-      setOrders(orders.map((o) => (o.id === orderId ? res.data.order : o)));
+      // Merge the updated fields into the existing order to preserve id/customer
+      setOrders(
+        orders.map((o) => {
+          if (o.id !== orderId) return o;
+          const updated = {
+            ...o,
+            status: res.data.order?.status || o.status,
+            timeline: res.data.order?.timeline || o.timeline,
+            total: res.data.order?.total ?? o.total,
+            order_date: res.data.order?.order_date || o.order_date,
+            // keep original id, order_id and customer fields intact
+            id: o.id,
+            order_id: o.order_id || o.id,
+            customer: o.customer || res.data.order?.customer,
+            customer_name: o.customer_name || res.data.order?.customer_name,
+          };
+          return updated;
+        })
+      );
       toast.success("Status updated!");
     } catch (error) {
       console.error("Failed to update status", error);
@@ -52,6 +69,8 @@ const OrderList = () => {
         return "bg-yellow-100 text-yellow-800";
       case "Confirmed":
         return "bg-purple-100 text-purple-800";
+      case "Out for Delivery":
+        return "bg-indigo-100 text-indigo-800";
       case "Shipped":
         return "bg-blue-100 text-blue-800";
       case "Delivered":
@@ -65,8 +84,10 @@ const OrderList = () => {
 
   const getAllowedNextStatuses = (current) => {
     if (current === "Pending") return ["Confirmed", "Cancelled"];
-    if (current === "Confirmed") return ["Shipped", "Delivered", "Cancelled"];
-    if (current === "Shipped") return ["Delivered", "Cancelled"];
+    if (current === "Confirmed") return ["Shipped", "Cancelled"];
+    if (current === "Shipped")
+      return ["Out for Delivery", "Delivered", "Cancelled"];
+    if (current === "Out for Delivery") return ["Delivered", "Cancelled"];
     if (current === "Delivered") return [];
     return [];
   };
@@ -77,7 +98,15 @@ const OrderList = () => {
 
       {/* Filter Tabs */}
       <div className="flex gap-3 mb-8 flex-wrap">
-        {["all", "Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"].map((s) => (
+        {[
+          "all",
+          "Pending",
+          "Confirmed",
+          "Shipped",
+          "Out for Delivery",
+          "Delivered",
+          "Cancelled",
+        ].map((s) => (
           <button
             key={s}
             onClick={() => setFilter(s === "all" ? "all" : s)}
@@ -134,7 +163,13 @@ const OrderList = () => {
                 return (
                   <tr key={order.id} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-5 font-medium">
-                      #{order.order_id || order.id.slice(-6).toUpperCase()}
+                      #
+                      {order.id || order.order_id
+                        ? (order.id || order.order_id)
+                            .toString()
+                            .slice(-6)
+                            .toUpperCase()
+                        : "-"}
                     </td>
                     <td className="px-6 py-5">
                       {order.customer?.name || "Guest"}
@@ -175,10 +210,12 @@ const OrderList = () => {
                                 Pending: "bg-yellow-500 hover:bg-yellow-600",
                                 Confirmed: "bg-purple-500 hover:bg-purple-600",
                                 Shipped: "bg-blue-500 hover:bg-blue-600",
+                                "Out for Delivery":
+                                  "bg-indigo-500 hover:bg-indigo-600",
                                 Delivered: "bg-green-500 hover:bg-green-600",
-                                Cancelled: "bg-red-500 hover:bg-red-600"
+                                Cancelled: "bg-red-500 hover:bg-red-600",
                               };
-                              
+
                               return (
                                 <button
                                   key={s}
@@ -186,7 +223,15 @@ const OrderList = () => {
                                   className={`px-3 py-1.5 text-white text-xs font-semibold rounded-lg ${statusStyles[s]} transition-all shadow-sm hover:shadow-md`}
                                   title={`Mark as ${s}`}
                                 >
-                                  {s === "Confirmed" ? "✓" : s === "Shipped" ? "🚚" : s === "Delivered" ? "✅" : s === "Cancelled" ? "✕" : s.charAt(0)}
+                                  {s === "Confirmed"
+                                    ? "✓"
+                                    : s === "Shipped"
+                                    ? "🚚"
+                                    : s === "Delivered"
+                                    ? "✅"
+                                    : s === "Cancelled"
+                                    ? "✕"
+                                    : s.charAt(0)}
                                 </button>
                               );
                             })}

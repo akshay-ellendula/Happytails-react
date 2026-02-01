@@ -19,7 +19,7 @@ export default function MyOrdersPage() {
   };
 
   const handleTrackOrder = (order) => {
-    navigate(`/track-order/${order._id || order.id}`, { state: { order } });
+    navigate(`/track-order/${order.id || order._id}`, { state: { order } });
   };
 
   useEffect(() => {
@@ -93,9 +93,45 @@ export default function MyOrdersPage() {
       }
     }
 
+    const formatDate = (d) =>
+      new Date(d).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+
+    const getDeliveryDisplay = (order, isDelivered) => {
+      if (isDelivered) {
+        if (order.delivery_date) return formatDate(order.delivery_date);
+        if (order.delivered_at) return formatDate(order.delivered_at);
+        // fallback: find timeline out for delivery or delivered
+        const evt = (order.timeline || []).find(
+          (t) =>
+            (t.status && t.status.toLowerCase().includes("out")) ||
+            (t.status && t.status.toLowerCase().includes("deliv"))
+        );
+        if (evt && evt.date) return formatDate(evt.date);
+        return "N/A";
+      }
+      // current orders: expected 10 days from order_date
+      try {
+        const base = order.order_date ? new Date(order.order_date) : new Date();
+        const expected = new Date(base);
+        expected.setDate(expected.getDate() + 10);
+        return `Est: ${expected.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })}`;
+        // eslint-disable-next-line no-unused-vars
+      } catch (e) {
+        return "Est: N/A";
+      }
+    };
+
     return (
       <div
-        key={order._id}
+        key={order.id || order._id}
         className="border-2 border-dark rounded-2xl p-6 hover:shadow-xl transition-all duration-300"
       >
         <div className="flex flex-col lg:flex-row gap-8">
@@ -104,13 +140,7 @@ export default function MyOrdersPage() {
             <div className="text-center mb-4">
               <h3 className="text-lg font-semibold text-dark">
                 {order.status === "Delivered"
-                  ? `Delivered on ${new Date(
-                      order.delivery_date
-                    ).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}`
+                  ? `Delivered on ${getDeliveryDisplay(order, true)}`
                   : "Order Placed"}
               </h3>
             </div>
@@ -153,7 +183,7 @@ export default function MyOrdersPage() {
               <div className="space-y-2 mb-6">
                 <p className="text-gray-700">
                   <span className="font-bold text-dark">Order ID:</span>{" "}
-                  {order._id}
+                  {order.id || order._id}
                 </p>
                 <p className="text-gray-700">
                   <span className="font-bold text-dark">Order Date:</span>{" "}
@@ -165,16 +195,9 @@ export default function MyOrdersPage() {
                 </p>
                 <p className="text-gray-700">
                   <span className="font-bold text-dark">Delivery Date:</span>{" "}
-                  {order.delivery_date
-                    ? new Date(order.delivery_date).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        }
-                      )
-                    : "Pending"}
+                  {order.status === "Delivered"
+                    ? getDeliveryDisplay(order, true)
+                    : getDeliveryDisplay(order, false)}
                 </p>
                 <p className="text-gray-700">
                   <span className="font-bold text-dark">Status:</span>{" "}
@@ -205,7 +228,7 @@ export default function MyOrdersPage() {
                 onClick={() => handleTrackOrder(order)}
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg"
               >
-                Track Order
+                Order Details
               </button>
               {order.status === "Delivered" && (
                 <button className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">

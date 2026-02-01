@@ -27,13 +27,46 @@ const ShopAnalytics = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axiosInstance.get("/vendors/analytics").then((res) => {
-      if (res.data.success) setData(res.data.analytics);
-      setLoading(false);
-    });
+    const fetchDashboard = async () => {
+      try {
+        const res = await axiosInstance.get("/vendors/dashboard");
+        if (res.data && res.data.success && res.data.stats) {
+          const s = res.data.stats;
+          const revenue = Number(s.totalRevenue || 0);
+          const newOrders = Number(s.newOrders || 0);
+          const totalOrders = Number(s.totalOrders || 0);
+          const avg = newOrders > 0 ? (revenue / newOrders).toFixed(2) : "0.00";
+          setData({
+            revenue: {
+              total: revenue.toFixed(2),
+              today: revenue.toFixed(2),
+              week: revenue.toFixed(2),
+              month: revenue.toFixed(2),
+            },
+            orders: {
+              // show total orders when 'all' period is selected
+              total: totalOrders,
+              today: newOrders,
+              week: newOrders,
+              month: newOrders,
+            },
+            avgOrderValue: { total: avg, month: avg },
+            productsSold: s.productsSold || 0,
+            revenueOrderCount: s.revenueOrderCount || 0,
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
   }, []);
 
-  if (loading) return <div className="p-8 text-center">Loading Analytics...</div>;
+  if (loading)
+    return <div className="p-8 text-center">Loading Analytics...</div>;
   if (!data) return <div className="p-8 text-center">No data available.</div>;
 
   const getValue = (category) => {
@@ -104,7 +137,9 @@ const ShopAnalytics = () => {
             ₹{getValue("revenue")}
           </p>
           <p className="text-sm text-gray-400 mt-2">
-            {period === "all" ? "Total earnings" : `Earnings for this ${period}`}
+            {period === "all"
+              ? "Total earnings"
+              : `Earnings for this ${period}`}
           </p>
         </div>
 
@@ -122,6 +157,19 @@ const ShopAnalytics = () => {
           <p className="text-sm text-gray-400 mt-2">
             {period === "all" ? "Total orders" : `Orders for this ${period}`}
           </p>
+          <p className="text-sm text-gray-400 mt-1">
+            Products sold:{" "}
+            <span className="font-medium text-gray-800">
+              {data.productsSold}
+            </span>
+          </p>
+          <p className="text-sm text-gray-400 mt-1">
+            Revenue from{" "}
+            <span className="font-medium text-gray-800">
+              {data.revenueOrderCount}
+            </span>{" "}
+            orders
+          </p>
         </div>
 
         {/* Avg Order Value Card */}
@@ -133,7 +181,10 @@ const ShopAnalytics = () => {
             </div>
           </div>
           <p className="text-3xl font-bold text-gray-800">
-            ₹{period === "month" ? data.avgOrderValue.month : data.avgOrderValue.total}
+            ₹
+            {period === "month"
+              ? data.avgOrderValue.month
+              : data.avgOrderValue.total}
           </p>
           <p className="text-sm text-gray-400 mt-2">
             {period === "month" ? "This month" : "All time average"}

@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs"; 
+import bcrypt from "bcryptjs";
 
 // --- IMPORTS: Models ---
-import Vendor from "../models/vendorModel.js"; 
+import Vendor from "../models/vendorModel.js";
 import { Order, OrderItem } from "../models/orderModel.js";
 import {
   Product,
@@ -14,7 +14,7 @@ import User from "../models/customerModel.js";
 
 // --- IMPORT CLOUDINARY HELPER ---
 // Fixed: Now importing the function properly instead of the object
-import uploadToCloudinary from "../utils/cloudinaryUploader.js"; 
+import uploadToCloudinary from "../utils/cloudinaryUploader.js";
 
 // --- HELPER TO SEND JSON RESPONSES ---
 const sendJson = (res, data) =>
@@ -44,16 +44,14 @@ const serviceProviderLogin = async (req, res) => {
       return sendError(res, "Incorrect password", 401);
     }
 
-    const tokenPayload = { 
-        role: "vendor",
-        vendorId: user._id.toString()
+    const tokenPayload = {
+      role: "vendor",
+      vendorId: user._id.toString(),
     };
 
-    const token = jwt.sign(
-      tokenPayload,
-      process.env.JWT_SECRET_KEY,
-      { expiresIn: "24h" }
-    );
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET_KEY, {
+      expiresIn: "24h",
+    });
 
     res.cookie("jwt", token, {
       httpOnly: true,
@@ -87,7 +85,7 @@ const logout = (req, res) => {
 
 const vendorSignup = async (req, res) => {
   const {
-    name, 
+    name,
     contactnumber,
     email,
     password,
@@ -96,7 +94,14 @@ const vendorSignup = async (req, res) => {
     storelocation,
   } = req.body;
 
-  if (!name || !contactnumber || !email || !password || !storename || !storelocation) {
+  if (
+    !name ||
+    !contactnumber ||
+    !email ||
+    !password ||
+    !storename ||
+    !storelocation
+  ) {
     return sendError(res, "All fields are required", 400);
   }
   if (password !== confirmpassword)
@@ -115,16 +120,16 @@ const vendorSignup = async (req, res) => {
       store_name: storename,
       name: name,
       email: email,
-      contact_number: contactnumber, 
+      contact_number: contactnumber,
       store_location: storelocation,
-      password: hashedPassword, 
+      password: hashedPassword,
       description: "",
     });
 
     const token = jwt.sign(
-      { 
-          vendorId: newVendor._id.toString(), 
-          role: "vendor" 
+      {
+        vendorId: newVendor._id.toString(),
+        role: "vendor",
       },
       process.env.JWT_SECRET_KEY,
       { expiresIn: "24h" }
@@ -209,7 +214,9 @@ const getVendorAnalytics = async (req, res) => {
         // 3. Filter by Order Status (Only count valid sales)
         {
           $match: {
-            "order.status": { $in: ["Pending", "Confirmed", "Shipped", "Delivered"] },
+            "order.status": {
+              $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+            },
           },
         },
       ];
@@ -282,283 +289,301 @@ const getVendorAnalytics = async (req, res) => {
 
 // --- 3. PRODUCTS ---
 const getVendorProducts = async (req, res) => {
-    if (!req.user) return sendError(res, "Unauthorized", 401);
-    const vendorId = req.user.vendorId;
-    const { category, sort } = req.query;
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+  const { category, sort } = req.query;
 
-    console.log("Fetching products for vendor:", vendorId);
+  console.log("Fetching products for vendor:", vendorId);
 
-    const matchStage = {
-        $or: [
-            { vendor_id: new mongoose.Types.ObjectId(vendorId) },
-            { vendor_id: vendorId }
-        ],
-        is_deleted: { $ne: true },
-    };
-    
-    if (category && category !== "All Categories")
-        matchStage.product_category = category;
+  const matchStage = {
+    $or: [
+      { vendor_id: new mongoose.Types.ObjectId(vendorId) },
+      { vendor_id: vendorId },
+    ],
+    is_deleted: { $ne: true },
+  };
 
-    const sortStage = {};
-    if (sort === "oldest") sortStage.created_at = 1;
-    else if (sort === "price_asc") sortStage.price_for_sort = 1;
-    else if (sort === "price_desc") sortStage.price_for_sort = -1;
-    else sortStage.created_at = -1;
+  if (category && category !== "All Categories")
+    matchStage.product_category = category;
 
-    try {
-        const products = await Product.aggregate([
-        { $match: matchStage },
-        {
-            $lookup: {
-            from: "productvariants",
-            localField: "_id",
-            foreignField: "product_id",
-            as: "variants",
-            },
+  const sortStage = {};
+  if (sort === "oldest") sortStage.created_at = 1;
+  else if (sort === "price_asc") sortStage.price_for_sort = 1;
+  else if (sort === "price_desc") sortStage.price_for_sort = -1;
+  else sortStage.created_at = -1;
+
+  try {
+    const products = await Product.aggregate([
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: "productvariants",
+          localField: "_id",
+          foreignField: "product_id",
+          as: "variants",
         },
-        {
-            $lookup: {
-            from: "productimages",
-            localField: "_id",
-            foreignField: "product_id",
-            as: "images",
-            },
+      },
+      {
+        $lookup: {
+          from: "productimages",
+          localField: "_id",
+          foreignField: "product_id",
+          as: "images",
         },
-        {
-            $lookup: {
-            from: "orderitems",
-            localField: "_id",
-            foreignField: "product_id",
-            as: "order_items",
-            },
+      },
+      {
+        $lookup: {
+          from: "orderitems",
+          localField: "_id",
+          foreignField: "product_id",
+          as: "order_items",
         },
-        {
-            $addFields: {
-            primary_image: {
-                $arrayElemAt: [
-                {
-                    $filter: {
-                    input: "$images",
-                    as: "image",
-                    cond: { $eq: ["$$image.is_primary", true] },
-                    },
+      },
+      {
+        $addFields: {
+          primary_image: {
+            $arrayElemAt: [
+              {
+                $filter: {
+                  input: "$images",
+                  as: "image",
+                  cond: { $eq: ["$$image.is_primary", true] },
                 },
-                0,
-                ],
-            },
-            price_for_sort: {
-                $ifNull: [{ $arrayElemAt: ["$variants.regular_price", 0] }, 0],
-            },
-            total_stock: { $sum: "$variants.stock_quantity" },
-            },
+              },
+              0,
+            ],
+          },
+          price_for_sort: {
+            $ifNull: [{ $arrayElemAt: ["$variants.regular_price", 0] }, 0],
+          },
+          total_stock: { $sum: "$variants.stock_quantity" },
         },
-        { $sort: sortStage },
-        {
-            $project: {
-            id: "$_id",
-            product_name: 1,
-            product_category: 1,
-            regular_price: {
-                $ifNull: [{ $arrayElemAt: ["$variants.regular_price", 0] }, 0],
-            },
-            sale_price: { $arrayElemAt: ["$variants.sale_price", 0] },
-            stock_quantity: "$total_stock",
-            sold: { $sum: "$order_items.quantity" },
-            image_data: {
-                $ifNull: ["$primary_image.image_data", "/images/default.jpg"],
-            },
-            },
+      },
+      { $sort: sortStage },
+      {
+        $project: {
+          id: "$_id",
+          product_name: 1,
+          product_category: 1,
+          regular_price: {
+            $ifNull: [{ $arrayElemAt: ["$variants.regular_price", 0] }, 0],
+          },
+          sale_price: { $arrayElemAt: ["$variants.sale_price", 0] },
+          stock_quantity: "$total_stock",
+          sold: { $sum: "$order_items.quantity" },
+          image_data: {
+            $ifNull: ["$primary_image.image_data", "/images/default.jpg"],
+          },
         },
-        ]);
-        
-        console.log(`Found ${products.length} products for vendor ${vendorId}`);
-        sendJson(res, { products });
-    } catch (error) {
-        console.error("getVendorProducts error:", error);
-        sendError(res, error.message || "Server error");
-    }
+      },
+    ]);
+
+    console.log(`Found ${products.length} products for vendor ${vendorId}`);
+    sendJson(res, { products });
+  } catch (error) {
+    console.error("getVendorProducts error:", error);
+    sendError(res, error.message || "Server error");
+  }
 };
 
 // --- SUBMIT PRODUCT (MULTER + CLOUDINARY) ---
 const submitProduct = async (req, res) => {
-    if (!req.user) return sendError(res, "Unauthorized", 401);
-    const vendorId = req.user.vendorId;
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
 
-    // DEBUG: Log to verify what is being received
-    console.log("Submit Product - Body:", req.body);
-    console.log("Submit Product - Files:", req.files);
+  // DEBUG: Log to verify what is being received
+  console.log("Submit Product - Body:", req.body);
+  console.log("Submit Product - Files:", req.files);
 
-    const {
+  const {
+    product_name,
+    product_category,
+    product_type,
+    product_description,
+    stock_status,
+    variants,
+  } = req.body;
+
+  try {
+    const newProduct = await Product.create({
+      vendor_id: vendorId,
       product_name,
       product_category,
       product_type,
       product_description,
       stock_status,
-      variants 
-    } = req.body;
+    });
 
-    try {
-      const newProduct = await Product.create({
-        vendor_id: vendorId,
-        product_name,
-        product_category,
-        product_type,
-        product_description,
-        stock_status,
+    // --- VARIANTS ---
+    let parsedVariants = [];
+    if (typeof variants === "string") {
+      try {
+        parsedVariants = JSON.parse(variants);
+      } catch (e) {
+        parsedVariants = [];
+      }
+    } else if (Array.isArray(variants)) {
+      parsedVariants = variants;
+    }
+
+    for (const variant of parsedVariants) {
+      await ProductVariant.create({
+        product_id: newProduct._id,
+        size: variant.size || null,
+        color: variant.color || null,
+        regular_price: parseFloat(variant.regular_price) || 0,
+        sale_price: variant.sale_price ? parseFloat(variant.sale_price) : null,
+        stock_quantity: parseInt(variant.stock_quantity) || 0,
+        sku: variant.sku || null,
       });
+    }
 
-      // --- VARIANTS ---
-      let parsedVariants = [];
-      if (typeof variants === 'string') {
-          try { parsedVariants = JSON.parse(variants); } catch (e) { parsedVariants = []; }
-      } else if (Array.isArray(variants)) {
-          parsedVariants = variants;
-      }
+    // --- IMAGES (CLOUDINARY) ---
+    if (req.files && req.files.length > 0) {
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        try {
+          // FIX: Using the imported unified upload helper
+          const secureUrl = await uploadToCloudinary(
+            file,
+            "pet_store_products"
+          );
 
-      for (const variant of parsedVariants) {
-        await ProductVariant.create({
-          product_id: newProduct._id,
-          size: variant.size || null,
-          color: variant.color || null,
-          regular_price: parseFloat(variant.regular_price) || 0,
-          sale_price: variant.sale_price ? parseFloat(variant.sale_price) : null,
-          stock_quantity: parseInt(variant.stock_quantity) || 0,
-          sku: variant.sku || null,
-        });
-      }
-
-      // --- IMAGES (CLOUDINARY) ---
-      if (req.files && req.files.length > 0) {
-        for (let i = 0; i < req.files.length; i++) {
-          const file = req.files[i];
-          try {
-            // FIX: Using the imported unified upload helper
-            const secureUrl = await uploadToCloudinary(file, "pet_store_products");
-
-            await ProductImage.create({
-              product_id: newProduct._id,
-              image_data: secureUrl, // Storing the URL string directly
-              is_primary: i === 0,
-            });
-          } catch (err) {
-            console.error("Cloudinary upload failed for product:", err);
-            // We continue loop even if one fails, or you could throw to stop
-          }
+          await ProductImage.create({
+            product_id: newProduct._id,
+            image_data: secureUrl, // Storing the URL string directly
+            is_primary: i === 0,
+          });
+        } catch (err) {
+          console.error("Cloudinary upload failed for product:", err);
+          // We continue loop even if one fails, or you could throw to stop
         }
       }
-
-      sendJson(res, { message: "Product added successfully" });
-    } catch (error) {
-      console.error("Submit Product Error:", error);
-      sendError(res, error.message);
     }
+
+    sendJson(res, { message: "Product added successfully" });
+  } catch (error) {
+    console.error("Submit Product Error:", error);
+    sendError(res, error.message);
+  }
 };
 
 // --- UPDATE PRODUCT (MULTER + CLOUDINARY) ---
 const updateProduct = async (req, res) => {
-    if (!req.user) return sendError(res, "Unauthorized", 401);
-    const vendorId = req.user.vendorId;
-    const productId = req.params.productId;
-    
-    // DEBUG: Log for update
-    console.log("Update Product - Files:", req.files);
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+  const productId = req.params.productId;
 
-    const {
+  // DEBUG: Log for update
+  console.log("Update Product - Files:", req.files);
+
+  const {
+    product_name,
+    product_category,
+    product_type,
+    product_description,
+    stock_status,
+    deletedImages,
+    variants,
+  } = req.body;
+
+  try {
+    const product = await Product.findOne({
+      _id: productId,
+      vendor_id: vendorId,
+    });
+    if (!product) return sendError(res, "Product not found", 404);
+
+    // 1. Update Product Details
+    await Product.findByIdAndUpdate(productId, {
       product_name,
       product_category,
       product_type,
       product_description,
       stock_status,
-      deletedImages,
-      variants
-    } = req.body;
+    });
 
-    try {
-      const product = await Product.findOne({
-        _id: productId,
-        vendor_id: vendorId,
-      });
-      if (!product) return sendError(res, "Product not found", 404);
-
-      // 1. Update Product Details
-      await Product.findByIdAndUpdate(productId, {
-        product_name,
-        product_category,
-        product_type,
-        product_description,
-        stock_status,
-      });
-
-      // 2. Handle Variants
-      if (variants) {
-        let parsedVariants = [];
-        if (typeof variants === 'string') {
-            try { parsedVariants = JSON.parse(variants); } catch (e) { parsedVariants = []; }
-        } else if (Array.isArray(variants)) {
-            parsedVariants = variants;
+    // 2. Handle Variants
+    if (variants) {
+      let parsedVariants = [];
+      if (typeof variants === "string") {
+        try {
+          parsedVariants = JSON.parse(variants);
+        } catch (e) {
+          parsedVariants = [];
         }
-
-        if (parsedVariants.length > 0) {
-          await ProductVariant.deleteMany({ product_id: productId });
-          for (const variant of parsedVariants) {
-            await ProductVariant.create({
-              product_id: productId,
-              size: variant.size || null,
-              color: variant.color || null,
-              regular_price: parseFloat(variant.regular_price) || 0,
-              sale_price: variant.sale_price ? parseFloat(variant.sale_price) : null,
-              stock_quantity: parseInt(variant.stock_quantity) || 0,
-              sku: variant.sku || null,
-            });
-          }
-        }
+      } else if (Array.isArray(variants)) {
+        parsedVariants = variants;
       }
 
-      // 3. Handle Images
-      // A. Delete removed images
-      if (deletedImages) {
-        let idsToDelete = deletedImages;
-        if (typeof deletedImages === 'string') {
-             if(deletedImages.includes(',')) idsToDelete = deletedImages.split(',');
-             else idsToDelete = [deletedImages];
-        } else if (!Array.isArray(deletedImages)) {
-            idsToDelete = [deletedImages];
-        }
-
-        await ProductImage.deleteMany({
-          _id: { $in: idsToDelete },
-          product_id: productId,
-        });
-      }
-
-      // B. Add new images (req.files)
-      if (req.files && req.files.length > 0) {
-        const existingImagesCount = await ProductImage.countDocuments({ product_id: productId });
-        let isNextPrimary = existingImagesCount === 0;
-
-        for (let i = 0; i < req.files.length; i++) {
-          const file = req.files[i];
-          try {
-            // FIX: Using the imported unified upload helper
-            const secureUrl = await uploadToCloudinary(file, "pet_store_products");
-
-            await ProductImage.create({
-              product_id: productId,
-              image_data: secureUrl,
-              is_primary: isNextPrimary, 
-            });
-            isNextPrimary = false; 
-          } catch (err) {
-            console.error("Cloudinary upload failed:", err);
-          }
+      if (parsedVariants.length > 0) {
+        await ProductVariant.deleteMany({ product_id: productId });
+        for (const variant of parsedVariants) {
+          await ProductVariant.create({
+            product_id: productId,
+            size: variant.size || null,
+            color: variant.color || null,
+            regular_price: parseFloat(variant.regular_price) || 0,
+            sale_price: variant.sale_price
+              ? parseFloat(variant.sale_price)
+              : null,
+            stock_quantity: parseInt(variant.stock_quantity) || 0,
+            sku: variant.sku || null,
+          });
         }
       }
-
-      sendJson(res, { message: "Product updated successfully" });
-    } catch (error) {
-      console.error("Update product error:", error);
-      sendError(res, "Server error");
     }
+
+    // 3. Handle Images
+    // A. Delete removed images
+    if (deletedImages) {
+      let idsToDelete = deletedImages;
+      if (typeof deletedImages === "string") {
+        if (deletedImages.includes(",")) idsToDelete = deletedImages.split(",");
+        else idsToDelete = [deletedImages];
+      } else if (!Array.isArray(deletedImages)) {
+        idsToDelete = [deletedImages];
+      }
+
+      await ProductImage.deleteMany({
+        _id: { $in: idsToDelete },
+        product_id: productId,
+      });
+    }
+
+    // B. Add new images (req.files)
+    if (req.files && req.files.length > 0) {
+      const existingImagesCount = await ProductImage.countDocuments({
+        product_id: productId,
+      });
+      let isNextPrimary = existingImagesCount === 0;
+
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        try {
+          // FIX: Using the imported unified upload helper
+          const secureUrl = await uploadToCloudinary(
+            file,
+            "pet_store_products"
+          );
+
+          await ProductImage.create({
+            product_id: productId,
+            image_data: secureUrl,
+            is_primary: isNextPrimary,
+          });
+          isNextPrimary = false;
+        } catch (err) {
+          console.error("Cloudinary upload failed:", err);
+        }
+      }
+    }
+
+    sendJson(res, { message: "Product updated successfully" });
+  } catch (error) {
+    console.error("Update product error:", error);
+    sendError(res, "Server error");
+  }
 };
 
 const getProductForEdit = async (req, res) => {
@@ -584,14 +609,15 @@ const getProductForEdit = async (req, res) => {
 // --- 4. ORDERS ---
 const getVendorOrders = async (req, res) => {
   try {
-    if (!req.user) return res.status(401).json({ success: false, message: "Unauthorized" });
+    if (!req.user)
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     const vendorId = req.user.vendorId;
     const statusFilter = req.query.status;
 
     // 1. Find all items belonging to this vendor (exclude deleted)
-    const matchStage = { 
+    const matchStage = {
       vendor_id: new mongoose.Types.ObjectId(vendorId),
-      is_deleted: { $ne: true }
+      is_deleted: { $ne: true },
     };
 
     const orders = await OrderItem.aggregate([
@@ -636,9 +662,9 @@ const getVendorOrders = async (req, res) => {
       {
         $project: {
           id: { $toString: "$order._id" },
-          // Note: Showing the full order total might be confusing in a multi-vendor app. 
+          // Note: Showing the full order total might be confusing in a multi-vendor app.
           // Ideally, you should sum only this vendor's items, but for now we keep order total.
-          total: "$order.total_amount", 
+          total: "$order.total_amount",
           order_date: "$order.order_date",
           timeline: "$order.timeline",
           status: "$order.status", // Keep it simple, use the string directly
@@ -761,7 +787,9 @@ const getVendorCustomerDetails = async (req, res) => {
       summary: {
         totalOrders,
         totalRevenue: totalRevenue.toFixed(2),
-        avgOrderValue: (totalOrders ? totalRevenue / totalOrders : 0).toFixed(2),
+        avgOrderValue: (totalOrders ? totalRevenue / totalOrders : 0).toFixed(
+          2
+        ),
         lastPurchase: orders[0]
           ? new Date(orders[0].order_date).toLocaleDateString()
           : "N/A",
@@ -785,7 +813,8 @@ const getOrderDetails = async (req, res) => {
     const order = await Order.findById(req.params.orderId).populate(
       "customer_id"
     );
-    if (!order || order.is_deleted) return sendError(res, "Order not found", 404);
+    if (!order || order.is_deleted)
+      return sendError(res, "Order not found", 404);
 
     const items = await OrderItem.find({ order_id: req.params.orderId });
 
@@ -838,7 +867,14 @@ const updateOrderStatus = async (req, res) => {
     if (!req.user) return sendError(res, "Unauthorized", 401);
     const vendorId = req.user.vendorId;
 
-    const validStatuses = ["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"];
+    const validStatuses = [
+      "Pending",
+      "Confirmed",
+      "Out for Delivery",
+      "Shipped",
+      "Delivered",
+      "Cancelled",
+    ];
     if (!validStatuses.includes(status)) {
       return sendError(res, "Invalid status", 400);
     }
@@ -847,24 +883,31 @@ const updateOrderStatus = async (req, res) => {
 
     if (status === "Pending") updateFields.pending_at = new Date();
     if (status === "Confirmed") updateFields.confirmed_at = new Date();
+    if (status === "Out for Delivery") updateFields.delivery_date = new Date();
     if (status === "Shipped") updateFields.shipped_at = new Date();
-    if (status === "Delivered") updateFields.delivered_at = new Date();
+    if (status === "Delivered") {
+      updateFields.delivered_at = new Date();
+      // ensure delivery_date is set when marking delivered
+      updateFields.delivery_date = updateFields.delivery_date || new Date();
+    }
     if (status === "Cancelled") updateFields.cancelled_at = new Date();
+
+    let description = "Status updated.";
+    if (status === "Pending") description = "Order is pending.";
+    else if (status === "Confirmed") description = "Order confirmed by seller.";
+    else if (status === "Out for Delivery")
+      description = "Your order is out for delivery.";
+    else if (status === "Shipped") description = "Your order has been shipped.";
+    else if (status === "Delivered")
+      description = "Your order has been delivered.";
+    else if (status === "Cancelled")
+      description = "Your order has been cancelled.";
 
     updateFields.$push = {
       timeline: {
         status,
         date: new Date(),
-        description:
-          status === "Pending"
-            ? "Order is pending."
-            : status === "Confirmed"
-            ? "Order confirmed by seller."
-            : status === "Shipped"
-            ? "Your order has been shipped."
-            : status === "Delivered"
-            ? "Your order has been delivered."
-            : "Your order has been cancelled.",
+        description,
       },
     };
 
@@ -879,24 +922,38 @@ const updateOrderStatus = async (req, res) => {
 
     const order = await Order.findByIdAndUpdate(orderId, updateFields, {
       new: true,
-    }).populate("customer_id", "name email phone");
+    }).populate("customer_id", "userName email phoneNumber");
 
     if (!order) {
       return sendError(res, "Order not found", 404);
     }
 
+    // Keep response shape consistent with getVendorOrders aggregation
+    const customerName =
+      order.customer_id?.userName ||
+      order.customer_id?.name ||
+      order.customer_id?.email ||
+      "Guest";
+    const customerEmail =
+      order.customer_id?.email || order.customer_id?.userName || null;
+    const customerPhone =
+      order.customer_id?.phoneNumber || order.customer_id?.phone || null;
+
     const formattedOrder = {
+      _id: order._id,
       id: order._id.toString(),
       order_id: order._id.toString(),
-      customer: {
-        name: order.customer_id?.userName || "Guest",
-        email: order.customer_id?.email,
-        phone: order.customer_id?.phoneNumber,
-      },
       total: order.total_amount,
       order_date: order.order_date,
       status: order.status,
       timeline: order.timeline,
+      customer_name: customerName,
+      customer: {
+        userName: order.customer_id?.userName || customerName,
+        name: customerName,
+        email: order.customer_id?.email || customerEmail,
+        phoneNumber: order.customer_id?.phoneNumber || customerPhone,
+      },
     };
 
     sendJson(res, { message: "Status updated", order: formattedOrder });
@@ -918,9 +975,9 @@ const getVendorCustomers = async (req, res) => {
 
     const customers = await OrderItem.aggregate([
       {
-        $match: { 
+        $match: {
           vendor_id: new mongoose.Types.ObjectId(vendorId),
-          is_deleted: { $ne: true }
+          is_deleted: { $ne: true },
         },
       },
       {
@@ -973,10 +1030,10 @@ const getVendorCustomers = async (req, res) => {
 const updateVendorProfile = async (req, res) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
-  
+
   // Mapping frontend fields to Vendor model fields
   const { storeName, ownerName, email, phone, address, description } = req.body;
-  
+
   try {
     // Note: Vendor model provided does not have profilePic, so we don't upload it here.
     await Vendor.findByIdAndUpdate(vendorId, {
@@ -1032,10 +1089,9 @@ const deleteOrder = async (req, res) => {
       return sendError(res, "Unauthorized: You do not own this order", 403);
     }
 
-    // Soft delete: Mark as deleted instead of removing from database
+    // Soft delete: Mark order as deleted but keep OrderItems for analytics
     await Order.findByIdAndUpdate(orderId, { is_deleted: true });
-    await OrderItem.updateMany({ order_id: orderId }, { is_deleted: true });
-    
+
     res
       .status(200)
       .json({ success: true, message: "Order deleted successfully" });
@@ -1053,9 +1109,8 @@ const deleteSelectedOrders = async (req, res) => {
     return sendError(res, "No orders selected", 400);
   }
   try {
-    // Soft delete: Mark as deleted instead of removing
+    // Soft delete: Mark orders as deleted but keep OrderItems for analytics
     await Order.updateMany({ _id: { $in: orderIds } }, { is_deleted: true });
-    await OrderItem.updateMany({ order_id: { $in: orderIds } }, { is_deleted: true });
     res.status(200).json({ success: true, message: "Selected orders deleted" });
   } catch (error) {
     sendError(res, "Server error");
@@ -1071,13 +1126,17 @@ const getVendorDashboard = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(vendorId)) {
       return sendError(res, "Invalid Vendor ID", 400);
     }
-    const vendorObjectId = new mongoose.Types.ObjectId(vendorId);    
+    const vendorObjectId = new mongoose.Types.ObjectId(vendorId);
     // Check if OrderItems exist for this vendor
-    const orderItemsCount = await OrderItem.countDocuments({ vendor_id: vendorObjectId });
-    
+    const orderItemsCount = await OrderItem.countDocuments({
+      vendor_id: vendorObjectId,
+    });
+
     if (orderItemsCount === 0) {
       // Check if vendor_id is stored as string instead of ObjectId
-      const orderItemsAsString = await OrderItem.countDocuments({ vendor_id: vendorId });
+      const orderItemsAsString = await OrderItem.countDocuments({
+        vendor_id: vendorId,
+      });
     }
 
     // 1. Total Revenue & Products Sold (All Time)
@@ -1094,7 +1153,9 @@ const getVendorDashboard = async (req, res) => {
       { $unwind: "$order" },
       {
         $match: {
-          "order.status": { $in: ["Pending", "Confirmed", "Shipped", "Delivered"] },
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+          },
         },
       },
       {
@@ -1104,6 +1165,46 @@ const getVendorDashboard = async (req, res) => {
           productsSold: { $sum: "$quantity" },
         },
       },
+    ]);
+
+    // Count unique orders contributing to revenue (statuses counted above)
+    const revenueOrdersAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+          },
+        },
+      },
+      { $group: { _id: "$order._id" } },
+      { $count: "count" },
+    ]);
+
+    // Count total unique orders (exclude soft-deleted orders)
+    const totalOrdersAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      { $match: { "order.is_deleted": { $ne: true } } },
+      { $group: { _id: "$order._id" } },
+      { $count: "count" },
     ]);
 
     // 2. New Orders (Pending/Confirmed - exclude deleted)
@@ -1118,10 +1219,12 @@ const getVendorDashboard = async (req, res) => {
         },
       },
       { $unwind: "$order" },
-      { $match: { 
-        "order.status": { $in: ["Pending", "Confirmed"] },
-        "order.is_deleted": { $ne: true }
-      } },
+      {
+        $match: {
+          "order.status": { $in: ["Pending", "Confirmed"] },
+          "order.is_deleted": { $ne: true },
+        },
+      },
       { $group: { _id: "$order._id" } },
       { $count: "count" },
     ]);
@@ -1182,7 +1285,9 @@ const getVendorDashboard = async (req, res) => {
         { $unwind: "$order" },
         {
           $match: {
-            "order.status": { $in: ["Pending", "Confirmed", "Shipped", "Delivered"] },
+            "order.status": {
+              $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+            },
             "order.order_date": { $gte: startDate, $lt: endDate },
           },
         },
@@ -1209,6 +1314,8 @@ const getVendorDashboard = async (req, res) => {
       totalRevenue: (totalStats[0]?.totalRevenue || 0).toFixed(2),
       productsSold: totalStats[0]?.productsSold || 0,
       newOrders: newOrdersStats[0]?.count || 0,
+      totalOrders: totalOrdersAgg[0]?.count || 0,
+      revenueOrderCount: revenueOrdersAgg[0]?.count || 0,
       revenueChange: calculateChange(
         currentMonth.revenue,
         lastMonth.revenue
@@ -1223,7 +1330,7 @@ const getVendorDashboard = async (req, res) => {
       })),
     };
 
-    console.log('Final Dashboard Stats:', JSON.stringify(stats, null, 2));
+    console.log("Final Dashboard Stats:", JSON.stringify(stats, null, 2));
     sendJson(res, { stats });
   } catch (error) {
     console.error("Dashboard Error:", error);
@@ -1234,11 +1341,11 @@ const getVendorDashboard = async (req, res) => {
 const vendorController = {
   serviceProviderLogin,
   logout,
-  vendorSignup, 
+  vendorSignup,
   getVendorProfile,
   getVendorAnalytics,
   getVendorProducts,
-  submitProduct, 
+  submitProduct,
   updateProduct,
   getProductForEdit,
   getVendorOrders,
@@ -1253,4 +1360,4 @@ const vendorController = {
   getVendorDashboard,
 };
 
-export default vendorController
+export default vendorController;

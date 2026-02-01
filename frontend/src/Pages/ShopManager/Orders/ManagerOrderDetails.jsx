@@ -2,7 +2,14 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { axiosInstance } from "../../../utils/axios";
-import { Printer, Package, Truck, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import {
+  Printer,
+  Package,
+  Truck,
+  CheckCircle,
+  XCircle,
+  Trash2,
+} from "lucide-react";
 import toast from "react-hot-toast";
 
 const ManagerOrderDetails = () => {
@@ -30,22 +37,36 @@ const ManagerOrderDetails = () => {
       const res = await axiosInstance.put(`/vendors/orders/${orderId}/status`, {
         status: newStatus,
       });
-      setOrder(res.data.order);
+      // Merge updated fields to avoid replacing customer/id unexpectedly
+      setOrder((prev) => {
+        const updated = res.data.order || {};
+        return {
+          ...prev,
+          ...updated,
+          // preserve nested customer object from previous if missing in response
+          customer: prev?.customer || updated?.customer || {},
+          id: prev?.id || updated?.id || prev?._id,
+          order_id: prev?.order_id || updated?.order_id || prev?.id,
+        };
+      });
       toast.success("Status updated successfully!");
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       toast.error("Failed to update status");
     }
   };
 
   const deleteOrder = async () => {
-    if (!window.confirm("Delete this order permanently? This cannot be undone.")) return;
+    if (
+      !window.confirm("Delete this order permanently? This cannot be undone.")
+    )
+      return;
 
     try {
       await axiosInstance.delete(`/vendors/orders/${orderId}`);
       toast.success("Order deleted successfully");
       navigate("/shop/orders");
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       toast.error("Failed to delete order");
     }
@@ -58,7 +79,9 @@ const ManagerOrderDetails = () => {
   if (!order) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl font-medium text-gray-600">Loading order...</div>
+        <div className="text-xl font-medium text-gray-600">
+          Loading order...
+        </div>
       </div>
     );
   }
@@ -66,21 +89,37 @@ const ManagerOrderDetails = () => {
   // Safe number formatting
   const fmt = (num) => Number(num || 0).toFixed(2);
 
+  const safeFormatDate = (d, opts = {}) => {
+    if (!d) return "-";
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return "-";
+    return date.toLocaleDateString("en-IN", opts);
+  };
+
+  const safeFormatTime = (d, opts = {}) => {
+    if (!d) return "";
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString("en-IN", opts);
+  };
+
   const status = order.status;
   const timeline = order.timeline || [];
 
   // Allow delete on all orders
   const canDelete = true;
-  
+
   // Get allowed next statuses based on current status
   const getAllowedNextStatuses = () => {
     if (status === "Pending") return ["Confirmed", "Cancelled"];
-    if (status === "Confirmed") return ["Shipped", "Delivered", "Cancelled"];
-    if (status === "Shipped") return ["Delivered", "Cancelled"];
+    if (status === "Confirmed") return ["Shipped", "Cancelled"];
+    if (status === "Shipped")
+      return ["Out for Delivery", "Delivered", "Cancelled"];
+    if (status === "Out for Delivery") return ["Delivered", "Cancelled"];
     if (status === "Delivered") return [];
     return [];
   };
-  
+
   const allowedStatuses = getAllowedNextStatuses();
 
   return (
@@ -114,110 +153,147 @@ const ManagerOrderDetails = () => {
       </div>
 
       {/* PERFECT TIMELINE - EXACTLY LIKE YOUR IMAGE */}
-<div className="mb-12">
-  <h2 className="text-2xl font-bold mb-8 text-gray-800">Order Timeline</h2>
+      <div className="mb-12">
+        <h2 className="text-2xl font-bold mb-8 text-gray-800">
+          Order Timeline
+        </h2>
 
-  <div className="space-y-10">
-    {/* Order Placed - Always First */}
-    <div className="flex items-start gap-5">
-      <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-md">
-        <Package size={26} className="text-white" />
-      </div>
-      <div className="pt-2">
-        <p className="font-semibold text-gray-800">Order was placed.</p>
-        <p className="text-sm text-gray-500 mt-1">
-          {new Date(order.order_date).toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })}{" "}
-          {new Date(order.order_date).toLocaleTimeString("en-IN", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </p>
-      </div>
-    </div>
+        <div className="space-y-10">
+          {/* Order Placed - Always First */}
+          <div className="flex items-start gap-5">
+            <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-md">
+              <Package size={26} className="text-white" />
+            </div>
+            <div className="pt-2">
+              <p className="font-semibold text-gray-800">Order was placed.</p>
+              <p className="text-sm text-gray-500 mt-1">
+                {safeFormatDate(order.order_date, {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}{" "}
+                {safeFormatTime(order.order_date, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+          </div>
 
-    {/* All Status Changes from Timeline */}
-    {timeline.map((event, index) => (
-      <div key={index} className="flex items-start gap-5">
-        <div
-          className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md ${
-            event.status === "Shipped"
-              ? "bg-blue-500"
-              : event.status === "Delivered"
-              ? "bg-green-500"
-              : event.status === "Cancelled"
-              ? "bg-red-500"
-              : "bg-purple-500"
-          }`}
-        >
-          {event.status === "Shipped" ? (
-            <Truck size={26} className="text-white" />
-          ) : event.status === "Delivered" ? (
-            <CheckCircle size={26} className="text-white" />
-          ) : event.status === "Cancelled" ? (
-            <XCircle size={26} className="text-white" />
-          ) : (
-            <Package size={26} className="text-white" />
-          )}
+          {/* All Status Changes from Timeline */}
+          {timeline.map((event, index) => (
+            <div key={index} className="flex items-start gap-5">
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md ${
+                  event.status === "Shipped"
+                    ? "bg-blue-500"
+                    : event.status === "Delivered"
+                    ? "bg-green-500"
+                    : event.status === "Cancelled"
+                    ? "bg-red-500"
+                    : "bg-purple-500"
+                }`}
+              >
+                {event.status === "Shipped" ? (
+                  <Truck size={26} className="text-white" />
+                ) : event.status === "Delivered" ? (
+                  <CheckCircle size={26} className="text-white" />
+                ) : event.status === "Cancelled" ? (
+                  <XCircle size={26} className="text-white" />
+                ) : (
+                  <Package size={26} className="text-white" />
+                )}
+              </div>
+
+              <div className="pt-2">
+                <p className="font-semibold text-gray-800">
+                  {event.status === "Shipped" && "Your order has been shipped."}
+                  {event.status === "Out for Delivery" &&
+                    "Your order is out for delivery."}
+                  {event.status === "Delivered" &&
+                    "Your order has been delivered."}
+                  {event.status === "Cancelled" &&
+                    "Your order has been cancelled."}
+                  {event.status === "Confirmed" && "Order Confirmed by seller."}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {safeFormatDate(event.date, {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}{" "}
+                  {safeFormatTime(event.date, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
-
-        <div className="pt-2">
-          <p className="font-semibold text-gray-800">
-            {event.status === "Shipped" && "Your order has been shipped."}
-            {event.status === "Delivered" && "Your order has been delivered."}
-            {event.status === "Cancelled" && "Your order has been cancelled."}
-            {event.status === "Confirmed" && "Order Confirmed by seller."}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            {new Date(event.date).toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}{" "}
-            {new Date(event.date).toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        </div>
       </div>
-    ))}
-  </div>
-</div>
 
       {/* Update Status Section */}
       {allowedStatuses.length > 0 && (
         <div className="mb-12 print:hidden bg-gradient-to-r from-gray-50 to-gray-100 p-8 rounded-2xl border border-gray-200">
-          <h3 className="text-2xl font-bold mb-6 text-gray-800">Update Order Status</h3>
-          <p className="text-gray-600 mb-6">Current Status: <span className={`px-4 py-2 rounded-full text-sm font-bold ${
-            status === "Pending" ? "bg-yellow-100 text-yellow-800" :
-            status === "Confirmed" ? "bg-purple-100 text-purple-800" :
-            status === "Shipped" ? "bg-blue-100 text-blue-800" :
-            status === "Delivered" ? "bg-green-100 text-green-800" :
-            "bg-red-100 text-red-800"
-          }`}>{status}</span></p>
-          
+          <h3 className="text-2xl font-bold mb-6 text-gray-800">
+            Update Order Status
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Current Status:{" "}
+            <span
+              className={`px-4 py-2 rounded-full text-sm font-bold ${
+                status === "Pending"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : status === "Confirmed"
+                  ? "bg-purple-100 text-purple-800"
+                  : status === "Shipped"
+                  ? "bg-blue-100 text-blue-800"
+                  : status === "Delivered"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              {status}
+            </span>
+          </p>
+
           <div className="flex flex-wrap gap-4">
             {allowedStatuses.map((newStatus) => {
               const statusConfig = {
-                Pending: { bg: "bg-yellow-500 hover:bg-yellow-600", icon: "⏳" },
-                Confirmed: { bg: "bg-purple-500 hover:bg-purple-600", icon: "✓" },
+                Pending: {
+                  bg: "bg-yellow-500 hover:bg-yellow-600",
+                  icon: "⏳",
+                },
+                Confirmed: {
+                  bg: "bg-purple-500 hover:bg-purple-600",
+                  icon: "✓",
+                },
                 Shipped: { bg: "bg-blue-500 hover:bg-blue-600", icon: "🚚" },
-                Delivered: { bg: "bg-green-500 hover:bg-green-600", icon: "✅" },
-                Cancelled: { bg: "bg-white hover:bg-red-50 border-2 border-red-400 text-red-600", icon: "✕" }
+                "Out for Delivery": {
+                  bg: "bg-indigo-500 hover:bg-indigo-600",
+                  icon: "🚚",
+                },
+                Delivered: {
+                  bg: "bg-green-500 hover:bg-green-600",
+                  icon: "✅",
+                },
+                Cancelled: {
+                  bg: "bg-white hover:bg-red-50 border-2 border-red-400 text-red-600",
+                  icon: "✕",
+                },
               };
-              
+
               const config = statusConfig[newStatus];
               const isCancelled = newStatus === "Cancelled";
-              
+
               return (
                 <button
                   key={newStatus}
                   onClick={() => updateStatus(newStatus)}
-                  className={`flex items-center gap-3 px-6 py-3.5 ${config.bg} ${
+                  className={`flex items-center gap-3 px-6 py-3.5 ${
+                    config.bg
+                  } ${
                     isCancelled ? "" : "text-white"
                   } font-semibold rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5`}
                 >
@@ -232,7 +308,9 @@ const ManagerOrderDetails = () => {
 
       {status === "Delivered" && (
         <div className="mb-12 print:hidden bg-green-50 p-6 rounded-xl border border-green-200">
-          <p className="text-green-800 font-semibold text-center">✅ This order has been delivered successfully!</p>
+          <p className="text-green-800 font-semibold text-center">
+            ✅ This order has been delivered successfully!
+          </p>
         </div>
       )}
 
@@ -241,7 +319,9 @@ const ManagerOrderDetails = () => {
         <div>
           <h3 className="text-xl font-bold mb-5">Customer Information</h3>
           <div className="bg-gray-50 p-6 rounded-xl">
-            <p className="font-semibold text-lg">{order.customer?.name || "Guest Customer"}</p>
+            <p className="font-semibold text-lg">
+              {order.customer?.name || order.customer_name || "Guest Customer"}
+            </p>
             <p className="text-gray-600">{order.customer?.email || "-"}</p>
             <p className="text-gray-600">{order.customer?.phone || "-"}</p>
           </div>
@@ -250,17 +330,23 @@ const ManagerOrderDetails = () => {
         <div>
           <h3 className="text-xl font-bold mb-5">Shipping Address</h3>
           <div className="bg-gray-50 p-6 rounded-xl text-gray-700">
-            <p className="font-semibold text-lg mb-3">{order.customer?.name || "Guest"}</p>
+            <p className="font-semibold text-lg mb-3">
+              {order.customer?.name || order.customer_name || "Guest"}
+            </p>
             <p className="text-gray-600 mb-4">{order.customer?.phone || "-"}</p>
             <div className="space-y-2 text-lg">
               <p>{order.shipping?.address?.houseNumber || "-"},</p>
               <p>{order.shipping?.address?.streetNo || "-"},</p>
               <p>{order.shipping?.address?.city || "-"},</p>
-              <p className="font-bold text-xl">{order.shipping?.address?.pincode || "-"}</p>
+              <p className="font-bold text-xl">
+                {order.shipping?.address?.pincode || "-"}
+              </p>
             </div>
             <p className="mt-5 text-sm text-gray-500">
               Delivery Method:{" "}
-              <span className="font-medium">{order.shipping?.method || "Standard Delivery"}</span>
+              <span className="font-medium">
+                {order.shipping?.method || "Standard Delivery"}
+              </span>
             </p>
           </div>
         </div>
@@ -272,16 +358,26 @@ const ManagerOrderDetails = () => {
         <table className="w-full border-collapse bg-white rounded-xl shadow-sm overflow-hidden">
           <thead className="bg-gray-100">
             <tr>
-              <th className="px-8 py-5 text-left font-bold text-gray-700">Product</th>
-              <th className="px-8 py-5 text-left font-bold text-gray-700">Price</th>
-              <th className="px-8 py-5 text-left font-bold text-gray-700">Qty</th>
-              <th className="px-8 py-5 text-right font-bold text-gray-700">Total</th>
+              <th className="px-8 py-5 text-left font-bold text-gray-700">
+                Product
+              </th>
+              <th className="px-8 py-5 text-left font-bold text-gray-700">
+                Price
+              </th>
+              <th className="px-8 py-5 text-left font-bold text-gray-700">
+                Qty
+              </th>
+              <th className="px-8 py-5 text-right font-bold text-gray-700">
+                Total
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {order.items?.map((item, i) => (
               <tr key={i} className="hover:bg-gray-50">
-                <td className="px-8 py-6">{item.product_name || "Unknown Product"}</td>
+                <td className="px-8 py-6">
+                  {item.product_name || "Unknown Product"}
+                </td>
                 <td className="px-8 py-6">₹{fmt(item.price)}</td>
                 <td className="px-8 py-6">{item.quantity}</td>
                 <td className="px-8 py-6 text-right font-semibold">
@@ -295,16 +391,23 @@ const ManagerOrderDetails = () => {
               <td colSpan="3" className="px-8 py-5 text-right text-lg">
                 Subtotal
               </td>
-              <td className="px-8 py-5 text-right text-xl">₹{fmt(order.subtotal)}</td>
+              <td className="px-8 py-5 text-right text-xl">
+                ₹{fmt(order.subtotal)}
+              </td>
             </tr>
             <tr>
               <td colSpan="3" className="px-8 py-5 text-right text-lg">
                 Platform Fee
               </td>
-              <td className="px-8 py-5 text-right text-xl">₹{fmt(order.platform_charge)}</td>
+              <td className="px-8 py-5 text-right text-xl">
+                ₹{fmt(order.platform_charge)}
+              </td>
             </tr>
             <tr className="bg-gray-200">
-              <td colSpan="3" className="px-8 py-6 text-right text-2xl font-bold">
+              <td
+                colSpan="3"
+                className="px-8 py-6 text-right text-2xl font-bold"
+              >
                 Total Amount
               </td>
               <td className="px-8 py-6 text-right text-3xl font-bold text-blue-600">
