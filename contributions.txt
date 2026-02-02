@@ -1,0 +1,17 @@
+Project Team and Contributions
+
+1.Pullangari Vedaprakash (S20230010192)
+  Responsible for the Admin side of the website, including both frontend and backend development.
+
+2.Thota Venkat Mani Sankar Sai Gautam (S20230010243)
+ Handles the User side of the website, covering frontend design and backend integration.
+
+3.Ellendula Akshay (S20230010079)
+ Works on the Event Manager module, managing event creation and coordination.
+
+4.Yerram Jeevankumar (S20230010271)
+ Responsible for the Store Manager module, including store and product-related operations.
+
+5.Draksharapu Sai Nitin (S20230010076)
+ Manages the event pipeline, where users book event tickets and the booking details are transferred to and 
+ stored on the Admin side.
