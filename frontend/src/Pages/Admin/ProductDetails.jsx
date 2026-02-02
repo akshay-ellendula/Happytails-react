@@ -268,7 +268,7 @@ const ProductDetails = () => {
     return (
         <div className="max-w-5xl mx-auto p-5 bg-gray-100 min-h-screen font-sans text-gray-800">
             <div className="flex justify-between items-center mb-6">
-                <button onClick={() => navigate("/admin/products")} className="text-blue-600 hover:underline">
+                <button onClick={() => navigate("/admin/products")} className="bg-green-500 text-white px-4 py-2 rounded">
                     ← Back to Products
                 </button>
                 <div>

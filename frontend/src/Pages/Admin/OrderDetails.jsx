@@ -76,7 +76,7 @@ const OrderDetails = () => {
       <div className="bg-white rounded-lg shadow-lg p-6">
         {/* Header */}
         <div className="flex justify-between items-center border-b pb-4 mb-4">
-          <button onClick={() => navigate("/admin/orders")} className="text-blue-600 hover:underline">
+          <button onClick={() => navigate("/admin/orders")} className="bg-green-500 text-white px-4 py-2 rounded">
             ← Back to Orders
           </button>
           <button 

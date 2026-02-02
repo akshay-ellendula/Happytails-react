@@ -334,7 +334,7 @@ const EventDetails = () => {
     <div className="max-w-5xl mx-auto p-6 bg-gray-100 min-h-screen font-sans text-gray-800">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
-        <button onClick={() => navigate("/admin/events")} className="text-blue-600 hover:underline text-lg">
+        <button onClick={() => navigate("/admin/events")} className="bg-green-500 text-white px-4 py-2 rounded">
           ← Back to Events
         </button>
         <div className="space-x-3">
