@@ -12,6 +12,9 @@ export default function Users() {
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
+  
+  // NEW: State for search term
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch customers (users)
   const getAllUsers = async () => {
@@ -67,6 +70,12 @@ export default function Users() {
     },
   ];
 
+  // NEW: Filter users based on search term (case-insensitive match on name or email)
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="flex bg-gray-100 min-h-screen">
       <Sidebar />
@@ -103,6 +112,9 @@ export default function Users() {
               type="text"
               placeholder="Search users by name or email..."
               className="w-full border px-3 py-2 rounded-md bg-gray-50"
+              // NEW: Connect to state and onChange handler
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
@@ -111,7 +123,8 @@ export default function Users() {
           {loading ? (
             <Loader />
           ) : (
-            <Table columns={userColumns} data={users} />
+            // CHANGED: Pass filteredUsers instead of users
+            <Table columns={userColumns} data={filteredUsers} />
           )}
         </div>
       </div>
