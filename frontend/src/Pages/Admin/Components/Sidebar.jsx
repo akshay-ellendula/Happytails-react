@@ -44,14 +44,13 @@ export default function Sidebar() {
             key={item.to}
             to={item.to}
             className={`
-              flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group
+              flex items-center px-4 py-3 rounded-xl transition-all duration-300 group
               ${pathname === item.to
                 ? "bg-gradient-to-r from-white to-gray-100 text-yellow-700 shadow-lg font-semibold"
                 : "text-gray-700 hover:bg-yellow-300 hover:text-gray-800 hover:shadow-md"
               }
             `}
           >
-            <span className="text-lg">{item.icon}</span>
             <span className="font-medium">{item.label}</span>
             {pathname === item.to && (
               <div className="ml-auto w-2 h-2 rounded-full bg-yellow-700"></div>

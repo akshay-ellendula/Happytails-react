@@ -63,11 +63,13 @@ const EditModal = ({ isOpen, onClose, manager, onSave }) => {
                                     src={
                                         formData.profilePic
                                             ? URL.createObjectURL(formData.profilePic)
-                                            : manager.profilePic?.startsWith("data:")
-                                                ? manager.profilePic
-                                                : manager.profilePic
-                                                    ? `data:image/jpeg;base64,${manager.profilePic}`
-                                                    : "https://via.placeholder.com/150"
+                                            : (manager.profilePic || manager.profile_pic || manager.image)?.startsWith("data:")
+                                                ? (manager.profilePic || manager.profile_pic || manager.image)
+                                                : (manager.profilePic || manager.profile_pic || manager.image)?.startsWith("http")
+                                                    ? (manager.profilePic || manager.profile_pic || manager.image)
+                                                    : (manager.profilePic || manager.profile_pic || manager.image)
+                                                        ? `data:image/jpeg;base64,${manager.profilePic || manager.profile_pic || manager.image}`
+                                                        : "https://via.placeholder.com/150"
                                     }
                                     alt="Profile"
                                     className="w-full h-full object-cover"
@@ -342,12 +344,14 @@ export default function EventManagerDetails() {
                     <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-6">
-                                {manager.profilePic ? (
+                                {manager.profilePic || manager.profile_pic || manager.image ? (
                                     <img
                                         src={
-                                            manager.profilePic.startsWith("data:")
-                                                ? manager.profilePic
-                                                : `data:image/jpeg;base64,${manager.profilePic}`
+                                            (manager.profilePic || manager.profile_pic || manager.image).startsWith("data:")
+                                                ? (manager.profilePic || manager.profile_pic || manager.image)
+                                                : (manager.profilePic || manager.profile_pic || manager.image).startsWith("http")
+                                                    ? (manager.profilePic || manager.profile_pic || manager.image)
+                                                    : `data:image/jpeg;base64,${manager.profilePic || manager.profile_pic || manager.image}`
                                         }
                                         alt={manager.name}
                                         className="h-24 w-24 rounded-full object-cover shadow-lg"

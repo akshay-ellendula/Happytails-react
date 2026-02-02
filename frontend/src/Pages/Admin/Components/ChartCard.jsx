@@ -97,7 +97,7 @@ export default function ChartCard({
         </div>
         
         {/* Chart type selector */}
-        <div className="flex space-x-2 mt-4">
+        <div className="flex space-x-2 mt-4 hidden">
           {['line', 'bar', 'doughnut'].map((chartType) => (
             <button
               key={chartType}
