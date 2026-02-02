@@ -234,10 +234,10 @@ export default function UserDetails() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
             <Sidebar />
-            
+
             <div className="flex-1 ml-64">
                 <Header title="User Details" />
-                
+
                 <main className="p-6">
                     {/* Header with Back Button */}
                     <div className="mb-8">
@@ -293,19 +293,6 @@ export default function UserDetails() {
                                         <p className="text-sm text-gray-500 mb-1">User ID</p>
                                         <p className="text-lg font-semibold text-gray-800">{userCode}</p>
                                     </div>
-                                    <div className="bg-gray-50 p-4 rounded-xl">
-                                        <p className="text-sm text-gray-500 mb-1">Joined Date</p>
-                                        <p className="text-lg font-semibold text-gray-800">
-                                            {user.createdAt
-                                                ? new Date(user.createdAt).toLocaleDateString('en-US', {
-                                                    weekday: 'long',
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric'
-                                                })
-                                                : "N/A"}
-                                        </p>
-                                    </div>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="bg-gray-50 p-4 rounded-xl">
@@ -316,24 +303,20 @@ export default function UserDetails() {
                                         <p className="text-sm text-gray-500 mb-1">Phone</p>
                                         <p className="text-lg font-semibold text-gray-800">{user.phone || "Not provided"}</p>
                                     </div>
-                                    <div className="bg-gray-50 p-4 rounded-xl">
-                                        <p className="text-sm text-gray-500 mb-1">Address</p>
-                                        <p className="text-lg font-semibold text-gray-800">{user.address || "Not provided"}</p>
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Activity Stats */}
-                    <div className="bg-white rounded-2xl shadow-lg p-6">
+                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
                         <h3 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-200">User Activity</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border-l-4 border-yellow-500">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <h3 className="text-sm text-gray-600 uppercase tracking-wider">Total Orders</h3>
-                                        <p className="text-3xl font-bold text-gray-800 mt-2">0</p>
+                                        <p className="text-3xl font-bold text-gray-800 mt-2">{user.orders?.length || 0}</p>
                                     </div>
                                     <div className="h-12 w-12 rounded-lg bg-yellow-100 flex items-center justify-center text-yellow-600 text-xl">
                                         🛒
@@ -345,7 +328,7 @@ export default function UserDetails() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <h3 className="text-sm text-gray-600 uppercase tracking-wider">Events Attended</h3>
-                                        <p className="text-3xl font-bold text-gray-800 mt-2">0</p>
+                                        <p className="text-3xl font-bold text-gray-800 mt-2">{user.events?.length || 0}</p>
                                     </div>
                                     <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 text-xl">
                                         🎫
@@ -357,28 +340,89 @@ export default function UserDetails() {
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <h3 className="text-sm text-gray-600 uppercase tracking-wider">Total Spent</h3>
-                                        <p className="text-3xl font-bold text-gray-800 mt-2">₹0</p>
+                                        <p className="text-3xl font-bold text-gray-800 mt-2">
+                                            {/* Calculate total spent from orders (parsing the price string) */}
+                                            {(() => {
+                                                const total = (user.orders || []).reduce((acc, order) => {
+                                                    const price = parseFloat(order.price.replace(/[^0-9.-]+/g, ""));
+                                                    return acc + (isNaN(price) ? 0 : price);
+                                                }, 0);
+                                                return `$${total.toFixed(2)}`;
+                                            })()}
+                                        </p>
                                     </div>
                                     <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center text-green-600 text-xl">
                                         💰
                                     </div>
                                 </div>
                             </div>
-
-                            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border-l-4 border-purple-500">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h3 className="text-sm text-gray-600 uppercase tracking-wider">Member Since</h3>
-                                        <p className="text-3xl font-bold text-gray-800 mt-2">
-                                            {user.createdAt ? new Date(user.createdAt).getFullYear() : "N/A"}
-                                        </p>
-                                    </div>
-                                    <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600 text-xl">
-                                        📅
-                                    </div>
-                                </div>
-                            </div>
                         </div>
+                    </div>
+
+                    {/* Orders Table */}
+                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                        <h3 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-200">Order History</h3>
+                        {user.orders && user.orders.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="text-sm text-gray-500 border-b border-gray-200">
+                                            <th className="py-3 px-4">Product</th>
+                                            <th className="py-3 px-4">Date</th>
+                                            <th className="py-3 px-4">Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-gray-700">
+                                        {user.orders.map((order, index) => (
+                                            <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                                <td className="py-3 px-4 font-medium">{order.productName}</td>
+                                                <td className="py-3 px-4">{order.purchaseDate}</td>
+                                                <td className="py-3 px-4">{order.price}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 text-center py-4">No recent orders.</p>
+                        )}
+                    </div>
+
+                    {/* Events Table */}
+                    <div className="bg-white rounded-2xl shadow-lg p-6">
+                        <h3 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-200">Events Participated</h3>
+                        {user.events && user.events.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="text-sm text-gray-500 border-b border-gray-200">
+                                            <th className="py-3 px-4">Event</th>
+                                            <th className="py-3 px-4">Location</th>
+                                            <th className="py-3 px-4">Date</th>
+                                            <th className="py-3 px-4">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-gray-700">
+                                        {user.events.map((event, index) => (
+                                            <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                                <td className="py-3 px-4 font-medium">{event.eventName}</td>
+                                                <td className="py-3 px-4">{event.location}</td>
+                                                <td className="py-3 px-4">{event.date}</td>
+                                                <td className="py-3 px-4">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold
+                                                        ${event.status === 'Attended' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}
+                                                    `}>
+                                                        {event.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 text-center py-4">No events participated.</p>
+                        )}
                     </div>
                 </main>
 

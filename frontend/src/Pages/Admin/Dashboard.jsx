@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [revenueChart, setRevenueChart] = useState(null);
   const [recentUsers, setRecentUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(true);
 
   useEffect(() => {
     async function fetchEverything() {
@@ -56,6 +57,14 @@ export default function Dashboard() {
     }
 
     fetchEverything();
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowWelcome(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const recentColumns = [
@@ -161,17 +170,19 @@ export default function Dashboard() {
         
         <main className="p-6">
           {/* Welcome Banner */}
-          <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 border border-yellow-200 shadow-lg">
-            <div className="flex items-center">
-              <div className="h-16 w-16 rounded-full bg-yellow-500 flex items-center justify-center text-white text-2xl mr-4">
-                👋
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800 mb-1">Welcome back, Admin!</h1>
-                <p className="text-gray-600">Here's what's happening with your platform today.</p>
+          {showWelcome && (
+            <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 border border-yellow-200 shadow-lg animate-fade-out">
+              <div className="flex items-center">
+                <div className="h-16 w-16 rounded-full bg-yellow-500 flex items-center justify-center text-white text-2xl mr-4">
+                  👋
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-800 mb-1">Welcome back, Admin!</h1>
+                  <p className="text-gray-600">Here's what's happening with your platform today.</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {loading ? (
             <Loader />

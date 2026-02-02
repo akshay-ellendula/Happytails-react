@@ -21,8 +21,6 @@ const EditModal = ({ isOpen, onClose, product, onSave }) => {
     category: "",
     price: 0,
     stock: 0,
-    sku: "",
-    brand: "",
     description: "",
   });
 
@@ -33,8 +31,6 @@ const EditModal = ({ isOpen, onClose, product, onSave }) => {
         category: product.product_category || "",
         price: product.regular_price || 0,
         stock: product.stock_quantity || 0,
-        sku: product.sku || "",
-        brand: product.brand || "",
         description: product.product_description || "",
       });
     }
@@ -121,27 +117,6 @@ const EditModal = ({ isOpen, onClose, product, onSave }) => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
-              <input
-                type="text"
-                name="brand"
-                value={formData.brand}
-                onChange={handleChange}
-                className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all duration-300"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
-            <input
-              type="text"
-              name="sku"
-              value={formData.sku}
-              onChange={handleChange}
-              className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all duration-300"
-            />
           </div>
 
           <div>
@@ -218,10 +193,8 @@ const ProductDetails = () => {
     const variants = [{
       regular_price: formData.price,
       stock_quantity: formData.stock,
-      sku: formData.sku,
     }];
     data.append("variants", JSON.stringify(variants));
-    data.append("brand", formData.brand);
 
     const resultAction = await dispatch(updateProduct({ id, formData: data }));
     if (updateProduct.fulfilled.match(resultAction)) {
@@ -448,6 +421,8 @@ const ProductDetails = () => {
                     })}
                   </p>
                 </div>
+              </div>
+              <div className="space-y-4">
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 mb-1">Shop Owner</p>
                   <p className="text-lg font-semibold text-gray-800">{product.vendor?.store_name || "N/A"}</p>
@@ -457,27 +432,20 @@ const ProductDetails = () => {
                   <p className="text-lg font-semibold text-gray-800">{product.vendor?.email || "N/A"}</p>
                 </div>
               </div>
-              <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <p className="text-sm text-gray-500 mb-1">SKU</p>
-                  <p className="text-lg font-semibold text-gray-800">{product.sku || "N/A"}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <p className="text-sm text-gray-500 mb-1">Brand</p>
-                  <p className="text-lg font-semibold text-gray-800">{product.brand || "N/A"}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <p className="text-sm text-gray-500 mb-1">Current Stock</p>
-                  <p className="text-lg font-semibold text-gray-800">{stockQuantity}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <p className="text-sm text-gray-500 mb-1">Stock Status</p>
-                  <p className="text-lg font-semibold text-gray-800">
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${stockQuantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                      {stockQuantity > 0 ? 'In Stock' : 'Out of Stock'}
-                    </span>
-                  </p>
-                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="bg-gray-50 p-4 rounded-xl">
+                <p className="text-sm text-gray-500 mb-1">Current Stock</p>
+                <p className="text-lg font-semibold text-gray-800">{stockQuantity}</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-xl">
+                <p className="text-sm text-gray-500 mb-1">Stock Status</p>
+                <p className="text-lg font-semibold text-gray-800">
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${stockQuantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {stockQuantity > 0 ? 'In Stock' : 'Out of Stock'}
+                  </span>
+                </p>
               </div>
             </div>
           </div>

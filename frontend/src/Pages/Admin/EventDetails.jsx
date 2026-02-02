@@ -568,22 +568,22 @@ const EventDetails = () => {
                   </thead>
                   <tbody>
                     {attendees.map((a) => (
-                      <tr key={a.ticketId} className="border-b hover:bg-gray-50">
-                        <td className="p-3 font-mono text-sm">{a.ticketId}</td>
-                        <td className="p-3 font-semibold">{a.customerName || "N/A"}</td>
-                        <td className="p-3 text-sm text-gray-600">{a.customerEmail}</td>
+                      <tr key={a.id || a.ticketId} className="border-b hover:bg-gray-50">
+                        <td className="p-3 font-mono text-sm">{a.id || a.ticketId || "N/A"}</td>
+                        <td className="p-3 font-semibold">{a.customer?.name || a.customerName || a.name || "N/A"}</td>
+                        <td className="p-3 text-sm text-gray-600">{a.customer?.email || a.customerEmail || a.email || "N/A"}</td>
                         <td className="p-3 text-center">
                           <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-                            {a.numberOfTickets}
+                            {a.number_of_tickets || a.numberOfTickets || a.tickets || "0"}
                           </span>
                         </td>
                         <td className="p-3 text-center">
-                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${a.petName ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                            {a.petName ? "Yes" : "No"}
+                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${(a.pet?.name || a.petName) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                            {(a.pet?.name || a.petName) ? "Yes" : "No"}
                           </span>
                         </td>
                         <td className="p-3 text-sm text-gray-500">
-                          {new Date(a.purchaseDate).toLocaleDateString()}
+                          {new Date(a.purchase_date || a.purchaseDate || a.created_at).toLocaleDateString()}
                         </td>
                       </tr>
                     ))}

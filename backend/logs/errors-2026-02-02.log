@@ -1,0 +1,13 @@
+[2026-02-02 20:15:57] ERROR: Unexpected field 
+Stack: MulterError: Unexpected field
+    at wrappedFileFilter (D:\FDFED\REACT_end\Happytails-react\backend\node_modules\multer\index.js:40:19)
+    at Multipart.<anonymous> (D:\FDFED\REACT_end\Happytails-react\backend\node_modules\multer\lib\make-middleware.js:132:7)
+    at Multipart.emit (node:events:518:28)
+    at HeaderParser.cb (D:\FDFED\REACT_end\Happytails-react\backend\node_modules\busboy\lib\types\multipart.js:358:14)
+    at HeaderParser.push (D:\FDFED\REACT_end\Happytails-react\backend\node_modules\busboy\lib\types\multipart.js:162:20)
+    at SBMH.ssCb [as _cb] (D:\FDFED\REACT_end\Happytails-react\backend\node_modules\busboy\lib\types\multipart.js:394:37)
+    at feed (D:\FDFED\REACT_end\Happytails-react\backend\node_modules\streamsearch\lib\sbmh.js:219:14)
+    at SBMH.push (D:\FDFED\REACT_end\Happytails-react\backend\node_modules\streamsearch\lib\sbmh.js:104:16)
+    at Multipart._write (D:\FDFED\REACT_end\Happytails-react\backend\node_modules\busboy\lib\types\multipart.js:567:19)
+    at writeOrBuffer (node:internal/streams/writable:572:12)
+-----------------------------------
