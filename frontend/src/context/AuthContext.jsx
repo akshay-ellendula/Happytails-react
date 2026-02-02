@@ -142,7 +142,7 @@ export const AuthProvider = ({ children }) => {
   const signout = async () => {
     setLoading(true);
     try {
-      await axiosInstance.post("/auth/logout");
+      await axiosInstance.get("/auth/logout");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {

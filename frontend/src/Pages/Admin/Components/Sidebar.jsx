@@ -1,10 +1,11 @@
-// src/Admin/Components/Sidebar.jsx
-
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";   // Adjust path if needed
 
 export default function Sidebar() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { signout } = useAuth();   // ← this is the key
 
   const menu = [
     { label: "Dashboard", to: "/admin/dashboard" },
@@ -15,6 +16,17 @@ export default function Sidebar() {
     { label: "Products", to: "/admin/products" },
     { label: "Orders", to: "/admin/orders" },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await signout();                    // Calls /auth/logout + clears state
+      navigate("/admin/login", { replace: true });
+    } catch (err) {
+      console.error("Logout failed", err);
+      // Optional: show toast/error message
+      alert("Logout failed – please try again");
+    }
+  };
 
   return (
     <aside className="w-64 bg-yellow-200 shadow-lg min-h-screen p-4 fixed">
@@ -33,15 +45,15 @@ export default function Sidebar() {
           >
             {item.label}
           </Link>
-          
         ))}
 
-        <a
-          href="/admin/logout"
-          className="block px-4 py-2 rounded-md hover:bg-yellow-300"
+        {/* Changed from <a> to button */}
+        <button
+          onClick={handleLogout}
+          className="block w-full text-left px-4 py-2 rounded-md hover:bg-yellow-300 text-red-700 font-medium"
         >
           Logout
-        </a>
+        </button>
       </nav>
     </aside>
   );

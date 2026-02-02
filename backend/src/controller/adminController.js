@@ -1746,15 +1746,20 @@ const updateProduct = async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to update product' });
     }
 };
-const logout = (req, res) => {
-    res.clearCookie('jwt', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-    });
-    res.json({ success: true, message: 'Logged out successfully' });
-};
 
+const logout = async (req, res) => {
+  try {
+    res.clearCookie("token", {  // Change "token" if your cookie name is different (check login code)
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
+    return res.status(200).json({ success: true, message: "Logged out" });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Logout failed" });
+  }
+};
 // adminController.js
 
 const getEventsData = async (req, res) => {

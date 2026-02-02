@@ -36,7 +36,7 @@ import MyEventsPage from "./pages/MyEventsPage/MyEventsPage";
 import TrackOrderPage from "./pages/TrackOrderPage/TrackOrderPage";
 
 // --- Pages: Admin ---
-import AdminLoginPage from "./pages/AdminLogin/AdminLoginPage"; // Check capitalization here (pages vs Pages)
+import AdminLoginPage from "./Pages/AdminLogin/AdminLoginPage"; // Check capitalization here (pages vs Pages)
 import Dashboard from "./Pages/Admin/Dashboard";
 import Users from "./Pages/Admin/Users";
 import UserDetails from "./Pages/Admin/UserDetails";
