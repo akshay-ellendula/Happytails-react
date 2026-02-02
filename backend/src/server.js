@@ -1,11 +1,15 @@
-// Load environment variables as a side-effect before importing other modules
 import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import path from "path";
+import fs from "fs";
+import morgan from "morgan";
+import { createStream } from "rotating-file-stream";
 
 import connect_Db from "./config/config_db.js";
 
+// Routes
 import authRoutes from "./router/authRoutes.js";
 import customerRoutes from "./router/customerRoutes.js";
 import eventManagerRoutes from "./router/eventManagerRoutes.js";
@@ -16,16 +20,36 @@ import eventAnalyticsRoutes from "./router/eventAnalyticsRoutes.js";
 import adminRoutes from "./router/adminRoutes.js";
 import vendorRoutes from "./router/vendorRoutes.js";
 
-// Environment variables loaded via `import "dotenv/config"` above
+// Import Error Middleware
+import { errorHandler } from './middleware/errorMiddleware.js';
 
 const app = express();
 
 connect_Db();
 
+// --- 1. ACCESS LOGGING SETUP (Morgan) ---
+const logDir = path.join(process.cwd(), "logs");
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir);
+}
+
+// Rotate access logs daily
+const accessLogStream = createStream("access.log", {
+  interval: "1d", 
+  path: logDir,
+  compress: "gzip" 
+});
+
+// Use morgan to log every request
+app.use(
+  morgan(":method :url :status :response-time ms", {
+    stream: accessLogStream
+  })
+);
+// ----------------------------------------
+
 app.use(express.json());
 app.use(cookieParser());
-
-// NOTE: express-session has been removed in favor of JWT based authentication
 
 app.use(
   cors({
@@ -45,7 +69,10 @@ app.use("/api/eventAnalytics", eventAnalyticsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/vendors", vendorRoutes);
 
-// Provide a sensible default if PORT isn't set
+// --- 2. ERROR LOGGING SETUP (Winston) ---
+// This must be the last app.use()
+app.use(errorHandler);
+
 const port = process.env.PORT || 5001;
 
 app.listen(port, () => {

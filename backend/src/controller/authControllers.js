@@ -11,7 +11,7 @@ import sendEmail from '../utils/sendEmail.js';
 // @desc    Signup for customer
 // @route   POST /api/auth/signup
 // @access  Public
-export const signup = async (req, res) => {
+export const signup = async (req, res, next) => {
     const { userName, email, password } = req.body;
     try {
         if (!userName || !email || !password) {
@@ -61,14 +61,14 @@ export const signup = async (req, res) => {
         });
     } catch (error) {
         console.log("Something went wrong in signup controller", error);
-        res.status(500).json({ message: "Internal Server Error" });
+        next(error); // Pass error to error handling middleware
     }
 }
 
 // @desc    Signin for customer
 // @route   POST /api/auth/signin
 // @access  Public
-export const signin = async (req, res) => {
+export const signin = async (req, res, next) => {
     const { email, password } = req.body;
     try {
         if (!email || !password) {
@@ -112,7 +112,7 @@ export const signin = async (req, res) => {
         });
     } catch (error) {
         console.log("Something went wrong in signin controller", error);
-        res.status(500).json({ message: "Internal Server Error" });
+        next(error); // Pass error to error handling middleware
     }
 }
 
@@ -127,7 +127,7 @@ export const logout = (req, res) => {
 // @desc    Signup for eventManager
 // @route   POST /api/auth/eventManagerSignup
 // @access  Public
-export const eventManagersignup = async (req, res) => {
+export const eventManagersignup = async (req, res, next) => {
     const { userName, email, password, contactnumber, companyname, location } = req.body;
     
     try {
@@ -175,14 +175,14 @@ export const eventManagersignup = async (req, res) => {
         res.status(201).json({ success: true });
     } catch (error) {
         console.log("Something went wrong in signup controller", error);
-        res.status(500).json({ message: "Internal Server Error" });
+        next(error); // Pass error to error handling middleware
     }
 }
 
 // @desc    Signin for eventManager
 // @route   POST /api/auth/eventManagerSignin
 // @access  Public
-export const eventManagersignin = async (req, res) => {
+export const eventManagersignin = async (req, res, next) => {
     const { email, password } = req.body;
     try {
         if (!email || !password) {
@@ -225,14 +225,14 @@ export const eventManagersignin = async (req, res) => {
         });
     } catch (error) {
         console.log("Something went wrong in eventManager signin controller", error);
-        res.status(500).json({ message: "Internal Server Error" });
+        next(error); // Pass error to error handling middleware
     }
 }
 
 // @desc    Signup for admin
 // @route   POST /api/auth/adminSignup
 // @access  Public
-export const adminSignup = async (req, res) => {
+export const adminSignup = async (req, res, next) => {
     const { userName, email, password } = req.body;
 
     try {
@@ -271,7 +271,7 @@ export const adminSignup = async (req, res) => {
 
     } catch (error) {
         console.error("Error in adminSignup controller:", error);
-        res.status(500).json({ message: "Internal Server Error" });
+        next(error); // Pass error to error handling middleware
     }
 };
 
@@ -280,7 +280,7 @@ export const adminSignup = async (req, res) => {
 // @access  Public
 // Find the adminSignin function and replace the res.cookie part:
 
-export const adminSignin = async (req, res) => {
+export const adminSignin = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
@@ -326,7 +326,7 @@ export const adminSignin = async (req, res) => {
         }
     } catch (error) {
         console.error("Admin Signin Error:", error);
-        return res.status(500).json({ success: false, message: "Internal Server Error" });
+        next(error); // Pass error to error handling middleware
     }
 };
 

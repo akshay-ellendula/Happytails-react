@@ -1,0 +1,16 @@
+GET /api/eventManagers/events/my-events 304 132.585 ms
+GET /api/eventManagers/events/my-events 200 124.924 ms
+GET /api/auth/verify 200 227.774 ms
+GET /api/auth/verify 200 232.951 ms
+GET /api/eventManagers/events/my-events 304 337.549 ms
+GET /api/eventManagers/profile/me 304 320.969 ms
+GET /api/eventManagers/events/my-events 200 317.782 ms
+GET /api/eventManagers/profile/me 200 317.365 ms
+GET /api/eventManagers/revenue/my-revenue 200 439.614 ms
+GET /api/eventManagers/revenue/my-revenue 304 454.405 ms
+GET /api/eventManagers/events/attendees 200 196.899 ms
+GET /api/eventManagers/events/attendees 304 205.497 ms
+GET /api/eventAnalytics/revenue-trends 304 108.383 ms
+GET /api/eventAnalytics/revenue-trends 200 120.177 ms
+GET /api/eventAnalytics/event-types 200 53.071 ms
+GET /api/eventAnalytics/event-types 200 330.919 ms

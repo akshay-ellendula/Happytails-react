@@ -9,7 +9,7 @@ import uploadToCloudinary from '../utils/cloudinaryUploader.js';
 // REMOVED: const JWT_SECRET = process.env.JWT_SECRET_KEY; 
 
 // --- getPetAccessories (UPDATED) ---
-const getPetAccessories = async (req, res) => {
+const getPetAccessories = async (req, res, next) => {
     try {
         console.log("Fetching pet accessories..."); 
 
@@ -126,16 +126,12 @@ const getPetAccessories = async (req, res) => {
         });
     } catch (err) {
         console.error("!!! Error in getPetAccessories:", err);
-        return res.status(500).json({
-             success: false,
-             message: 'Server error fetching pet accessories.',
-             error: err.message 
-        });
+        next(err);
     }
 };
 
 // --- getProduct (UPDATED) ---
-const getProduct = async (req, res) => {
+const getProduct = async (req, res, next) => {
     try {
         const productId = req.params.id;
         
@@ -177,12 +173,12 @@ const getProduct = async (req, res) => {
 
     } catch (err) {
         console.error("Error fetching product:", err); 
-        return res.status(500).json({ success: false, message: 'Server error fetching product details.' });
+        next(err);
     }
 };
 
 // --- checkout (UPDATED) ---
-const checkout = async (req, res) => {
+const checkout = async (req, res, next) => {
     try {
         const customerID = req.user.customerId;
 
@@ -262,17 +258,14 @@ const checkout = async (req, res) => {
         });
     } catch (err) {
         console.error('Checkout error:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Server error during checkout'
-        });
+        next(err);
     }
 };
 
 
 // --- processPayment (UPDATED) ---
 // --- processPayment (FIXED) ---
-const processPayment = async (req, res) => {
+const processPayment = async (req, res, next) => {
     try {
         const checkoutToken = req.cookies.checkout_session;
         const { cardNumber, expiryDate, cvv } = req.body; 
@@ -392,15 +385,12 @@ const processPayment = async (req, res) => {
 
     } catch (err) {
         console.error('Payment processing error:', err);
-        return res.status(500).json({
-            success: false,
-            message: 'Error processing payment. Please try again.'
-        });
+        next(err);
     }
 };
 
 // --- getUserOrders (UPDATED) ---
-const getUserOrders = async (req, res) => {
+const getUserOrders = async (req, res, next) => {
     
     try {
         const orders = await Order.find({ customer_id: req.user.customerId})
@@ -437,12 +427,12 @@ const getUserOrders = async (req, res) => {
         res.json({ success: true, orders: populatedOrders });
     } catch (error) {
         console.error("Error fetching user orders:", error); 
-        res.status(500).json({ success: false, message: 'Failed to fetch orders' });
+        next(error);
     }
 };
 
 // --- reorder (UPDATED) ---
-const reorder = async (req, res) => {
+const reorder = async (req, res, next) => {
     try {
         const orderId = req.params.orderId;
 
@@ -480,7 +470,7 @@ const reorder = async (req, res) => {
         res.json({ success: true, cart: cartItems });
     } catch (err) {
         console.error('Reorder error:', err);
-        res.status(500).json({ success: false, message: 'Failed to fetch order items for reorder' });
+        next(err);
     }
 };
 export {

@@ -4,18 +4,18 @@ import Customer from "../models/customerModel.js";
 // ✅ All functions work the same — only putCustomer changed to Base64 logic
 
 // GET all customers
-export const getCustomers = async (req, res) => {
+export const getCustomers = async (req, res, next) => {
   try {
     const customers = await Customer.find({}).select("-password");
     res.status(200).json(customers);
   } catch (error) {
     console.error("getCustomers error:", error);
-    res.status(500).json({ message: "Server Error" });
+    next(error);
   }
 };
 
 // GET one customer
-export const getCustomer = async (req, res) => {
+export const getCustomer = async (req, res, next) => {
   const { id } = req.params;
   try {
     const customer = await Customer.findById(id).select("-password");
@@ -24,12 +24,12 @@ export const getCustomer = async (req, res) => {
     res.status(200).json(customer);
   } catch (error) {
     console.error("getCustomer error:", error);
-    res.status(500).json({ message: "Server Error" });
+    next(error);
   }
 };
 
 // ✅ PUT – update profile + picture (Base64, no Cloudinary)
-export const putCustomer = async (req, res) => {
+export const putCustomer = async (req, res, next) => {
   const { id } = req.params;
   const {
     userName,
@@ -118,14 +118,12 @@ export const putCustomer = async (req, res) => {
   } catch (error) {
     console.error("putCustomer error:", error.message);
     console.error(error.stack);
-    res
-      .status(500)
-      .json({ success: false, message: error.message || "Server Error" });
+    next(error);
   }
 };
 
 // DELETE customer
-export const deleteCustomer = async (req, res) => {
+export const deleteCustomer = async (req, res, next) => {
   const { id } = req.params;
   try {
     const customer = await Customer.findById(id);
@@ -139,14 +137,12 @@ export const deleteCustomer = async (req, res) => {
       .json({ success: true, message: "Customer deleted successfully" });
   } catch (error) {
     console.error("deleteCustomer error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Server Error" });
+    next(error);
   }
 };
 
 // Toggle active status
-export const changeActiveStatus = async (req, res) => {
+export const changeActiveStatus = async (req, res, next) => {
   const { id } = req.params;
   try {
     const customer = await Customer.findById(id);
@@ -161,8 +157,6 @@ export const changeActiveStatus = async (req, res) => {
       .json({ success: true, message: "Customer status updated" });
   } catch (error) {
     console.error("changeActiveStatus error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Server Error" });
+    next(error);
   }
 };

@@ -5,7 +5,7 @@ import uploadToCloudinary from '../utils/cloudinaryUploader.js';
 //@desc Create new event
 //@route POST /api/events
 //@access Event Manager
-export const createEvent = async (req, res) => {
+export const createEvent = async (req, res, next) => {
     try {
         const eventManagerId = req.user.eventManagerId;
         const {
@@ -58,14 +58,14 @@ export const createEvent = async (req, res) => {
 
     } catch (error) {
         console.log("Error in createEvent controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 };
 
 //@desc Get all events for event manager
 //@route GET /api/events/manager
 //@access Event Manager
-export const getEventManagerEvents = async (req, res) => {
+export const getEventManagerEvents = async (req, res, next) => {
     try {
         const eventManagerId = req.user.eventManagerId;
         const { page = 1, limit = 10, status, search } = req.query;
@@ -121,14 +121,14 @@ export const getEventManagerEvents = async (req, res) => {
 
     } catch (error) {
         console.log("Error in getEventManagerEvents controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 };
 
 //@desc Get single event
 //@route GET /api/events/:id
 //@access Event Manager, Admin
-export const getEvent = async (req, res) => {
+export const getEvent = async (req, res, next) => {
     try {
         const { id } = req.params;
         const event = await Event.findById(id);
@@ -140,14 +140,14 @@ export const getEvent = async (req, res) => {
 
     } catch (error) {
         console.log("Error in getEvent controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 };
 
 //@desc Update event
 //@route PUT /api/events/:id
 //@access Event Manager
-export const updateEvent = async (req, res) => {
+export const updateEvent = async (req, res, next) => {
     try {
         const { id } = req.params;
         const eventManagerId = req.user.eventManagerId;
@@ -191,14 +191,14 @@ export const updateEvent = async (req, res) => {
 
     } catch (error) {
         console.log("Error in updateEvent controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 };
 
 //@desc Delete event
 //@route DELETE /api/events/:id
 //@access Event Manager
-export const deleteEvent = async (req, res) => {
+export const deleteEvent = async (req, res, next) => {
     try {
         const { id } = req.params;
         const eventManagerId = req.user.eventManagerId;
@@ -228,14 +228,14 @@ export const deleteEvent = async (req, res) => {
 
     } catch (error) {
         console.log("Error in deleteEvent controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 };
 
 //@desc Get event analytics
 //@route GET /api/events/:id/eventAnalytics
 //@access Event Manager
-export const getEventAnalytics = async (req, res) => {
+export const getEventAnalytics = async (req, res, next) => {
     try {
         const { id } = req.params;
         const eventManagerId = req.user.eventManagerId;
@@ -283,14 +283,14 @@ export const getEventAnalytics = async (req, res) => {
 
     } catch (error) {
         console.log("Error in getEventAnalytics controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 };
 
 //@desc Get all events (public)
 //@route GET /api/events/public
 //@access Public
-export const getAllEvents = async (req, res) => {
+export const getAllEvents = async (req, res,next) => {
     try {
         const { page = 1, limit = 10, category, search } = req.query;
 
@@ -320,6 +320,6 @@ export const getAllEvents = async (req, res) => {
 
     } catch (error) {
         console.log("Error in getAllEvents controller:", error);
-        res.status(500).json({ message: 'Server Error' });
+        next(error); // Pass error to error handling middleware
     }
 };
