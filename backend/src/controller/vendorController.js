@@ -23,7 +23,7 @@ const sendError = (res, message, code = 500) =>
   res.status(code).json({ success: false, message });
 
 // --- 1. LOGIN & AUTH ---
-const serviceProviderLogin = async (req, res) => {
+const serviceProviderLogin = async (req, res, next) => {
   const { email, password, role } = req.body;
 
   if (!email || !password || !role)
@@ -74,7 +74,7 @@ const serviceProviderLogin = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
@@ -83,7 +83,7 @@ const logout = (req, res) => {
   res.status(200).json({ success: true, message: "Logged out successfully" });
 };
 
-const vendorSignup = async (req, res) => {
+const vendorSignup = async (req, res, next) => {
   const {
     name,
     contactnumber,
@@ -154,12 +154,12 @@ const vendorSignup = async (req, res) => {
     });
   } catch (error) {
     console.error("Signup error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- 2. DASHBOARD & ANALYTICS ---
-const getVendorProfile = async (req, res) => {
+const getVendorProfile = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -180,10 +180,10 @@ const getVendorProfile = async (req, res) => {
     sendJson(res, { vendor: vendorData });
   } catch (error) {
     console.error("Profile Error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
-const getVendorAnalytics = async (req, res) => {
+const getVendorAnalytics = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -284,12 +284,12 @@ const getVendorAnalytics = async (req, res) => {
     sendJson(res, { analytics: analyticsData });
   } catch (error) {
     console.error("Analytics Error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- 3. PRODUCTS ---
-const getVendorProducts = async (req, res) => {
+const getVendorProducts = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const { category, sort } = req.query;
@@ -383,12 +383,12 @@ const getVendorProducts = async (req, res) => {
     sendJson(res, { products });
   } catch (error) {
     console.error("getVendorProducts error:", error);
-    sendError(res, error.message || "Server error");
+    next(error);
   }
 };
 
 // --- SUBMIT PRODUCT (MULTER + CLOUDINARY) ---
-const submitProduct = async (req, res) => {
+const submitProduct = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -465,12 +465,12 @@ const submitProduct = async (req, res) => {
     sendJson(res, { message: "Product added successfully" });
   } catch (error) {
     console.error("Submit Product Error:", error);
-    sendError(res, error.message);
+    next(error);
   }
 };
 
 // --- UPDATE PRODUCT (MULTER + CLOUDINARY) ---
-const updateProduct = async (req, res) => {
+const updateProduct = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const productId = req.params.productId;
@@ -583,11 +583,11 @@ const updateProduct = async (req, res) => {
     sendJson(res, { message: "Product updated successfully" });
   } catch (error) {
     console.error("Update product error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
-const getProductForEdit = async (req, res) => {
+const getProductForEdit = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -603,12 +603,12 @@ const getProductForEdit = async (req, res) => {
 
     sendJson(res, { product: { ...product.toObject(), variants, images } });
   } catch (error) {
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- 4. ORDERS ---
-const getVendorOrders = async (req, res) => {
+const getVendorOrders = async (req, res, next) => {
   try {
     if (!req.user)
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -689,13 +689,11 @@ const getVendorOrders = async (req, res) => {
     res.json({ success: true, orders });
   } catch (error) {
     console.error("getVendorOrders error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 };
 
-const getVendorCustomerDetails = async (req, res) => {
+const getVendorCustomerDetails = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const customerId = req.params.customerId;
@@ -804,11 +802,11 @@ const getVendorCustomerDetails = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching customer details:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
-const getOrderDetails = async (req, res) => {
+const getOrderDetails = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   try {
     const order = await Order.findById(req.params.orderId).populate(
@@ -856,11 +854,11 @@ const getOrderDetails = async (req, res) => {
     sendJson(res, { order: orderData });
   } catch (error) {
     console.error("Get Order Details Error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
-const updateOrderStatus = async (req, res) => {
+const updateOrderStatus = async (req, res, next) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
@@ -960,12 +958,12 @@ const updateOrderStatus = async (req, res) => {
     sendJson(res, { message: "Status updated", order: formattedOrder });
   } catch (error) {
     console.error("Update Status Error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- 5. CUSTOMERS ---
-const getVendorCustomers = async (req, res) => {
+const getVendorCustomers = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -1023,12 +1021,12 @@ const getVendorCustomers = async (req, res) => {
     sendJson(res, { customers });
   } catch (error) {
     console.error("Error fetching customers:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- 6. PROFILE UPDATE ---
-const updateVendorProfile = async (req, res) => {
+const updateVendorProfile = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -1047,11 +1045,11 @@ const updateVendorProfile = async (req, res) => {
     });
     sendJson(res, { message: "Profile updated" });
   } catch (error) {
-    sendError(res, "Update failed");
+    next(error);
   }
 };
 
-const deleteProduct = async (req, res) => {
+const deleteProduct = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const productId = req.params.productId;
@@ -1069,11 +1067,11 @@ const deleteProduct = async (req, res) => {
     res.status(200).json({ success: true, message: "Product deleted" });
   } catch (error) {
     console.error("Error deleting product:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
-const deleteOrder = async (req, res) => {
+const deleteOrder = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const orderId = req.params.orderId;
@@ -1098,11 +1096,11 @@ const deleteOrder = async (req, res) => {
       .json({ success: true, message: "Order deleted successfully" });
   } catch (error) {
     console.error("Delete order error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
-const deleteSelectedOrders = async (req, res) => {
+const deleteSelectedOrders = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const { orderIds } = req.body;
 
@@ -1114,12 +1112,12 @@ const deleteSelectedOrders = async (req, res) => {
     await Order.updateMany({ _id: { $in: orderIds } }, { is_deleted: true });
     res.status(200).json({ success: true, message: "Selected orders deleted" });
   } catch (error) {
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- DASHBOARD (JSON) ---
-const getVendorDashboard = async (req, res) => {
+const getVendorDashboard = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId || req.user.eventManagerId;
 
@@ -1630,11 +1628,11 @@ const getVendorDashboard = async (req, res) => {
     sendJson(res, { stats });
   } catch (error) {
     console.error("Dashboard Error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
-const changePassword = async (req, res) => {
+const changePassword = async (req, res, next) => {
   try {
     const vendorObjectId = new mongoose.Types.ObjectId(req.user.vendorId);
     const { currentPassword, newPassword } = req.body;
@@ -1660,7 +1658,7 @@ const changePassword = async (req, res) => {
     sendJson(res, { message: "Password updated successfully." });
   } catch (error) {
     console.error("Change Password Error:", error);
-    sendError(res, "Server error.");
+    next(error);
   }
 };
 
