@@ -132,7 +132,7 @@ const vendorSignup = async (req, res) => {
         role: "vendor",
       },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: "24h" }
+      { expiresIn: "24h" },
     );
 
     res.cookie("jwt", token, {
@@ -174,6 +174,7 @@ const getVendorProfile = async (req, res) => {
       phone: vendor.contact_number,
       address: vendor.store_location,
       description: vendor.description || "",
+      createdAt: vendor.createdAt,
     };
 
     sendJson(res, { vendor: vendorData });
@@ -446,7 +447,7 @@ const submitProduct = async (req, res) => {
           // FIX: Using the imported unified upload helper
           const secureUrl = await uploadToCloudinary(
             file,
-            "pet_store_products"
+            "pet_store_products",
           );
 
           await ProductImage.create({
@@ -564,7 +565,7 @@ const updateProduct = async (req, res) => {
           // FIX: Using the imported unified upload helper
           const secureUrl = await uploadToCloudinary(
             file,
-            "pet_store_products"
+            "pet_store_products",
           );
 
           await ProductImage.create({
@@ -768,11 +769,11 @@ const getVendorCustomerDetails = async (req, res) => {
           };
         }
         acc[item.order_id].items.push(
-          `${item.product_name} (x${item.quantity})`
+          `${item.product_name} (x${item.quantity})`,
         );
         acc[item.order_id].total += item.total;
         return acc;
-      }, {})
+      }, {}),
     );
 
     sendJson(res, {
@@ -788,7 +789,7 @@ const getVendorCustomerDetails = async (req, res) => {
         totalOrders,
         totalRevenue: totalRevenue.toFixed(2),
         avgOrderValue: (totalOrders ? totalRevenue / totalOrders : 0).toFixed(
-          2
+          2,
         ),
         lastPurchase: orders[0]
           ? new Date(orders[0].order_date).toLocaleDateString()
@@ -811,7 +812,7 @@ const getOrderDetails = async (req, res) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   try {
     const order = await Order.findById(req.params.orderId).populate(
-      "customer_id"
+      "customer_id",
     );
     if (!order || order.is_deleted)
       return sendError(res, "Order not found", 404);
@@ -1207,6 +1208,23 @@ const getVendorDashboard = async (req, res) => {
       { $count: "count" },
     ]);
 
+    // 1b. Total Unique Customers 
+    const totalCustomersAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId, is_deleted: { $ne: true } } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      { $match: { "order.is_deleted": { $ne: true } } },
+      { $group: { _id: "$order.customer_id" } }, // Group by customer_id
+      { $count: "count" },
+    ]);
+
     // 2. New Orders (Pending/Confirmed - exclude deleted)
     const newOrdersStats = await OrderItem.aggregate([
       { $match: { vendor_id: vendorObjectId, is_deleted: { $ne: true } } },
@@ -1222,6 +1240,30 @@ const getVendorDashboard = async (req, res) => {
       {
         $match: {
           "order.status": { $in: ["Pending", "Confirmed"] },
+          "order.is_deleted": { $ne: true },
+        },
+      },
+      { $group: { _id: "$order._id" } },
+      { $count: "count" },
+    ]);
+
+    // 2b. Active Orders (Pending, Confirmed, Shipped, Out for Delivery)
+    const activeOrdersStats = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId, is_deleted: { $ne: true } } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Out for Delivery"],
+          },
           "order.is_deleted": { $ne: true },
         },
       },
@@ -1305,24 +1347,278 @@ const getVendorDashboard = async (req, res) => {
     const currentMonth = await getMonthStats(currentMonthStart, now);
     const lastMonth = await getMonthStats(lastMonthStart, lastMonthEnd);
 
+    // Week stats (last 7 days)
+    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekStats = await getMonthStats(weekStart, now);
+
+    // Count unique orders contributing to revenue within current month
+    const monthRevenueOrdersAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+          },
+          "order.order_date": { $gte: currentMonthStart, $lt: now },
+        },
+      },
+      { $group: { _id: "$order._id" } },
+      { $count: "count" },
+    ]);
+
+    // Count unique orders for week
+    const weekRevenueOrdersAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+          },
+          "order.order_date": { $gte: weekStart, $lt: now },
+        },
+      },
+      { $group: { _id: "$order._id" } },
+      { $count: "count" },
+    ]);
+
+    // Today's revenue and orders
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const todayStatsAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+          },
+          "order.order_date": { $gte: todayStart, $lt: now },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          revenue: { $sum: { $multiply: ["$price", "$quantity"] } },
+          orders: { $addToSet: "$order._id" },
+          sold: { $sum: "$quantity" },
+        },
+      },
+      {
+        $project: {
+          revenue: 1,
+          orderCount: { $size: "$orders" },
+        },
+      },
+    ]);
+
+    const todayRevenue = todayStatsAgg[0]?.revenue || 0;
+    const todayOrderCount = todayStatsAgg[0]?.orderCount || 0;
+
+    // Top products by revenue (last 90 days to keep relevance)
+    const recentDays = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const topProductsAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+          },
+          "order.order_date": { $gte: recentDays, $lt: now },
+        },
+      },
+      {
+        $group: {
+          _id: "$product_id",
+          product_name: { $first: "$product_name" },
+          revenue: { $sum: { $multiply: ["$price", "$quantity"] } },
+          quantity: { $sum: "$quantity" },
+        },
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 5 },
+    ]);
+
     const calculateChange = (current, previous) => {
       if (previous === 0) return current > 0 ? 100 : 0;
       return ((current - previous) / previous) * 100;
     };
 
+    // --- Dynamic Insights Aggregations ---
+
+    // 1. Peak Hours (Most frequent hour of day for orders)
+    const peakHoursAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      { $match: { "order.status": { $ne: "Cancelled" } } },
+      {
+        $project: {
+          hour: { $hour: "$order.order_date" },
+        },
+      },
+      { $group: { _id: "$hour", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 1 },
+    ]);
+    
+    let peakHourText = "No data available";
+    if (peakHoursAgg.length > 0) {
+      const hour = peakHoursAgg[0]._id;
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 || 12;
+      const nextHour = (hour + 1) % 12 || 12;
+      peakHourText = `Most orders between ${displayHour}${ampm} - ${nextHour}${ampm}`;
+    }
+
+    // 2. Best Day (Day of week with most revenue)
+    const bestDayAgg = await OrderItem.aggregate([
+        { $match: { vendor_id: vendorObjectId } },
+        {
+          $lookup: {
+            from: "orders",
+            localField: "order_id",
+            foreignField: "_id",
+            as: "order",
+          },
+        },
+        { $unwind: "$order" },
+        { $match: { "order.status": { $ne: "Cancelled" } } },
+        {
+            $group: {
+                _id: { $dayOfWeek: "$order.order_date" }, // 1 (Sun) - 7 (Sat)
+                revenue: { $sum: { $multiply: ["$price", "$quantity"] } }
+            }
+        },
+        { $sort: { revenue: -1 } },
+        { $limit: 1 }
+    ]);
+
+    const days = ["Unknown", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const bestDayText = bestDayAgg.length > 0 ? days[bestDayAgg[0]._id] + " has highest sales" : "No data available";
+
+    // 3. Customer Growth (This Month vs Last Month unique customers)
+    const getUniqueCustomersCount = async (startDate, endDate) => {
+         const agg = await OrderItem.aggregate([
+            { $match: { vendor_id: vendorObjectId } },
+            {
+                $lookup: {
+                  from: "orders",
+                  localField: "order_id",
+                  foreignField: "_id",
+                  as: "order",
+                },
+            },
+            { $unwind: "$order" },
+            { 
+                $match: { 
+                    "order.status": { $ne: "Cancelled" },
+                    "order.order_date": { $gte: startDate, $lt: endDate }
+                } 
+            },
+            { $group: { _id: "$order.customer_id" } },
+            { $count: "count" }
+         ]);
+         return agg[0]?.count || 0;
+    };
+
+    const currentMonthCustomers = await getUniqueCustomersCount(currentMonthStart, now);
+    const lastMonthCustomers = await getUniqueCustomersCount(lastMonthStart, lastMonthEnd);
+    
+    let customerGrowthText = "No change";
+    if (lastMonthCustomers === 0) {
+        customerGrowthText = currentMonthCustomers > 0 ? "+100% new customers this month" : "No new customers";
+    } else {
+        const growth = ((currentMonthCustomers - lastMonthCustomers) / lastMonthCustomers) * 100;
+        customerGrowthText = `${growth > 0 ? '+' : ''}${growth.toFixed(0)}% new customers this month`;
+    }
+
     const stats = {
+      insights: {
+        peakHours: peakHourText,
+        bestDay: bestDayText,
+        customerGrowth: customerGrowthText
+      },
       totalRevenue: (totalStats[0]?.totalRevenue || 0).toFixed(2),
-      productsSold: totalStats[0]?.productsSold || 0,
+      productsSold: {
+        total: totalStats[0]?.productsSold || 0,
+        month: currentMonth.sold || 0,
+        week: weekStats.sold || 0,
+        today: todayStatsAgg[0]?.sold || 0,
+      },
+      revenueOrderCount: {
+        total: revenueOrdersAgg[0]?.count || 0,
+        month: monthRevenueOrdersAgg[0]?.count || 0,
+        week: weekRevenueOrdersAgg[0]?.count || 0,
+        today: todayStatsAgg[0]?.orderCount || 0,
+      },
+      totalCustomers: totalCustomersAgg[0]?.count || 0,
       newOrders: newOrdersStats[0]?.count || 0,
+      activeOrders: activeOrdersStats[0]?.count || 0,
       totalOrders: totalOrdersAgg[0]?.count || 0,
-      revenueOrderCount: revenueOrdersAgg[0]?.count || 0,
+      monthRevenue: (currentMonth.revenue || 0).toFixed(2),
+      weekRevenue: (weekStats.revenue || 0).toFixed(2),
+      todayRevenue: todayRevenue.toFixed
+        ? todayRevenue.toFixed(2)
+        : (Number(todayRevenue) || 0).toFixed(2),
+      todayOrderCount: todayOrderCount || 0,
+      topProducts: topProductsAgg.map((p) => ({
+        product_id: p._id,
+        product_name: p.product_name,
+        revenue: p.revenue,
+        quantity: p.quantity,
+      })),
       revenueChange: calculateChange(
         currentMonth.revenue,
-        lastMonth.revenue
+        lastMonth.revenue,
       ).toFixed(1),
       productsSoldChange: calculateChange(
         currentMonth.sold,
-        lastMonth.sold
+        lastMonth.sold,
       ).toFixed(1),
       recentOrders: recentOrders.slice(0, 5).map((o) => ({
         ...o,
@@ -1335,6 +1631,36 @@ const getVendorDashboard = async (req, res) => {
   } catch (error) {
     console.error("Dashboard Error:", error);
     sendError(res, "Server error");
+  }
+};
+
+const changePassword = async (req, res) => {
+  try {
+    const vendorObjectId = new mongoose.Types.ObjectId(req.user.vendorId);
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return sendError(res, "Please provide both current and new passwords.");
+    }
+
+    const vendor = await Vendor.findById(vendorObjectId);
+    if (!vendor) {
+      return sendError(res, "Vendor not found.");
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, vendor.password);
+    if (!isMatch) {
+      return sendError(res, "Incorrect current password.");
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    vendor.password = hashedPassword;
+    await vendor.save();
+
+    sendJson(res, { message: "Password updated successfully." });
+  } catch (error) {
+    console.error("Change Password Error:", error);
+    sendError(res, "Server error.");
   }
 };
 
@@ -1353,6 +1679,7 @@ const vendorController = {
   updateOrderStatus,
   getVendorCustomers,
   getVendorCustomerDetails,
+  changePassword,
   updateVendorProfile,
   deleteProduct,
   deleteOrder,

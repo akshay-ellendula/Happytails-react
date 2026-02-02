@@ -20,6 +20,11 @@ router.put(
   protectRoute(["vendor", "eventManager"]),
   vendorController.updateVendorProfile
 );
+router.put(
+  "/change-password",
+  protectRoute(["vendor", "eventManager"]),
+  vendorController.changePassword
+);
 router.get(
   "/analytics",
   protectRoute(["vendor", "eventManager"]),
