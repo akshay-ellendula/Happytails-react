@@ -95,7 +95,7 @@ HappyTails/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/happytails-react.git
+git clone https://github.com/akshay-ellendula/Happytails-react.git
 cd happytails-react
 
 ```
