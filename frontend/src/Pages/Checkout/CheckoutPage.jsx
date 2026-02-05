@@ -61,8 +61,11 @@ const CheckoutPage = () => {
         toast.error('No saved addresses found');
         return;
       }
+      // Address already contains its name (alias) from database
       selectedAddress = user.addresses[selectedAddressIndex];
     }
+
+    console.log("Selected address for checkout:", selectedAddress);
 
     const cartPayload = cart.map(item => ({
       product_id: item.product_id,
@@ -150,8 +153,8 @@ const CheckoutPage = () => {
               >
                 {user.addresses.map((addr, idx) => (
                   <option key={idx} value={idx}>
-                    <span className="font-medium">{addr.name || `Address ${idx + 1}`}</span>
-                    {addr.isDefault && ' ★'}
+                    {addr.name || `Address ${idx + 1}`}
+                    {addr.isDefault && ' (Default)'}
                   </option>
                 ))}
               </select>
@@ -194,7 +197,7 @@ const CheckoutPage = () => {
             <div className="grid gap-4">
               <div>
                 <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Address Name <span className="text-gray-500">(e.g., Home, Office)</span>
+                  Address Name <span className="text-gray-500 text-xs">(e.g., Home, Office)</span>
                 </label>
                 <input
                   name="name"

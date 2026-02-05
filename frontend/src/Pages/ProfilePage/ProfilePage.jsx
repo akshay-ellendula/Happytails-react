@@ -28,30 +28,43 @@ export default function ProfilePage() {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // FIXED: Better useEffect with proper address name handling
   useEffect(() => {
     console.log("ProfilePage render: user =", user);
     console.log("User addresses:", user?.addresses);
     
     if (user) {
-      // Backend should now return addresses with names
-      const formattedAddresses = (user.addresses || []).map((addr, index) => ({
-        name: addr.name || `Address ${index + 1}`,
-        houseNumber: addr.houseNumber || "",
-        streetNo: addr.streetNo || "",
-        city: addr.city || "",
-        pincode: addr.pincode || "",
-        isDefault: addr.isDefault || false,
-      }));
+      // CRITICAL FIX: Check if we're currently editing or have unsaved changes
+      const hasUnsavedChanges = editMode || showAddressForm || editingAddressIndex !== null;
+      
+      if (!hasUnsavedChanges) {
+        // Only reset from user data if we don't have unsaved changes
+        const formattedAddresses = (user.addresses || []).map((addr, index) => {
+          console.log(`Address ${index}:`, addr);
+          return {
+            name: addr.name || `Address ${index + 1}`, // Use address.name from backend
+            houseNumber: addr.houseNumber || "",
+            streetNo: addr.streetNo || "",
+            city: addr.city || "",
+            pincode: addr.pincode || "",
+            isDefault: addr.isDefault || false,
+          };
+        });
 
-      setProfile({
-        name: user.userName || "",
-        email: user.email || "",
-        phone: user.phoneNumber || "",
-        profilePic: user.profilePic || "/icons/profile-circle-svgrepo-com.svg",
-        addresses: formattedAddresses,
-      });
+        console.log("Setting addresses from user:", formattedAddresses);
+
+        setProfile({
+          name: user.userName || "",
+          email: user.email || "",
+          phone: user.phoneNumber || "",
+          profilePic: user.profilePic || "/icons/profile-circle-svgrepo-com.svg",
+          addresses: formattedAddresses,
+        });
+      } else {
+        console.log("Keeping local addresses due to unsaved changes");
+      }
     }
-  }, [user]);
+  }, [user]); // Only depends on user
 
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -74,10 +87,10 @@ export default function ProfilePage() {
 
   const saveAddress = () => {
     // Validate required fields
-    const addressName = newAddress.name.trim() || 
-                       (editingAddressIndex !== null ? 
-                        profile.addresses[editingAddressIndex]?.name : 
-                        `Address ${profile.addresses.length + 1}`);
+    if (!newAddress.name.trim()) {
+      alert("Please enter an address name (e.g., Home, Office)");
+      return;
+    }
     
     if (!newAddress.houseNumber.trim() || !newAddress.streetNo.trim() || 
         !newAddress.city.trim() || !newAddress.pincode.trim()) {
@@ -86,9 +99,15 @@ export default function ProfilePage() {
     }
 
     let updatedAddresses = [...profile.addresses];
+    
+    // CRITICAL: Ensure we preserve all fields including name
     const addressToSave = {
-      ...newAddress,
-      name: addressName, // Ensure name is always set
+      name: newAddress.name.trim(), // Make sure name is trimmed
+      houseNumber: newAddress.houseNumber.trim(),
+      streetNo: newAddress.streetNo.trim(),
+      city: newAddress.city.trim(),
+      pincode: newAddress.pincode.trim(),
+      isDefault: newAddress.isDefault,
     };
 
     if (editingAddressIndex !== null) {
@@ -105,7 +124,7 @@ export default function ProfilePage() {
       }));
     }
 
-    console.log("Saving addresses:", updatedAddresses);
+    console.log("Saving addresses to local state:", updatedAddresses);
     setProfile({ ...profile, addresses: updatedAddresses });
     resetAddressForm();
   };
@@ -117,6 +136,7 @@ export default function ProfilePage() {
 
   const editAddress = (index) => {
     const address = profile.addresses[index];
+    console.log("Editing address:", address);
     setEditingAddressIndex(index);
     setNewAddress({
       name: address.name || "",
@@ -162,41 +182,40 @@ export default function ProfilePage() {
     setShowAddressForm(true);
   };
 
+  // FIXED: Better hasChanges function
   const hasChanges = () => {
     const userAddresses = user?.addresses || [];
     
-    // Compare addresses with proper field checking
-    const addressesChanged = !arraysEqual(profile.addresses, userAddresses);
+    // Deep compare addresses
+    const addressesChanged = JSON.stringify(profile.addresses) !== JSON.stringify(userAddresses);
     
-    return (
+    const hasChange = 
       profile.name !== (user?.userName || "") ||
       profile.email !== (user?.email || "") ||
       profile.phone !== (user?.phoneNumber || "") ||
       addressesChanged ||
-      newImageFile !== null
-    );
-  };
-
-  // Helper function to compare address arrays
-  const arraysEqual = (a, b) => {
-    if (a.length !== b.length) return false;
+      newImageFile !== null;
     
-    return a.every((addrA, index) => {
-      const addrB = b[index];
-      return (
-        (addrA.name || "") === (addrB?.name || "") &&
-        (addrA.houseNumber || "") === (addrB?.houseNumber || "") &&
-        (addrA.streetNo || "") === (addrB?.streetNo || "") &&
-        (addrA.city || "") === (addrB?.city || "") &&
-        (addrA.pincode || "") === (addrB?.pincode || "") &&
-        (addrA.isDefault || false) === (addrB?.isDefault || false)
-      );
+    console.log("Checking for changes:", {
+      nameChanged: profile.name !== (user?.userName || ""),
+      emailChanged: profile.email !== (user?.email || ""),
+      phoneChanged: profile.phone !== (user?.phoneNumber || ""),
+      addressesChanged,
+      hasImageChange: newImageFile !== null,
+      totalChange: hasChange
     });
+    
+    return hasChange;
   };
 
+  // FIXED: handleSave with better logging and state management
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
+
+    console.log("=== SAVE PROFILE START ===");
+    console.log("Current profile addresses:", profile.addresses);
+    console.log("Original user addresses:", user?.addresses);
 
     if (!hasChanges()) {
       alert("No changes to save.");
@@ -229,16 +248,17 @@ export default function ProfilePage() {
       formData.append("email", profile.email);
       formData.append("phoneNumber", profile.phone);
       
-      // Ensure all addresses have names before sending
+      // CRITICAL: Send addresses as proper JSON
       const addressesToSend = profile.addresses.map((addr, index) => ({
         name: addr.name || `Address ${index + 1}`,
-        houseNumber: addr.houseNumber,
-        streetNo: addr.streetNo,
-        city: addr.city,
-        pincode: addr.pincode,
+        houseNumber: addr.houseNumber || "",
+        streetNo: addr.streetNo || "",
+        city: addr.city || "",
+        pincode: addr.pincode || "",
         isDefault: addr.isDefault || false,
       }));
       
+      console.log("Addresses being sent:", addressesToSend);
       formData.append("addresses", JSON.stringify(addressesToSend));
       
       if (newImageFile) {
@@ -261,26 +281,41 @@ export default function ProfilePage() {
       );
 
       console.log("API Response:", response.data);
+      console.log("User in response:", response.data.user);
+      console.log("Addresses in response:", response.data.user?.addresses);
 
       if (response.data.success) {
         alert("Profile updated successfully!");
         
-        // Update user context with the response data
+        // CRITICAL: Update user context with the response data
         if (response.data.user) {
-          // Ensure addresses in response have names
+          // Ensure addresses have names
           const updatedUser = {
             ...response.data.user,
             addresses: response.data.user.addresses?.map((addr, index) => ({
-              ...addr,
               name: addr.name || `Address ${index + 1}`,
+              houseNumber: addr.houseNumber || "",
+              streetNo: addr.streetNo || "",
+              city: addr.city || "",
+              pincode: addr.pincode || "",
+              isDefault: addr.isDefault || false,
             })) || [],
           };
+          
+          console.log("Updating user context with:", updatedUser);
           updateUser(updatedUser);
         }
         
         setEditMode(false);
         setNewImageFile(null);
         setShowAddressForm(false);
+        
+        // Force a small delay to ensure state updates
+        setTimeout(() => {
+          console.log("Save completed. Current user:", user);
+          console.log("Current profile addresses:", profile.addresses);
+        }, 100);
+        
       } else {
         alert("Error: " + response.data.message);
       }
@@ -292,16 +327,19 @@ export default function ProfilePage() {
       );
     } finally {
       setLoading(false);
+      console.log("=== SAVE PROFILE END ===");
     }
   };
 
   const handleCancel = () => {
+    console.log("Canceling changes");
     setEditMode(false);
     setNewImageFile(null);
     setShowAddressForm(false);
     resetAddressForm();
+    
+    // Reset to original user data
     if (user) {
-      // Reset to original user data
       const formattedAddresses = (user.addresses || []).map((addr, index) => ({
         name: addr.name || `Address ${index + 1}`,
         houseNumber: addr.houseNumber || "",
@@ -310,6 +348,8 @@ export default function ProfilePage() {
         pincode: addr.pincode || "",
         isDefault: addr.isDefault || false,
       }));
+
+      console.log("Resetting to user addresses:", formattedAddresses);
 
       setProfile({
         name: user.userName || "",
