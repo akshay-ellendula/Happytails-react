@@ -1,14 +1,10 @@
-// backend/src/controller/productController.js
-
 import { Product, ProductVariant, ProductImage } from '../models/productsModel.js';
 import Customer from '../models/customerModel.js';
-import { Order, OrderItem } from '../models/orderModel.js';       // Added .js
-import jwt from 'jsonwebtoken'; // UPDATED: Import jwt
-import mongoose from 'mongoose';                                
+import { Order, OrderItem } from '../models/orderModel.js';
+import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import uploadToCloudinary from '../utils/cloudinaryUploader.js';
-// REMOVED: const JWT_SECRET = process.env.JWT_SECRET_KEY; 
 
-// --- getPetAccessories (UPDATED) ---
 const getPetAccessories = async (req, res, next) => {
     try {
         console.log("Fetching pet accessories..."); 
@@ -76,7 +72,6 @@ const getPetAccessories = async (req, res, next) => {
         ]);
         console.log(`Found ${products.length} products after aggregation.`); 
 
-        // --- Fetch Filters (Ensure these are awaited) ---
         console.log("Fetching filters..."); 
         const productTypesRaw = await Product.aggregate([ 
             { $match: { product_type: { $ne: null, $ne: "" } } }, 
@@ -93,7 +88,7 @@ const getPetAccessories = async (req, res, next) => {
         const colors = colorsRaw.map(item => item.color).sort();
 
         const sizesRaw = await ProductVariant.aggregate([
-            { $match: { size: { $ne: null, $ne: "" } } }, // Added not empty check
+            { $match: { size: { $ne: null, $ne: "" } } },
             {
                 $group: {
                     _id: { $toLower: { $trim: { input: '$size' } } }
@@ -130,12 +125,10 @@ const getPetAccessories = async (req, res, next) => {
     }
 };
 
-// --- getProduct (UPDATED) ---
 const getProduct = async (req, res, next) => {
     try {
         const productId = req.params.id;
         
-        // Validate if productId is a valid ObjectId
         if (!mongoose.Types.ObjectId.isValid(productId)) {
              return res.status(400).json({ success: false, message: 'Invalid product ID format' });
         }
@@ -177,7 +170,6 @@ const getProduct = async (req, res, next) => {
     }
 };
 
-// --- checkout (UPDATED) ---
 const checkout = async (req, res, next) => {
     try {
         const customerID = req.user.customerId;
@@ -187,198 +179,143 @@ const checkout = async (req, res, next) => {
             return res.status(404).json({ message: "User not found" })
         }
         
-        // UPDATED: Check for address object and city
-        if (!customer.userName || !customer.email || !customer.phoneNumber || !customer.address || !customer.address.city) {
+        const { cart, selectedAddress } = req.body;
+
+        if (!selectedAddress || !selectedAddress.city || !selectedAddress.pincode) {
             return res.status(400).json({
                 success: false,
-                message: 'Please complete your profile information (including address) before proceeding to checkout.'
+                message: 'Please provide a valid shipping address.'
             });
         }
 
-        const { cart } = req.body;
-
-        if (!cart || !Array.isArray(cart) || cart.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Cart is empty'
-            });
+        // Basic cart validation (adjust according to your needs)
+        if (!Array.isArray(cart) || cart.length === 0) {
+            return res.status(400).json({ success: false, message: 'Cart is empty or invalid' });
         }
 
-        const cleanCart = cart.map(item => ({
-            product_id: item.product_id || null,
-            variant_id: item.variant_id || null, 
-            product_name: item.product_name,
-            quantity: parseInt(item.quantity) || 1,
-            price: parseFloat(item.price) || 0,
-            size: item.size || null,
-            color: item.color || null
-        }));
-
-        const invalidItems = cleanCart.filter(item =>
-            !item.product_id || !item.variant_id || !item.product_name || item.quantity <= 0 || item.price < 0 // Price can be 0 for free items
-        );
-
-        if (invalidItems.length > 0) {
-            console.warn("Invalid cart items detected:", invalidItems);
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid cart items detected'
-            });
-        }
-
-        const subtotal = cleanCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const charge = subtotal * 0.04; 
-        const total = subtotal + charge;
-
-        const orderTotals = {
-            subtotal, charge, total
-        }
-
-        const payload = {
-            customerId: customerID,
-            orderTotals: orderTotals,
-            cleanCart: cleanCart
-        };
-
-        // FIXED: Use process.env.JWT_SECRET_KEY directly
-        const checkoutToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
-            expiresIn: '15m'
+        let subtotal = 0;
+        const cleanCart = cart.map(item => {
+            subtotal += item.price * item.quantity;
+            return {
+                product_id: item.product_id,
+                variant_id: item.variant_id,
+                product_name: item.product_name,
+                quantity: Number(item.quantity),
+                price: Number(item.price),
+                size: item.size || null,
+                color: item.color || null
+            };
         });
 
-        res.cookie('checkout_session', checkoutToken, {
-            httpOnly: true, 
-            secure: process.env.NODE_ENV === 'production', 
-            maxAge: 15 * 60 * 1000,
-            sameSite: 'strict' 
+        const charge = subtotal * 0.04;
+        const total = subtotal + charge;
+
+        const orderTotals = { subtotal, charge, total };
+
+        const sessionData = {
+            cart: cleanCart,
+            orderTotals,
+            selectedAddress,
+        };
+
+        res.cookie('checkout_session', JSON.stringify(sessionData), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 10 * 60 * 1000 // 10 minutes
         });
 
         return res.json({
             success: true,
-            redirectUrl: '/payment', // You need to create this frontend route
+            redirectUrl: '/payment'
         });
+
     } catch (err) {
         console.error('Checkout error:', err);
         next(err);
     }
 };
 
-
-// --- processPayment (UPDATED) ---
-// --- processPayment (FIXED) ---
 const processPayment = async (req, res, next) => {
     try {
-        const checkoutToken = req.cookies.checkout_session;
-        const { cardNumber, expiryDate, cvv } = req.body; 
-
-        if (!checkoutToken) {
-            return res.status(401).json({ success: false, message: 'Checkout session expired or missing token.' });
+        const sessionCookie = req.cookies.checkout_session;
+        if (!sessionCookie) {
+            return res.status(400).json({ success: false, message: 'Session expired or invalid' });
         }
 
-        let orderTotals;
-        let cleanCart;
-        let customerID;
+        const sessionData = JSON.parse(sessionCookie);
+        const { cart, orderTotals, selectedAddress } = sessionData;
 
-        try {
-            const decoded = jwt.verify(checkoutToken, process.env.JWT_SECRET_KEY);
-            orderTotals = decoded.orderTotals;
-            cleanCart = decoded.cleanCart; 
-            customerID = decoded.customerId;
-        } catch (err) {
-            console.error('JWT validation failed:', err.message);
-            res.clearCookie('checkout_session');
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid or expired checkout session. Please start checkout again.'
-            });
-        }
+        const { cardNumber, expiryDate, cvv } = req.body;
 
-        if (!cleanCart || !orderTotals || !cardNumber) {
-            return res.status(400).json({
-                success: false,
-                message: 'Unable to fetch Cart or payment details'
-            });
-        }
-
-        // Basic card validation (SIMULATION)
         const cleanCardNumber = cardNumber.replace(/\s/g, '');
         if (cleanCardNumber.length !== 16 || isNaN(cleanCardNumber)) {
             return res.status(400).json({ success: false, message: 'Invalid card number' });
         }
         const paymentLastFour = cleanCardNumber.slice(-4);
 
-        // --- Database Transaction ---
         const session = await mongoose.startSession();
         session.startTransaction();
+
         try {
-            // 1. Create Order document
-            // NOTE: We do NOT put vendor_id here, because an order might have items from multiple vendors.
             const order = await Order.create([{
-                customer_id: customerID, 
+                customer_id: req.user.customerId,
                 order_date: new Date(),
-                status: 'Pending', 
+                status: 'Pending',
                 subtotal: orderTotals.subtotal,
                 total_amount: orderTotals.total,
                 payment_last_four: paymentLastFour,
+                shippingAddress: selectedAddress
             }], { session });
 
-            // 2. Prepare Order Items (FIXED SECTION)
             const orderItems = [];
 
-            // We iterate using a for-loop so we can await the Product database call
-            for (const item of cleanCart) {
-                // Fetch the actual product to get the trusted vendor_id
+            for (const item of cart) {
                 const product = await Product.findById(item.product_id).session(session);
-
                 if (!product) {
                     throw new Error(`Product not found: ${item.product_name}`);
                 }
 
-                // Push to array with the correct vendor_id
                 orderItems.push({
                     order_id: order[0]._id,
-                    product_id: item.product_id, 
-                    variant_id: item.variant_id, 
-                    
-                    // 👇 THIS FIXES THE ERROR 👇
-                    vendor_id: product.vendor_id, 
-                    
+                    product_id: item.product_id,
+                    variant_id: item.variant_id,
+                    vendor_id: product.vendor_id,
                     product_name: item.product_name,
                     quantity: item.quantity,
-                    price: item.price, 
+                    price: item.price,
                     size: item.size,
                     color: item.color
                 });
 
-                // 3. Update Stock inside the same loop
                 const updateResult = await ProductVariant.updateOne(
-                    { _id: item.variant_id, stock_quantity: { $gte: item.quantity } }, 
+                    { _id: item.variant_id, stock_quantity: { $gte: item.quantity } },
                     { $inc: { stock_quantity: -item.quantity } },
                     { session }
                 );
+
                 if (updateResult.matchedCount === 0 || updateResult.modifiedCount === 0) {
-                     throw new Error(`Insufficient stock for ${item.product_name}`);
+                    throw new Error(`Insufficient stock for ${item.product_name}`);
                 }
             }
 
-            // 4. Insert all items at once
             await OrderItem.insertMany(orderItems, { session });
 
-            // Commit transaction
             await session.commitTransaction();
-            
+
             res.clearCookie('checkout_session');
-            
+
             return res.json({
                 success: true,
                 redirectUrl: '/my_orders'
             });
         } catch (transactionError) {
             await session.abortTransaction();
-            console.error('Transaction Error during payment:', transactionError); 
+            console.error('Transaction Error during payment:', transactionError);
             const errorMessage = transactionError.message.includes('Insufficient stock')
                 ? transactionError.message
                 : 'Failed to process payment due to a server error.';
-            return res.status(400).json({ success: false, message: errorMessage }); 
+            return res.status(400).json({ success: false, message: errorMessage });
         } finally {
             session.endSession();
         }
@@ -389,9 +326,7 @@ const processPayment = async (req, res, next) => {
     }
 };
 
-// --- getUserOrders (UPDATED) ---
 const getUserOrders = async (req, res, next) => {
-    
     try {
         const orders = await Order.find({ customer_id: req.user.customerId})
             .sort({ order_date: -1 })
@@ -404,13 +339,13 @@ const getUserOrders = async (req, res, next) => {
         const populatedOrders = await Promise.all(orders.map(async order => {
             const items = await OrderItem.find({ order_id: order._id }).lean();
             const detailedItems = await Promise.all(items.map(async item => {
-                let imageData = null; // Use null instead of path
+                let imageData = null;
                 if (item.product_id) {
                     const imageDoc = await ProductImage.findOne({
                         product_id: item.product_id,
                         is_primary: true
                     }).select('image_data').lean(); 
-                    imageData = imageDoc?.image_data || null; // Use null if no image
+                    imageData = imageDoc?.image_data || null;
                 }
                 return {
                     ...item,
@@ -431,12 +366,10 @@ const getUserOrders = async (req, res, next) => {
     }
 };
 
-// --- reorder (UPDATED) ---
 const reorder = async (req, res, next) => {
     try {
         const orderId = req.params.orderId;
 
-        // UPDATED: Use 'customer_id' to match schema
         const order = await Order.findOne({ _id: orderId, customer_id: req.user.customerId }).lean(); 
         if (!order) {
             return res.status(404).json({ success: false, message: 'Order not found or access denied' });
@@ -446,7 +379,6 @@ const reorder = async (req, res, next) => {
         if (items.length === 0) return res.status(404).json({ success: false, message: 'Order items not found' });
         
         const cartItems = await Promise.all(items.map(async (item) => {
-            // UPDATED: Fetch image data
             let imageData = null;
             if (item.product_id) {
                  const imageDoc = await ProductImage.findOne({
@@ -464,7 +396,7 @@ const reorder = async (req, res, next) => {
                 price: item.price, 
                 size: item.size || null,
                 color: item.color || null,
-                image_data: imageData // UPDATED: Include image data
+                image_data: imageData
             };
         }));
         res.json({ success: true, cart: cartItems });
@@ -473,6 +405,7 @@ const reorder = async (req, res, next) => {
         next(err);
     }
 };
+
 export {
     getPetAccessories,
     getProduct,

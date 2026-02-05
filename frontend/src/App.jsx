@@ -21,6 +21,7 @@ import ServiceProviderLogin from "./Pages/Auth/ServiceProviderLogin";
 import ProductAccessoryPageWrapper from "./pages/Accessory/ProductAccessoryPageWrapper";
 import ProductDetailPage from "./pages/Accessory/ProductDetailPage";
 import CartSidebar from "./pages/Accessory/components/CartSidebar";
+import CheckoutPage from "./pages/Checkout/CheckoutPage";
 
 // --- Pages: Events & Booking ---
 import EventsPage from "./pages/Events/EventsPage";
@@ -212,6 +213,7 @@ function AppRoutes() {
       {/* --- 404 --- */}
       <Route path="/404" element={<NotFound />} />
       <Route path="*" element={<Navigate to="/404" replace />} />
+      <Route path="/checkout" element={<CheckoutPage />} />
     </Routes>
   );
 }

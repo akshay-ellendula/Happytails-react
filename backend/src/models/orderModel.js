@@ -1,8 +1,4 @@
-// orderModel.js
-
-import mongoose from 'mongoose'; // <-- CHANGE 1: Use ES import
-
-// --- Schemas related to Orders and Transactions ---
+import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema({
     customer_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
@@ -16,6 +12,12 @@ const orderSchema = new mongoose.Schema({
     cancelled_at: { type: Date, default: null },
     payment_last_four: { type: String, default: null },
     is_deleted: { type: Boolean, default: false },
+    shippingAddress: {
+        houseNumber: { type: String },
+        streetNo: { type: String },
+        city: { type: String },
+        pincode: { type: String }
+    },
     timeline: [{
         status: { type: String },
         date: { type: Date },
@@ -36,12 +38,9 @@ const orderItemSchema = new mongoose.Schema({
     is_deleted: { type: Boolean, default: false },
 });
 
-// --- Create Models ---
 const Order = mongoose.model('Order', orderSchema);
 const OrderItem = mongoose.model('OrderItem', orderItemSchema);
 
-
-// --- CHANGE 2: Use ES Module named export ---
 export {
     Order,
     OrderItem,

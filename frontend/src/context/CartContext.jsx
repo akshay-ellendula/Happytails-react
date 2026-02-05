@@ -1,15 +1,11 @@
-// frontend/src/context/CartContext.jsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { axiosInstance } from '../utils/axios';
 import { toast } from 'react-hot-toast';
 
-// 1. Create the context
 const CartContext = createContext();
 
-// 2. Create a hook to easily use the context
 export const useCart = () => useContext(CartContext);
 
-// 3. Create the Provider component
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState(() => {
         try {
@@ -22,16 +18,13 @@ export const CartProvider = ({ children }) => {
 
     const [isCartOpen, setIsCartOpen] = useState(false);
 
-    // Save cart to localStorage whenever it changes
     useEffect(() => {
         localStorage.setItem('cart', JSON.stringify(cart));
     }, [cart]);
 
-    // --- Cart State Functions ---
     const openCart = () => setIsCartOpen(true);
     const closeCart = () => setIsCartOpen(false);
 
-    // --- Cart Item Functions ---
     const updateQuantity = useCallback((index, quantity) => {
         setCart(prevCart => {
             const newCart = [...prevCart];
@@ -51,7 +44,6 @@ export const CartProvider = ({ children }) => {
         return { subtotal, charge, total };
     }, [cart]);
 
-    // --- Core Logic Functions ---
     const addToCart = (product, variant, quantity) => {
         if (!product || !variant) {
             return { success: false, message: 'Invalid product data.' };
@@ -89,50 +81,18 @@ export const CartProvider = ({ children }) => {
         }
 
         setCart(newCart);
-        openCart(); // Open the cart on successful add
+        openCart();
         return { success: true, message: 'Added to cart!' };
     };
     
-    const handleCheckout = async () => {
+    const handleCheckout = () => {
         if (cart.length === 0) {
             toast.error('Your cart is empty!');
             return;
         }
-
-        const cartWithoutImages = cart.map(item => ({
-            product_id: item.product_id,
-            variant_id: item.variant_id,
-            product_name: item.product_name,
-            quantity: parseInt(item.quantity) || 1,
-            price: parseFloat(item.price) || 0,
-            size: item.size || null,
-            color: item.color || null
-        }));
-
-        try {
-            const response = await axiosInstance.post('/products/checkout', { cart: cartWithoutImages });
-            const result = response.data;
-
-            if (!result.success) {
-                toast.error(result.message || 'Checkout failed.');
-                if (response.status === 400 && result.message.includes('profile')) {
-                    window.location.href = '/profile';
-                }
-                return;
-            }
-
-            if (result.success && result.redirectUrl) {
-                setCart([]); // Clear cart
-                window.location.href = result.redirectUrl;
-            }
-
-        } catch (error) {
-            const message = error.response?.data?.message || `Network error: ${error.message}.`;
-            toast.error(message);
-        }
+        window.location.href = '/checkout';  // ← changed to redirect
     };
 
-    // 4. Provide all values
     const value = {
         cart,
         isCartOpen,

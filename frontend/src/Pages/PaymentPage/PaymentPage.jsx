@@ -15,7 +15,6 @@ const PaymentPage = () => {
     name: "",
   });
   const [isProcessing, setIsProcessing] = useState(false);
-  // Add mobile menu state to match other pages
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
   const navigate = useNavigate();
@@ -27,22 +26,19 @@ const PaymentPage = () => {
   const handleInputChange = (e) => {
     let { name, value } = e.target;
 
-    // Formatting for card number (adds spaces)
     if (name === "number") {
       value = value
         .replace(/\s/g, "")
         .replace(/(\d{4})/g, "$1 ")
         .trim();
-      if (value.length > 19) return; // 16 digits + 3 spaces
+      if (value.length > 19) return;
     }
 
-    // Formatting for expiry date (adds /)
     if (name === "expiry") {
       value = value.replace(/\D/g, "").replace(/(\d{2})(\d)/, "$1/$2");
       if (value.length > 5) return;
     }
 
-    // Formatting for CVV (max 4 digits)
     if (name === "cvv") {
       value = value.replace(/\D/g, "");
       if (value.length > 4) return;
@@ -88,7 +84,6 @@ const PaymentPage = () => {
         cvv: cardData.cvv,
       };
 
-      // This endpoint reads the checkout_session cookie you set in the backend
       const response = await axiosInstance.post(
         "/products/process-payment",
         paymentData
@@ -118,9 +113,8 @@ const PaymentPage = () => {
 
       <div className="grow flex items-center justify-center py-12 px-4">
         <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-md border-4 border-black">
-          {/* Back Button */}
           <button
-            onClick={() => navigate("/pet_accessory")} // Go back to shop
+            onClick={() => navigate("/pet_accessory")}
             className="absolute top-6 left-6 flex items-center gap-2 text-gray-600 hover:text-black transition-colors"
             disabled={isProcessing}
           >
@@ -190,7 +184,6 @@ const PaymentPage = () => {
   );
 };
 
-// Re-using your FormInput component style from Authpage for consistency
 const FormInput = ({
   type = "text",
   name,
@@ -221,7 +214,5 @@ const FormInput = ({
     </div>
   </div>
 );
-
-// Icons imported at top for FormInput
 
 export default PaymentPage;

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto'; // Import crypto
+import crypto from 'crypto';
 
 const customerSchema = new mongoose.Schema({
     userName: {
@@ -19,12 +19,13 @@ const customerSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    address: {
+    addresses: [{
         houseNumber: { type: String },
         streetNo: { type: String },
         city: { type: String },
-        pincode: { type: String }
-    },
+        pincode: { type: String },
+        isDefault: { type: Boolean, default: false }
+    }],
     phoneNumber: {
         type: String,
     },
@@ -32,7 +33,6 @@ const customerSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
-    // Add these two fields
     resetPasswordToken: String,
     resetPasswordExpire: Date
 }, {
@@ -54,17 +54,10 @@ customerSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 }
 
-// Add this method to generate the reset token
 customerSchema.methods.getResetPasswordToken = function () {
-    // Generate token
     const resetToken = crypto.randomBytes(20).toString('hex');
-
-    // Hash token and set to resetPasswordToken field
     this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-
-    // Set expire (10 minutes)
     this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
-
     return resetToken;
 };
 

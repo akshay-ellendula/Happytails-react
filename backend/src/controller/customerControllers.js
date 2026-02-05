@@ -1,9 +1,5 @@
-// controller/customerControllers.js
 import Customer from "../models/customerModel.js";
 
-// ✅ All functions work the same — only putCustomer changed to Base64 logic
-
-// GET all customers
 export const getCustomers = async (req, res, next) => {
   try {
     const customers = await Customer.find({}).select("-password");
@@ -14,7 +10,6 @@ export const getCustomers = async (req, res, next) => {
   }
 };
 
-// GET one customer
 export const getCustomer = async (req, res, next) => {
   const { id } = req.params;
   try {
@@ -28,58 +23,41 @@ export const getCustomer = async (req, res, next) => {
   }
 };
 
-// ✅ PUT – update profile + picture (Base64, no Cloudinary)
 export const putCustomer = async (req, res, next) => {
   const { id } = req.params;
   const {
     userName,
     email,
     phoneNumber,
-    houseNumber,
-    streetNo,
-    city,
-    pincode,
+    addresses,
   } = req.body;
 
-  // Security check
   if (req.user.role === "customer" && req.user.customerId !== id) {
-    return res
-      .status(403)
-      .json({
-        success: false,
-        message: "Forbidden: you can only edit your own profile.",
-      });
+    return res.status(403).json({
+      success: false,
+      message: "Forbidden: you can only edit your own profile.",
+    });
   }
 
   try {
     const customer = await Customer.findById(id);
     if (!customer)
-      return res
-        .status(404)
-        .json({ success: false, message: "Customer not found" });
+      return res.status(404).json({ success: false, message: "Customer not found" });
 
-    // Validation
     if (!userName || !email) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Username and email are required" });
+      return res.status(400).json({ success: false, message: "Username and email are required" });
     }
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
     if (!emailRegex.test(email)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Only @gmail.com allowed" });
+      return res.status(400).json({ success: false, message: "Only @gmail.com allowed" });
     }
 
     const existing = await Customer.findOne({ email });
     if (existing && existing._id.toString() !== id) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Email already taken" });
+      return res.status(400).json({ success: false, message: "Email already taken" });
     }
 
-    // ✅ Convert uploaded image to Base64 and store directly
     let profilePicUrl = customer.profilePic;
 
     if (req.file) {
@@ -89,16 +67,25 @@ export const putCustomer = async (req, res, next) => {
       profilePicUrl = dataUrl;
     }
 
-    // ✅ Update fields
     customer.userName = userName;
     customer.email = email;
     customer.phoneNumber = phoneNumber || customer.phoneNumber;
     customer.profilePic = profilePicUrl;
-    customer.address = customer.address || {};
-    customer.address.houseNumber = houseNumber || customer.address.houseNumber;
-    customer.address.streetNo = streetNo || customer.address.streetNo;
-    customer.address.city = city || customer.address.city;
-    customer.address.pincode = pincode || customer.address.pincode;
+
+    if (addresses) {
+      let parsedAddresses;
+      try {
+        parsedAddresses = typeof addresses === 'string' ? JSON.parse(addresses) : addresses;
+      } catch (e) {
+        return res.status(400).json({ success: false, message: "Invalid addresses format" });
+      }
+
+      const hasDefault = parsedAddresses.some(addr => addr.isDefault);
+      if (!hasDefault && parsedAddresses.length > 0) {
+        parsedAddresses[0].isDefault = true;
+      }
+      customer.addresses = parsedAddresses;
+    }
 
     const saved = await customer.save();
 
@@ -106,55 +93,44 @@ export const putCustomer = async (req, res, next) => {
       success: true,
       message: "Customer updated successfully",
       user: {
-        customerId: saved._id,
+        customerId: saved._id.toString(),
         userName: saved.userName,
         email: saved.email,
         profilePic: saved.profilePic,
         phoneNumber: saved.phoneNumber,
-        address: saved.address,
+        addresses: saved.addresses,
         role: "customer",
       },
     });
   } catch (error) {
-    console.error("putCustomer error:", error.message);
-    console.error(error.stack);
+    console.error("putCustomer error:", error.message, error.stack);
     next(error);
   }
 };
 
-// DELETE customer
 export const deleteCustomer = async (req, res, next) => {
   const { id } = req.params;
   try {
     const customer = await Customer.findById(id);
     if (!customer)
-      return res
-        .status(404)
-        .json({ success: false, message: "Customer not found" });
+      return res.status(404).json({ success: false, message: "Customer not found" });
     await Customer.findByIdAndDelete(id);
-    res
-      .status(200)
-      .json({ success: true, message: "Customer deleted successfully" });
+    res.status(200).json({ success: true, message: "Customer deleted successfully" });
   } catch (error) {
     console.error("deleteCustomer error:", error);
     next(error);
   }
 };
 
-// Toggle active status
 export const changeActiveStatus = async (req, res, next) => {
   const { id } = req.params;
   try {
     const customer = await Customer.findById(id);
     if (!customer)
-      return res
-        .status(404)
-        .json({ success: false, message: "Customer not found" });
+      return res.status(404).json({ success: false, message: "Customer not found" });
     customer.isActive = !customer.isActive;
     await customer.save();
-    res
-      .status(200)
-      .json({ success: true, message: "Customer status updated" });
+    res.status(200).json({ success: true, message: "Customer status updated" });
   } catch (error) {
     console.error("changeActiveStatus error:", error);
     next(error);
