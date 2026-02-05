@@ -28,41 +28,33 @@ export default function ProfilePage() {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // FIXED: Better useEffect with proper address name handling
+  // Simplified useEffect - always update from user context
   useEffect(() => {
-    console.log("ProfilePage render: user =", user);
-    console.log("User addresses:", user?.addresses);
+    console.log("ProfilePage: User context updated", user);
     
     if (user) {
-      // CRITICAL FIX: Check if we're currently editing or have unsaved changes
-      const hasUnsavedChanges = editMode || showAddressForm || editingAddressIndex !== null;
-      
-      if (!hasUnsavedChanges) {
-        // Only reset from user data if we don't have unsaved changes
-        const formattedAddresses = (user.addresses || []).map((addr, index) => {
-          console.log(`Address ${index}:`, addr);
-          return {
-            name: addr.name || `Address ${index + 1}`, // Use address.name from backend
-            houseNumber: addr.houseNumber || "",
-            streetNo: addr.streetNo || "",
-            city: addr.city || "",
-            pincode: addr.pincode || "",
-            isDefault: addr.isDefault || false,
-          };
-        });
+      const formattedAddresses = (user.addresses || []).map((addr, index) => ({
+        name: addr.name || `Address ${index + 1}`,
+        houseNumber: addr.houseNumber || "",
+        streetNo: addr.streetNo || "",
+        city: addr.city || "",
+        pincode: addr.pincode || "",
+        isDefault: addr.isDefault || false,
+      }));
 
-        console.log("Setting addresses from user:", formattedAddresses);
+      console.log("Setting profile from user context:", {
+        name: user.userName,
+        email: user.email,
+        addresses: formattedAddresses
+      });
 
-        setProfile({
-          name: user.userName || "",
-          email: user.email || "",
-          phone: user.phoneNumber || "",
-          profilePic: user.profilePic || "/icons/profile-circle-svgrepo-com.svg",
-          addresses: formattedAddresses,
-        });
-      } else {
-        console.log("Keeping local addresses due to unsaved changes");
-      }
+      setProfile({
+        name: user.userName || "",
+        email: user.email || "",
+        phone: user.phoneNumber || "",
+        profilePic: user.profilePic || "/icons/profile-circle-svgrepo-com.svg",
+        addresses: formattedAddresses,
+      });
     }
   }, [user]); // Only depends on user
 
@@ -182,12 +174,25 @@ export default function ProfilePage() {
     setShowAddressForm(true);
   };
 
-  // FIXED: Better hasChanges function
+  // Improved hasChanges function with better address comparison
   const hasChanges = () => {
     const userAddresses = user?.addresses || [];
     
-    // Deep compare addresses
-    const addressesChanged = JSON.stringify(profile.addresses) !== JSON.stringify(userAddresses);
+    // Normalize both address arrays for comparison
+    const normalizeAddress = (addr) => ({
+      name: addr.name || '',
+      houseNumber: addr.houseNumber || '',
+      streetNo: addr.streetNo || '',
+      city: addr.city || '',
+      pincode: addr.pincode || '',
+      isDefault: Boolean(addr.isDefault),
+    });
+    
+    const normalizedProfileAddresses = profile.addresses.map(normalizeAddress);
+    const normalizedUserAddresses = userAddresses.map(normalizeAddress);
+    
+    // Deep compare with JSON.stringify
+    const addressesChanged = JSON.stringify(normalizedProfileAddresses) !== JSON.stringify(normalizedUserAddresses);
     
     const hasChange = 
       profile.name !== (user?.userName || "") ||
@@ -201,6 +206,8 @@ export default function ProfilePage() {
       emailChanged: profile.email !== (user?.email || ""),
       phoneChanged: profile.phone !== (user?.phoneNumber || ""),
       addressesChanged,
+      profileAddresses: normalizedProfileAddresses,
+      userAddresses: normalizedUserAddresses,
       hasImageChange: newImageFile !== null,
       totalChange: hasChange
     });
@@ -208,30 +215,30 @@ export default function ProfilePage() {
     return hasChange;
   };
 
-  // FIXED: handleSave with better logging and state management
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+  
     console.log("=== SAVE PROFILE START ===");
     console.log("Current profile addresses:", profile.addresses);
     console.log("Original user addresses:", user?.addresses);
-
+  
     if (!hasChanges()) {
       alert("No changes to save.");
       setEditMode(false);
       setNewImageFile(null);
       setShowAddressForm(false);
+      setEditingAddressIndex(null);
       setLoading(false);
       return;
     }
-
+  
     if (profile.phone && !/^[6-9]\d{9}$/.test(profile.phone)) {
       alert("Please enter a valid 10-digit Indian phone number.");
       setLoading(false);
       return;
     }
-
+  
     const customerId = user?.customerId || user?._id || user?.id;
     if (!user || !customerId) {
       console.warn("ProfilePage: Missing user or customerId", user);
@@ -239,7 +246,7 @@ export default function ProfilePage() {
       setLoading(false);
       return;
     }
-
+  
     try {
       console.log("Sending to API - Addresses:", profile.addresses);
       
@@ -248,7 +255,7 @@ export default function ProfilePage() {
       formData.append("email", profile.email);
       formData.append("phoneNumber", profile.phone);
       
-      // CRITICAL: Send addresses as proper JSON
+      // CRITICAL: Send addresses as proper JSON with names preserved
       const addressesToSend = profile.addresses.map((addr, index) => ({
         name: addr.name || `Address ${index + 1}`,
         houseNumber: addr.houseNumber || "",
@@ -264,12 +271,12 @@ export default function ProfilePage() {
       if (newImageFile) {
         formData.append("profilePic", newImageFile);
       }
-
+    
       console.log("FormData contents:");
       for (let pair of formData.entries()) {
         console.log(pair[0] + ': ', pair[1]);
       }
-
+    
       const response = await axiosInstance.put(
         `/public/${customerId}`,
         formData,
@@ -279,42 +286,57 @@ export default function ProfilePage() {
           }
         }
       );
-
+    
       console.log("API Response:", response.data);
       console.log("User in response:", response.data.user);
       console.log("Addresses in response:", response.data.user?.addresses);
-
+    
       if (response.data.success) {
         alert("Profile updated successfully!");
         
         // CRITICAL: Update user context with the response data
         if (response.data.user) {
-          // Ensure addresses have names
+          // Get addresses from response
+          const responseAddresses = response.data.user.addresses || [];
+          
+          // Format addresses properly
+          const formattedAddresses = responseAddresses.map((addr, index) => ({
+            name: addr.name || `Address ${index + 1}`,
+            houseNumber: addr.houseNumber || "",
+            streetNo: addr.streetNo || "",
+            city: addr.city || "",
+            pincode: addr.pincode || "",
+            isDefault: addr.isDefault || false,
+          }));
+          
           const updatedUser = {
             ...response.data.user,
-            addresses: response.data.user.addresses?.map((addr, index) => ({
-              name: addr.name || `Address ${index + 1}`,
-              houseNumber: addr.houseNumber || "",
-              streetNo: addr.streetNo || "",
-              city: addr.city || "",
-              pincode: addr.pincode || "",
-              isDefault: addr.isDefault || false,
-            })) || [],
+            addresses: formattedAddresses,
           };
           
           console.log("Updating user context with:", updatedUser);
+          console.log("Formatted addresses:", formattedAddresses);
+          
           updateUser(updatedUser);
+          
+          // ALSO update the local profile state immediately
+          setProfile({
+            ...profile,
+            name: response.data.user.userName || profile.name,
+            email: response.data.user.email || profile.email,
+            phone: response.data.user.phoneNumber || profile.phone,
+            profilePic: response.data.user.profilePic || profile.profilePic,
+            addresses: formattedAddresses,
+          });
         }
         
+        // Reset all edit states
         setEditMode(false);
         setNewImageFile(null);
         setShowAddressForm(false);
+        setEditingAddressIndex(null);
         
-        // Force a small delay to ensure state updates
-        setTimeout(() => {
-          console.log("Save completed. Current user:", user);
-          console.log("Current profile addresses:", profile.addresses);
-        }, 100);
+        console.log("Save completed. Current profile addresses:", profile.addresses);
         
       } else {
         alert("Error: " + response.data.message);
@@ -333,10 +355,12 @@ export default function ProfilePage() {
 
   const handleCancel = () => {
     console.log("Canceling changes");
+    
+    // Reset all edit states
     setEditMode(false);
     setNewImageFile(null);
     setShowAddressForm(false);
-    resetAddressForm();
+    setEditingAddressIndex(null);
     
     // Reset to original user data
     if (user) {
@@ -359,10 +383,20 @@ export default function ProfilePage() {
         addresses: formattedAddresses,
       });
     }
+    
+    // Reset address form
+    setNewAddress({
+      name: "",
+      houseNumber: "",
+      streetNo: "",
+      city: "",
+      pincode: "",
+      isDefault: false,
+    });
   };
 
   return (
-    <form onSubmit={handleSave} className="max-w-4xl mx-auto p-6">
+    <form onSubmit={handleSave} className="max-w-4xl mx-auto p-6" noValidate>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
         <p className="text-gray-600 mt-2">Manage your personal information and addresses</p>

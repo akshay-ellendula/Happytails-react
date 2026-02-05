@@ -19,3 +19,14 @@ GET /api/admin/stats 200 494.631 ms
 GET /api/admin/revenue-chart 200 741.898 ms
 GET /api/admin/stats 304 534.874 ms
 GET /api/admin/revenue-chart 304 713.515 ms
+GET /api/events/public 304 126.518 ms
+GET /api/events/public 304 96.905 ms
+GET /api/auth/verify 200 247.919 ms
+GET /api/products/getProducts 304 371.317 ms
+GET /api/auth/verify 304 271.236 ms
+GET /api/public/690a65657304539294f42bad 200 267.729 ms
+GET /api/products/getProducts 304 514.083 ms
+OPTIONS /api/public/690a65657304539294f42bad 204 0.436 ms
+PUT /api/public/690a65657304539294f42bad 200 531.437 ms
+OPTIONS /api/public/690a65657304539294f42bad 204 0.234 ms
+PUT /api/public/690a65657304539294f42bad 200 483.529 ms

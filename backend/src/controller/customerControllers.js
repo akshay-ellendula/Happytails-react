@@ -79,7 +79,17 @@ export const putCustomer = async (req, res, next) => {
       } catch (e) {
         return res.status(400).json({ success: false, message: "Invalid addresses format" });
       }
-
+    
+      // FIXED: Preserve the actual names sent from frontend
+      parsedAddresses = parsedAddresses.map((addr, index) => ({
+        name: addr.name || `Address ${index + 1}`, // Use sent name or default
+        houseNumber: addr.houseNumber || "",
+        streetNo: addr.streetNo || "",
+        city: addr.city || "",
+        pincode: addr.pincode || "",
+        isDefault: addr.isDefault || false,
+      }));
+    
       const hasDefault = parsedAddresses.some(addr => addr.isDefault);
       if (!hasDefault && parsedAddresses.length > 0) {
         parsedAddresses[0].isDefault = true;
@@ -88,6 +98,16 @@ export const putCustomer = async (req, res, next) => {
     }
 
     const saved = await customer.save();
+
+    // FIXED: Ensure response addresses have proper names
+    const responseAddresses = saved.addresses.map((addr, index) => ({
+      name: addr.name || `Address ${index + 1}`,
+      houseNumber: addr.houseNumber || "",
+      streetNo: addr.streetNo || "",
+      city: addr.city || "",
+      pincode: addr.pincode || "",
+      isDefault: addr.isDefault || false,
+    }));
 
     res.status(200).json({
       success: true,
@@ -98,7 +118,7 @@ export const putCustomer = async (req, res, next) => {
         email: saved.email,
         profilePic: saved.profilePic,
         phoneNumber: saved.phoneNumber,
-        addresses: saved.addresses,
+        addresses: responseAddresses,
         role: "customer",
       },
     });
