@@ -20,6 +20,7 @@ const customerSchema = new mongoose.Schema({
         required: true,
     },
     addresses: [{
+        name: { type: String, default: "" },
         houseNumber: { type: String },
         streetNo: { type: String },
         city: { type: String },

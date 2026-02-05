@@ -13,6 +13,7 @@ const orderSchema = new mongoose.Schema({
     payment_last_four: { type: String, default: null },
     is_deleted: { type: Boolean, default: false },
     shippingAddress: {
+        name: { type: String, default: "" },
         houseNumber: { type: String },
         streetNo: { type: String },
         city: { type: String },

@@ -33,7 +33,7 @@ export default function ProfilePage() {
     console.log("User addresses:", user?.addresses);
     
     if (user) {
-      // Ensure addresses have names - if not, add default names
+      // Backend should now return addresses with names
       const formattedAddresses = (user.addresses || []).map((addr, index) => ({
         name: addr.name || `Address ${index + 1}`,
         houseNumber: addr.houseNumber || "",
