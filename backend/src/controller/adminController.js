@@ -37,6 +37,91 @@ const getUsers = async (req, res ,next) => {
     }
 };
 
+
+const getTopSpenders = async (req, res, next) => {
+    try {
+        // 1. Total spent on products (using total_amount like your vendor top-customers)
+        const orderAgg = await Order.aggregate([
+            {
+                $group: {
+                    _id: "$customer_id",
+                    spentOnProducts: { $sum: "$total_amount" }
+                }
+            }
+        ]);
+
+        // 2. Total spent on events
+        const ticketAgg = await Ticket.aggregate([
+            {
+                $group: {
+                    _id: "$customerId",
+                    spentOnEvents: { $sum: "$price" }
+                }
+            }
+        ]);
+
+        // Merge both
+        const spendingMap = new Map();
+
+        orderAgg.forEach(o => {
+            spendingMap.set(o._id.toString(), {
+                spentOnProducts: o.spentOnProducts || 0,
+                spentOnEvents: 0
+            });
+        });
+
+        ticketAgg.forEach(t => {
+            const key = t._id.toString();
+            if (spendingMap.has(key)) {
+                spendingMap.get(key).spentOnEvents = t.spentOnEvents || 0;
+            } else {
+                spendingMap.set(key, {
+                    spentOnProducts: 0,
+                    spentOnEvents: t.spentOnEvents || 0
+                });
+            }
+        });
+
+        if (spendingMap.size === 0) {
+            return res.json({ success: true, topSpenders: [] });
+        }
+
+        // Fetch customer names
+        const customerIds = Array.from(spendingMap.keys()).map(id =>
+            new mongoose.Types.ObjectId(id)
+        );
+
+        const customers = await Customer.find({ _id: { $in: customerIds } })
+            .select("userName email");
+
+        const customerMap = new Map(
+            customers.map(c => [c._id.toString(), { name: c.userName, email: c.email }])
+        );
+
+        // Build final array
+        let topSpenders = Array.from(spendingMap.entries()).map(([id, spends]) => ({
+            id,
+            name: customerMap.get(id)?.name || "Unknown User",
+            email: customerMap.get(id)?.email || "",
+            spentOnProducts: spends.spentOnProducts,
+            spentOnEvents: spends.spentOnEvents,
+            totalSpent: spends.spentOnProducts + spends.spentOnEvents
+        }));
+
+        // Sort & take top 3
+        topSpenders.sort((a, b) => b.totalSpent - a.totalSpent);
+        topSpenders = topSpenders.slice(0, 3);
+
+        res.json({ success: true, topSpenders });
+    } catch (err) {
+        console.error("Error in getTopSpenders:", err);
+        next(err);
+    }
+};
+
+
+
+
 const getUser = async (req, res,next) => {
     try {
         const userId = req.params.id;
@@ -2198,6 +2283,7 @@ export {
     updateVendor,
     deleteVendor,
 
+
     // admin-events.ejs, admin-em-details.ejs, admin-event-details.ejs
     getEventManagers,
     getEventManagerStats,
@@ -2222,5 +2308,6 @@ export {
 
     //admin-dashboard.ejs
     dashBoardStats,
+    getTopSpenders,
     getRevenueChartData,
 };

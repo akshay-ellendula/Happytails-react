@@ -55,6 +55,8 @@ import {
     // admin-dashboard.ejs
     dashBoardStats,
     getRevenueChartData,
+    getTopSpenders
+
 } from '../controller/adminController.js'; // Corrected import syntax for controller functions
 import upload from '../middleware/uploadMiddleware.js'; 
 import protectRoute from '../middleware/authMiddleware.js'; 
@@ -67,6 +69,8 @@ router.get('/logout', protectRoute(['admin']), logout);
 // =======================================================
 router.get('/stats', protectRoute(['admin']), dashBoardStats);
 router.get('/revenue-chart', protectRoute(['admin']), getRevenueChartData);
+// After the other customer routes
+router.get('/customers/top-spenders', protectRoute(['admin']), getTopSpenders);
 
 
 // =======================================================
