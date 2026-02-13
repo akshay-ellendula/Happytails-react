@@ -10,6 +10,7 @@ import "./admin-styles.css";
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [stats, setStats] = useState({});
+  const [topOrderedProducts, setTopOrderedProducts] = useState([]);   // ← NEW
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -20,7 +21,7 @@ export default function Products() {
   const loadProducts = async () => {
     try {
       const res = await axiosInstance.get("/admin/products");
-      if (res.data.success) setProducts(res.data.products);
+      if (res.data.success) setProducts(res.data.products || []);
     } catch (err) {
       console.error("Error fetching products:", err);
     }
@@ -30,9 +31,21 @@ export default function Products() {
   const loadStats = async () => {
     try {
       const res = await axiosInstance.get("/admin/products/stats");
-      if (res.data.success) setStats(res.data.stats);
+      if (res.data.success) setStats(res.data.stats || {});
     } catch (err) {
       console.error("Error fetching stats:", err);
+    }
+  };
+
+  // NEW: Fetch Top 3 Highest Ordered Products (by quantity)
+  const loadTopOrderedProducts = async () => {
+    try {
+      const res = await axiosInstance.get("/admin/products/top-ordered");
+      if (res.data.success) {
+        setTopOrderedProducts(res.data.topOrderedProducts || []);
+      }
+    } catch (err) {
+      console.error("Error loading top ordered products:", err);
     }
   };
 
@@ -40,10 +53,11 @@ export default function Products() {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
     try {
-      const res = await axiosInstance.delete(`/admin/product/${id}`);
+      const res = await axiosInstance.delete(`/admin/products/${id}`);
       if (res.data.success) {
-        setProducts((prev) => prev.filter((p) => p._id !== id));
-        loadStats();
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        loadStats();           // refresh stats
+        loadTopOrderedProducts(); // refresh top 3
       }
     } catch (err) {
       console.error("Delete error:", err);
@@ -52,7 +66,8 @@ export default function Products() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      await Promise.all([loadProducts(), loadStats()]);
+      setLoading(true);
+      await Promise.all([loadProducts(), loadStats(), loadTopOrderedProducts()]);
       setLoading(false);
     };
     fetchAll();
@@ -61,7 +76,7 @@ export default function Products() {
   const filtered = products.filter((p) => {
     const name = p.product_name?.toLowerCase() || "";
     const term = search.toLowerCase();
-    return name.includes(term) || p._id?.toString().includes(term);
+    return name.includes(term) || p.id?.toString().includes(term);
   });
 
   const totalPages = Math.ceil(filtered.length / PRODUCTS_PER_PAGE);
@@ -110,27 +125,16 @@ export default function Products() {
       label: "Stock",
       key: "stock",
       render: (stock) => {
-        let className, textColor, bgColor;
-        
-        if (stock > 5) {
-          className = "bg-gradient-to-r from-green-100 to-green-50 border border-green-200";
-          textColor = "text-green-800";
-        } else if (stock > 0) {
-          className = "bg-gradient-to-r from-yellow-100 to-yellow-50 border border-yellow-200";
-          textColor = "text-yellow-800";
-        } else {
-          className = "bg-gradient-to-r from-red-100 to-red-50 border border-red-200";
-          textColor = "text-red-800";
-        }
+        let className = "", textColor = "";
+        if (stock > 5) { className = "bg-green-100 border-green-200"; textColor = "text-green-800"; }
+        else if (stock > 0) { className = "bg-yellow-100 border-yellow-200"; textColor = "text-yellow-800"; }
+        else { className = "bg-red-100 border-red-200"; textColor = "text-red-800"; }
 
         return (
           <div className="text-center">
             <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${className} ${textColor}`}>
               {stock || 0}
             </span>
-            <div className="text-xs text-gray-500 mt-1">
-              {stock > 5 ? 'In Stock' : stock > 0 ? 'Low Stock' : 'Out of Stock'}
-            </div>
           </div>
         );
       },
@@ -142,9 +146,6 @@ export default function Products() {
         <div className="text-center">
           <div className="font-semibold text-gray-800">
             {date ? new Date(date).toLocaleDateString() : "N/A"}
-          </div>
-          <div className="text-xs text-gray-500">
-            {date ? new Date(date).getFullYear() : ''}
           </div>
         </div>
       ),
@@ -180,7 +181,7 @@ export default function Products() {
         <Header title="Products Management" />
 
         <div className="p-6">
-          {/* Stats Cards */}
+          {/* Stats Cards - your original */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-yellow-500">
               <div className="flex justify-between items-start mb-4">
@@ -231,7 +232,45 @@ export default function Products() {
             </div>
           </div>
 
-          {/* Search Bar */}
+          {/* ====================== TOP 3 HIGHEST ORDERED PRODUCTS ====================== */}
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Top Ordered Products</h2>
+            <p className="text-gray-600 mb-6">Highest quantity sold (All time)</p>
+
+            {topOrderedProducts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {topOrderedProducts.map((product, index) => (
+                  <div
+                    key={product._id || index}
+                    className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-yellow-500"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <div className="text-4xl font-bold text-yellow-600">#{index + 1}</div>
+                        <h3 className="text-xl font-bold text-gray-800 mt-2 line-clamp-2">
+                          {product.product_name}
+                        </h3>
+                        <p className="text-gray-600 text-sm mt-1">{product.category || "—"}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-gray-900">
+                          {product.totalOrdered} units
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">Ordered</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl p-12 text-center shadow-lg border border-gray-200">
+                <div className="text-gray-500 text-lg">No order data available yet.</div>
+              </div>
+            )}
+          </div>
+          {/* ====================== END TOP 3 ====================== */}
+
+          {/* Search Bar + Table + Pagination + No results - your original code */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -286,7 +325,7 @@ export default function Products() {
                   <Table columns={columns} data={paginated} />
                 </div>
                 
-                {/* No results message */}
+                {/* No results message - your original */}
                 {filtered.length === 0 && search && (
                   <div className="p-8 text-center">
                     <div className="h-16 w-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">
@@ -318,7 +357,7 @@ export default function Products() {
                 )}
               </div>
 
-              {/* Pagination */}
+              {/* Pagination - your original */}
               {totalPages > 1 && (
                 <div className="bg-white rounded-2xl shadow-lg p-4">
                   <div className="flex justify-center gap-2">
@@ -336,7 +375,6 @@ export default function Products() {
                     
                     {Array.from({ length: totalPages }, (_, i) => {
                       const pageNum = i + 1;
-                      // Show only first, last, and pages around current page
                       if (
                         pageNum === 1 ||
                         pageNum === totalPages ||

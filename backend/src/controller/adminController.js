@@ -120,7 +120,114 @@ const getTopSpenders = async (req, res, next) => {
 };
 
 
+const getTopEventManagers = async (req, res, next) => {
+    try {
+        const topManagers = await Ticket.aggregate([
+            {
+                $lookup: {
+                    from: 'events',
+                    localField: 'eventId',
+                    foreignField: '_id',
+                    as: 'event'
+                }
+            },
+            { $unwind: '$event' },
+            {
+                $lookup: {
+                    from: 'eventmanagers',
+                    localField: 'event.eventManagerId',
+                    foreignField: '_id',
+                    as: 'manager'
+                }
+            },
+            { $unwind: '$manager' },
+            {
+                $group: {
+                    _id: '$event.eventManagerId',
+                    name: { $first: '$manager.userName' },
+                    email: { $first: '$manager.email' },
+                    organization: { $first: '$manager.companyName' },
+                    totalRevenue: { $sum: '$price' }
+                }
+            },
+            { $sort: { totalRevenue: -1 } },
+            { $limit: 3 },
+            {
+                $project: {
+                    id: '$_id',
+                    name: 1,
+                    email: 1,
+                    organization: 1,
+                    totalRevenue: 1
+                }
+            }
+        ]);
 
+        res.json({ success: true, topManagers: topManagers || [] });
+    } catch (err) {
+        console.error("Error in getTopEventManagers:", err);
+        next(err);
+    }
+};
+
+const getTopVendors = async (req, res, next) => {
+    try {
+        const topVendors = await OrderItem.aggregate([
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'product_id',
+                    foreignField: '_id',
+                    as: 'product'
+                }
+            },
+            { $unwind: '$product' },
+            {
+                $lookup: {
+                    from: 'orders',
+                    localField: 'order_id',
+                    foreignField: '_id',
+                    as: 'order'
+                }
+            },
+            { $unwind: '$order' },
+            {
+                $lookup: {
+                    from: 'vendors',
+                    localField: 'product.vendor_id',
+                    foreignField: '_id',
+                    as: 'vendor'
+                }
+            },
+            { $unwind: '$vendor' },
+            {
+                $group: {
+                    _id: '$product.vendor_id',
+                    name: { $first: '$vendor.name' },
+                    store_name: { $first: '$vendor.store_name' },
+                    email: { $first: '$vendor.email' },
+                    totalSales: { $sum: '$order.subtotal' }
+                }
+            },
+            { $sort: { totalSales: -1 } },
+            { $limit: 3 },
+            {
+                $project: {
+                    id: '$_id',
+                    name: 1,
+                    store_name: 1,
+                    email: 1,
+                    totalSales: 1
+                }
+            }
+        ]);
+
+        res.json({ success: true, topVendors: topVendors || [] });
+    } catch (err) {
+        console.error("Error in getTopVendors:", err);
+        next(err);
+    }
+};
 
 const getUser = async (req, res,next) => {
     try {
@@ -2158,6 +2265,37 @@ const getOrderDetails = async (req, res) => {
     }
 };
 
+const getTopEvents = async (req, res, next) => {
+    try {
+        const topEvents = await Ticket.aggregate([
+            {
+                $lookup: {
+                    from: 'events',
+                    localField: 'eventId',
+                    foreignField: '_id',
+                    as: 'event'
+                }
+            },
+            { $unwind: '$event' },
+            {
+                $group: {
+                    _id: '$eventId',
+                    title: { $first: '$event.title' },
+                    venue: { $first: '$event.venue' },
+                    totalRevenue: { $sum: '$price' }
+                }
+            },
+            { $sort: { totalRevenue: -1 } },
+            { $limit: 3 }
+        ]);
+
+        res.json({ success: true, topEvents: topEvents || [] });
+    } catch (err) {
+        console.error("Error in getTopEvents:", err);
+        next(err);
+    }
+};
+
 const getOrderStats = async (req, res) => {
     try {
         const today = new Date();
@@ -2185,6 +2323,36 @@ const getOrderStats = async (req, res) => {
     } catch (err) {
         console.error('Error fetching order stats:', err);
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+const getTopOrderedProducts = async (req, res, next) => {
+    try {
+        const topProducts = await OrderItem.aggregate([
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'product_id',
+                    foreignField: '_id',
+                    as: 'product'
+                }
+            },
+            { $unwind: '$product' },
+            {
+                $group: {
+                    _id: '$product_id',
+                    product_name: { $first: '$product.product_name' },
+                    category: { $first: '$product.product_category' },
+                    totalOrdered: { $sum: '$quantity' }
+                }
+            },
+            { $sort: { totalOrdered: -1 } },
+            { $limit: 3 }
+        ]);
+
+        res.json({ success: true, topOrderedProducts: topProducts || [] });
+    } catch (err) {
+        console.error("Error in getTopOrderedProducts:", err);
+        next(err);
     }
 };
 
@@ -2263,6 +2431,7 @@ export {
     adminGetUsers,
 
     // admin-products.ejs, admin-product-details.ejs, admin-add-product.ejs
+    getTopOrderedProducts,
     getProducts,
     getProductStats,
     deleteProduct,
@@ -2282,9 +2451,11 @@ export {
     getVendorTopCustomers,
     updateVendor,
     deleteVendor,
-
+    getTopVendors,
 
     // admin-events.ejs, admin-em-details.ejs, admin-event-details.ejs
+    getTopEvents,
+    getTopEventManagers,
     getEventManagers,
     getEventManagerStats,
     getTotalEvents,

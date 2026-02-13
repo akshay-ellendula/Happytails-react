@@ -11,6 +11,7 @@ import "./admin-styles.css";
 export default function EventManagers() {
   const [managers, setManagers] = useState([]);
   const [stats, setStats] = useState({});
+  const [topManagers, setTopManagers] = useState([]);   // ← NEW
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export default function EventManagers() {
     try {
       const res = await axiosInstance.get("/admin/event-managers");
       if (res.data.success) {
-        setManagers(res.data.eventManagers);
+        setManagers(res.data.eventManagers || []);
       }
     } catch (err) {
       console.error("Error fetching event managers:", err);
@@ -32,10 +33,22 @@ export default function EventManagers() {
     try {
       const res = await axiosInstance.get("/admin/event-managers/stats");
       if (res.data.success) {
-        setStats(res.data.stats);
+        setStats(res.data.stats || {});
       }
     } catch (err) {
       console.error("Error fetching stats:", err);
+    }
+  };
+
+  // NEW: Fetch Top 3 Event Managers by Ticket Revenue
+  const getTopManagers = async () => {
+    try {
+      const res = await axiosInstance.get("/admin/event-managers/top-managers");
+      if (res.data.success) {
+        setTopManagers(res.data.topManagers || []);
+      }
+    } catch (err) {
+      console.error("Error fetching top managers:", err);
     }
   };
 
@@ -43,7 +56,7 @@ export default function EventManagers() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      await Promise.all([getEventManagers(), getStats()]);
+      await Promise.all([getEventManagers(), getStats(), getTopManagers()]);
       setLoading(false);
     };
     fetchData();
@@ -122,7 +135,7 @@ export default function EventManagers() {
         <Header title="Event Manager Management" />
 
         <div className="p-6">
-          {/* Stats Cards */}
+          {/* Stats Cards - your original version */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-yellow-500">
               <div className="flex justify-between items-start mb-4">
@@ -185,7 +198,44 @@ export default function EventManagers() {
             </div>
           </div>
 
-          {/* Search Bar and Header */}
+          {/* ====================== TOP 3 EVENT MANAGERS ====================== */}
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Top Performing Event Managers</h2>
+            <p className="text-gray-600 mb-6">Highest ticket revenue generated (All time)</p>
+
+            {topManagers.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {topManagers.map((manager, index) => (
+                  <div
+                    key={manager.id}
+                    className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-yellow-500"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-4xl font-bold text-yellow-600 mb-2">#{index + 1}</div>
+                        <h3 className="text-xl font-bold text-gray-800">{manager.name}</h3>
+                        <p className="text-gray-600">{manager.organization || 'Individual'}</p>
+                        <p className="text-sm text-gray-500 mt-1">{manager.email}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-gray-900">
+                          ₹{manager.totalRevenue.toLocaleString("en-IN")}
+                        </div>
+                        <div className="text-xs text-gray-500">Total Revenue</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl p-12 text-center shadow-lg">
+                <div className="text-gray-500 text-lg">No ticket revenue data available yet.</div>
+              </div>
+            )}
+          </div>
+          {/* ====================== END TOP 3 ====================== */}
+
+          {/* Search Bar and Header - your original version */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -233,7 +283,7 @@ export default function EventManagers() {
                 <Table columns={columns} data={filteredManagers} />
               </div>
               
-              {/* No results message */}
+              {/* No results message - your original version */}
               {filteredManagers.length === 0 && searchTerm && (
                 <div className="p-8 text-center">
                   <div className="h-16 w-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">

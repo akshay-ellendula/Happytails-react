@@ -10,6 +10,7 @@ import "./admin-styles.css";
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
   const [stats, setStats] = useState({});
+  const [topVendors, setTopVendors] = useState([]);     // ← added
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -20,7 +21,7 @@ export default function Vendors() {
   const loadVendors = async () => {
     try {
       const res = await axiosInstance.get("/admin/vendors");
-      if (res.data.success) setVendors(res.data.vendors);
+      if (res.data.success) setVendors(res.data.vendors || []);
     } catch (err) {
       console.error("Error loading vendors:", err.response?.data || err.message);
     }
@@ -30,15 +31,28 @@ export default function Vendors() {
   const loadStats = async () => {
     try {
       const res = await axiosInstance.get("/admin/vendors/stats");
-      if (res.data.success) setStats(res.data.stats);
+      if (res.data.success) setStats(res.data.stats || {});
     } catch (err) {
       console.error("Error loading vendor stats:", err);
     }
   };
 
+  // Fetch top 3 vendors by sales
+  const loadTopVendors = async () => {
+    try {
+      const res = await axiosInstance.get("/admin/vendors/top-vendors");
+      if (res.data.success) {
+        setTopVendors(res.data.topVendors || []);
+      }
+    } catch (err) {
+      console.error("Error loading top vendors:", err);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
-      await Promise.all([loadVendors(), loadStats()]);
+      setLoading(true);
+      await Promise.all([loadVendors(), loadStats(), loadTopVendors()]);
       setLoading(false);
     };
     fetchData();
@@ -124,7 +138,7 @@ export default function Vendors() {
         <Header title="Shop Manager Management" />
 
         <div className="p-6">
-          {/* Stats Cards */}
+          {/* Stats Cards – your original version */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-yellow-500">
               <div className="flex justify-between items-start mb-4">
@@ -193,7 +207,40 @@ export default function Vendors() {
             </div>
           </div>
 
-          {/* Search Bar */}
+          {/* ─── Top 3 Shops Section ──────────────────────────────────────── */}
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">Top Performing Shops</h2>
+
+            {topVendors.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {topVendors.map((vendor, index) => (
+                  <div
+                    key={vendor.id}
+                    className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border-l-4 border-yellow-500"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-800">
+                          #{index + 1} — {vendor.store_name}
+                        </h3>
+                        <p className="text-gray-600">{vendor.name}</p>
+                        <p className="text-sm text-gray-500">{vendor.email}</p>
+                      </div>
+                      <div className="text-3xl font-bold text-yellow-600">
+                        ₹{vendor.totalSales?.toLocaleString("en-IN") || "0"}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl p-8 text-center text-gray-600 shadow-lg">
+                No sales data available yet
+              </div>
+            )}
+          </div>
+
+          {/* Search Bar – your original version */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -209,13 +256,13 @@ export default function Vendors() {
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value);
-                      setPage(1);
+                      setPage(1);           // ← added reset to page 1 on search change
                     }}
                   />
-                  <svg 
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -226,10 +273,10 @@ export default function Vendors() {
                 </Button>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between text-sm text-gray-500">
               <div>
-                Showing {((page - 1) * VENDORS_PER_PAGE) + 1}-{Math.min(page * VENDORS_PER_PAGE, filtered.length)} of {filtered.length} managers
+                Showing {((page - 1) * VENDORS_PER_PAGE) + 1}–{Math.min(page * VENDORS_PER_PAGE, filtered.length)} of {filtered.length} managers
                 {search && (
                   <span className="ml-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
                     Searching for: "{search}"
@@ -252,7 +299,7 @@ export default function Vendors() {
                 <div className="p-6">
                   <Table columns={columns} data={paginated} />
                 </div>
-                
+
                 {/* No results message */}
                 {filtered.length === 0 && search && (
                   <div className="p-8 text-center">
@@ -271,7 +318,7 @@ export default function Vendors() {
                     </button>
                   </div>
                 )}
-                
+
                 {filtered.length === 0 && !search && (
                   <div className="p-8 text-center">
                     <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
@@ -285,7 +332,7 @@ export default function Vendors() {
                 )}
               </div>
 
-              {/* Pagination */}
+              {/* Pagination – your original version */}
               {totalPages > 1 && (
                 <div className="bg-white rounded-2xl shadow-lg p-4">
                   <div className="flex justify-center gap-2">
@@ -300,10 +347,9 @@ export default function Vendors() {
                     >
                       Previous
                     </button>
-                    
+
                     {Array.from({ length: totalPages }, (_, i) => {
                       const pageNum = i + 1;
-                      // Show only first, last, and pages around current page
                       if (
                         pageNum === 1 ||
                         pageNum === totalPages ||
@@ -330,7 +376,7 @@ export default function Vendors() {
                       }
                       return null;
                     })}
-                    
+
                     <button
                       onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
                       disabled={page === totalPages}

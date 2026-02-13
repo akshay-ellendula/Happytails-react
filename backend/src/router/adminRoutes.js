@@ -10,6 +10,7 @@ import {
     adminGetUsers,
 
     // admin-products.ejs, admin-product-details.ejs, admin-add-product.ejs
+    getTopOrderedProducts,
     getProducts,
     getProductStats,
     deleteProduct,
@@ -29,8 +30,11 @@ import {
     getVendorTopCustomers,
     updateVendor,
     deleteVendor,
+    getTopVendors,
 
     // admin-events.ejs, admin-em-details.ejs, admin-event-details.ejs
+    getTopEvents,
+    getTopEventManagers,
     getEventManagers,
     getEventManagerStats,
     getTotalEvents,
@@ -87,6 +91,7 @@ router.delete('/customers/:id', protectRoute(['admin']), deleteUser);
 // =======================================================
 // 4. VENDOR (SHOP MANAGER) MANAGEMENT
 // =======================================================
+router.get('/vendors/top-vendors', protectRoute(['admin']), getTopVendors);
 router.get('/vendors', protectRoute(['admin']), getVendors);
 router.get('/vendors/stats', protectRoute(['admin']), getVendorStats);
 router.get('/vendors/latest', protectRoute(['admin']), adminGetVendors);
@@ -101,6 +106,7 @@ router.delete('/vendors/:id', protectRoute(['admin']), deleteVendor);
 // =======================================================
 // 5. PRODUCT MANAGEMENT
 // =======================================================
+router.get('/products/top-ordered', protectRoute(['admin']), getTopOrderedProducts);
 router.get('/products', protectRoute(['admin']), getProducts);
 router.get('/products/stats', protectRoute(['admin']), getProductStats);
 router.post(
@@ -124,6 +130,7 @@ router.delete('/products/:id', protectRoute(['admin']), deleteProduct);
 // =======================================================
 // 6. EVENT MANAGER MANAGEMENT
 // =======================================================
+router.get('/event-managers/top-managers', protectRoute(['admin']), getTopEventManagers);
 router.get('/event-managers', protectRoute(['admin']), getEventManagers);
 router.get('/event-managers/stats', protectRoute(['admin']), getEventManagerStats);
 router.get('/event-managers/:id', protectRoute(['admin']), getEventManager);
@@ -142,6 +149,7 @@ router.delete('/event-managers/:id', protectRoute(['admin']), deleteEventManager
 // =======================================================
 // 7. EVENT MANAGEMENT
 // =======================================================
+router.get('/events/top-events', protectRoute(['admin']), getTopEvents);
 router.get('/events', protectRoute(['admin']), getEventsData);
 router.get('/events/total', protectRoute(['admin']), getTotalEvents);
 router.get('/events/revenue', protectRoute(['admin']), getEventRevenue);
