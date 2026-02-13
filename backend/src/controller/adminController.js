@@ -40,7 +40,7 @@ const getUsers = async (req, res ,next) => {
 
 const getTopSpenders = async (req, res, next) => {
     try {
-        // 1. Total spent on products (using total_amount like your vendor top-customers)
+        // 1. Total spent on products
         const orderAgg = await Order.aggregate([
             {
                 $group: {
@@ -86,7 +86,7 @@ const getTopSpenders = async (req, res, next) => {
             return res.json({ success: true, topSpenders: [] });
         }
 
-        // Fetch customer names
+        // Fetch ONLY existing customers
         const customerIds = Array.from(spendingMap.keys()).map(id =>
             new mongoose.Types.ObjectId(id)
         );
@@ -98,15 +98,22 @@ const getTopSpenders = async (req, res, next) => {
             customers.map(c => [c._id.toString(), { name: c.userName, email: c.email }])
         );
 
-        // Build final array
-        let topSpenders = Array.from(spendingMap.entries()).map(([id, spends]) => ({
-            id,
-            name: customerMap.get(id)?.name || "Unknown User",
-            email: customerMap.get(id)?.email || "",
-            spentOnProducts: spends.spentOnProducts,
-            spentOnEvents: spends.spentOnEvents,
-            totalSpent: spends.spentOnProducts + spends.spentOnEvents
-        }));
+        // Build final array → SKIP deleted customers
+        let topSpenders = Array.from(spendingMap.entries())
+            .map(([id, spends]) => {
+                const customer = customerMap.get(id);
+                if (!customer) return null;           // ← IMPORTANT: skip deleted users
+
+                return {
+                    id,
+                    name: customer.name,
+                    email: customer.email || "",
+                    spentOnProducts: spends.spentOnProducts,
+                    spentOnEvents: spends.spentOnEvents,
+                    totalSpent: spends.spentOnProducts + spends.spentOnEvents
+                };
+            })
+            .filter(Boolean);   // remove null entries
 
         // Sort & take top 3
         topSpenders.sort((a, b) => b.totalSpent - a.totalSpent);
