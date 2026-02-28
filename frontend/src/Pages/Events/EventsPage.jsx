@@ -23,21 +23,17 @@ const EventsPage = () => {
         setLoading(true);
         const response = await axiosInstance.get('/events/public');
         
-        console.log("API Response:", response.data); // Check console to see structure
+        console.log("API Response:", response.data);
 
-        // --- FIX START ---
-        // Handle if API returns direct array OR nested object
         let eventsData = [];
         if (Array.isArray(response.data)) {
             eventsData = response.data;
         } else if (response.data && Array.isArray(response.data.events)) {
-            eventsData = response.data.events; // Handle { events: [...] }
+            eventsData = response.data.events;
         } else if (response.data && Array.isArray(response.data.data)) {
-            eventsData = response.data.data;   // Handle { data: [...] }
+            eventsData = response.data.data;
         }
-        // --- FIX END ---
 
-        // 1. Transform events data for frontend
         const transformedEvents = eventsData.map(event => ({
           id: event._id,
           img: event.images?.thumbnail || '/images/default-event.jpg',
@@ -47,12 +43,13 @@ const EventsPage = () => {
           venue: event.venue,
           price: event.ticketPrice === 0 || !event.ticketPrice ? 'Free Entry' : `${event.ticketPrice}`,
           buttonText: event.ticketPrice === 0 ? 'Free Register' : 'Book tickets',
-          category: event.category || 'general'
+          category: event.category || 'general',
+          total_tickets: event.total_tickets,
+          tickets_sold: event.tickets_sold
         }));
         
         setEvents(transformedEvents);
 
-        // 2. Extract unique categories dynamically
         const uniqueCategories = [...new Set(eventsData.map(event => event.category))].filter(Boolean);
         const categoryData = uniqueCategories.map(category => ({
           name: category.toUpperCase(),
@@ -73,8 +70,6 @@ const EventsPage = () => {
 
     fetchData();
   }, []);
-
-  // --- Helper Functions ---
 
   const formatDate = (dateString) => {
     try {
@@ -120,12 +115,13 @@ const EventsPage = () => {
     return emojiMap[category.toLowerCase()] || '🎉';
   };
 
-  // --- Render Logic ---
-
   if (loading) {
     return (
-      <div className="bg-[#effe8b] min-h-screen">
-        <Header />
+      <div className="bg-[#f2c737] min-h-screen">
+        <Header onMenuToggle={toggleMobileMenu} />
+        {isMobileMenuOpen && (
+          <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+        )}
         <div className="flex justify-center items-center h-96">
           <div className="text-xl font-medium text-gray-600">Loading events...</div>
         </div>
@@ -136,8 +132,11 @@ const EventsPage = () => {
 
   if (error) {
     return (
-      <div className="bg-[#effe8b] min-h-screen">
-        <Header />
+      <div className="bg-[#f2c737] min-h-screen">
+        <Header onMenuToggle={toggleMobileMenu} />
+        {isMobileMenuOpen && (
+          <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+        )}
         <div className="flex justify-center items-center h-96">
           <div className="text-xl text-red-500 font-semibold">{error}</div>
         </div>
@@ -147,8 +146,11 @@ const EventsPage = () => {
   }
 
   return (
-    <div className="bg-[#effe8b] min-h-screen">
-      <Header />
+    <div className="bg-[#f2c737] min-h-screen">
+      <Header onMenuToggle={toggleMobileMenu} />
+      {isMobileMenuOpen && (
+        <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+      )}
       
       {events.length > 0 ? (
         <>

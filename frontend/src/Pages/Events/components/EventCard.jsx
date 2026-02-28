@@ -9,8 +9,9 @@ const EventCard = ({ event }) => {
   };
   const ticketsLeft = event.total_tickets - event.tickets_sold;
   const isSoldOut = ticketsLeft === 0;
+  
   return (
-    <div className="bg-white rounded-2xl overflow-hidden hover:transform hover:scale-105 transition cursor-pointer border-2 border-transparent shadow-sm hover:shadow-lg">
+    <div className="bg-white rounded-2xl overflow-hidden hover:transform hover:scale-105 transition cursor-pointer border-2 border-transparent shadow-md hover:shadow-xl">
       <div
         className="h-64 flex items-center justify-center bg-gray-100 overflow-hidden relative"
         onClick={handleBookClick}
@@ -49,12 +50,12 @@ const EventCard = ({ event }) => {
             className={`font-bold px-4 py-2 rounded-full text-sm transition ${
               isSoldOut
                 ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                : "bg-[#effe8b] text-[#1a1a1a] hover:bg-black hover:text-white"
+                : "bg-[#f2c737] text-[#1a1a1a] hover:bg-black hover:text-white"
             }`}
           >
             {isSoldOut
               ? "Sold Out"
-              : event.ticketPrice === 0
+              : event.price === 0
               ? "Register Now"
               : "Book tickets"}
           </button>
@@ -63,7 +64,7 @@ const EventCard = ({ event }) => {
           <div className="mt-2">
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
-                className="bg-green-500 h-2 rounded-full"
+                className="bg-[#f2c737] h-2 rounded-full"
                 style={{
                   width: `${(ticketsLeft / event.total_tickets) * 100}%`,
                 }}

@@ -6,7 +6,6 @@ export default function ProfileForm() {
   const [editMode, setEditMode] = useState(false);
   const { user, updateUser } = useAuth();
 
-  // MODIFIED: Initialize state with defaults again.
   const [profile, setProfile] = useState({
     name: "",
     email: "",
@@ -20,8 +19,6 @@ export default function ProfileForm() {
 
   const [newImageFile, setNewImageFile] = useState(null);
 
-  // ADDED THIS EFFECT: This syncs the component's state
-  // with the user context whenever the user object changes (e.g., after login).
   useEffect(() => {
     console.log("ProfileForm render: user =", user);
     if (user) {
@@ -36,7 +33,7 @@ export default function ProfileForm() {
         pincode: user.address?.pincode || "",
       });
     }
-  }, [user]); // This effect runs when the component mounts AND when 'user' changes.
+  }, [user]);
 
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -53,7 +50,6 @@ export default function ProfileForm() {
     }
   };
 
-  // Check if any field changed
   const hasChanges = () => {
     return (
       profile.name !== (user.userName || "") ||
@@ -102,7 +98,6 @@ export default function ProfileForm() {
         formData.append("profilePic", newImageFile);
       }
 
-      // Let axios set Content-Type with boundary for multipart
       const response = await axiosInstance.put(
         `/public/${customerId}`,
         formData
@@ -127,7 +122,6 @@ export default function ProfileForm() {
   const handleCancel = () => {
     setEditMode(false);
     setNewImageFile(null);
-    // This logic is still correct for resetting changes.
     if (user) {
       setProfile({
         name: user.userName || "",
@@ -151,7 +145,7 @@ export default function ProfileForm() {
             editMode ? "cursor-pointer" : ""
           }`}
         >
-          <div className="w-32 h-32 rounded-full border-4 border-dark overflow-hidden">
+          <div className="w-32 h-32 rounded-full border-4 border-[#f2c737] overflow-hidden">
             <img
               src={profile.profilePic}
               alt="Profile"
@@ -160,9 +154,9 @@ export default function ProfileForm() {
           </div>
           {editMode && (
             <>
-              <div className="absolute inset-0 flex items-center justify-center bg-dark/50 rounded-full border-4 border-dashed border-dark">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full border-4 border-dashed border-[#f2c737]">
                 <svg
-                  className="w-12 h-12 text-primary"
+                  className="w-12 h-12 text-[#f2c737]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -263,7 +257,7 @@ export default function ProfileForm() {
           <button
             type="button"
             onClick={() => setEditMode(true)}
-            className="bg-dark bg-black text-white text-primary px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            className="bg-black text-[#f2c737] px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg border border-black"
           >
             Edit
           </button>
@@ -271,7 +265,7 @@ export default function ProfileForm() {
           <form onSubmit={handleSave} className="flex gap-4">
             <button
               type="submit"
-              className="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
+              className="bg-[#f2c737] text-[#1a1a1a] px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg border border-black"
             >
               Save
             </button>
@@ -299,11 +293,11 @@ function InputField({
 }) {
   return (
     <div>
-      <label className="block text-dark text-base font-medium mb-2">
+      <label className="block text-gray-700 text-base font-medium mb-2">
         {label}:
       </label>
       {!editMode ? (
-        <span className="block text-dark text-xl font-bold">
+        <span className="block text-gray-900 text-xl font-bold">
           {value || `Enter ${label}`}
         </span>
       ) : (
@@ -313,10 +307,10 @@ function InputField({
           value={value}
           onChange={onChange}
           readOnly={readOnly}
-          className={`w-full px-4 py-3 border-2 rounded-lg bg-primary/20 text-dark text-lg font-medium focus:outline-none focus:ring-2 ${
+          className={`w-full px-4 py-3 border-2 rounded-lg text-gray-900 text-lg font-medium focus:outline-none focus:ring-2 ${
             readOnly
               ? "border-gray-300 bg-gray-100 cursor-not-allowed"
-              : "border-dark focus:ring-dark"
+              : "border-gray-300 focus:ring-[#f2c737] focus:border-[#f2c737]"
           }`}
         />
       )}

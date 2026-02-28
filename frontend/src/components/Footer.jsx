@@ -23,21 +23,21 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2 text-white text-xs sm:text-sm">
               <li>
-                <Link to="/" className="hover:text-[#effe8b] transition">
+                <Link to="/" className="hover:text-[#f2c737] transition">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link to="/events" className="hover:text-[#effe8b] transition">
+                <Link to="/events" className="hover:text-[#f2c737] transition">
                   Pet Events
                 </Link>
               </li>
               <li>
                 <Link
                   to="/service-login"
-                  className="hover:text-[#effe8b] transition"
+                  className="hover:text-[#f2c737] transition"
                 >
-                  Serivce Login
+                  Service Login
                 </Link>
               </li>
               <li>
@@ -50,22 +50,22 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2 text-white text-xs sm:text-sm">
               <li>
-                <Link to="/" className="hover:text-[#effe8b] transition">
+                <Link to="/" className="hover:text-[#f2c737] transition">
                   Terms & Conditions
                 </Link>
               </li>
               <li>
-                <Link to="/" className="hover:text-[#effe8b] transition">
+                <Link to="/" className="hover:text-[#f2c737] transition">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/" className="hover:text-[#effe8b] transition">
+                <Link to="/" className="hover:text-[#f2c737] transition">
                   Contact Us
                 </Link>
               </li>
               <li>
-                <Link to="/" className="hover:text-[#effe8b] transition">
+                <Link to="/" className="hover:text-[#f2c737] transition">
                   FAQ
                 </Link>
               </li>
@@ -79,7 +79,7 @@ const Footer = () => {
               Organize a pet event? List it on HappyTails!
             </p>
             <Link to="/partnerRegistrataion">
-              <button className="bg-white text-[#1a1a1a] font-bold px-4 sm:px-6 py-2 rounded-full hover:bg-[#effe8b] transition text-xs sm:text-sm border border-white">
+              <button className="bg-white text-[#1a1a1a] font-bold px-4 sm:px-6 py-2 rounded-full hover:bg-[#f2c737] transition text-xs sm:text-sm border border-white">
                 Get Started
               </button>
             </Link>
@@ -91,16 +91,16 @@ const Footer = () => {
             © 2025 HappyTails. All rights reserved.
           </p>
           <div className="flex space-x-4 sm:space-x-6">
-            <a href="#" className="text-white hover:text-[#effe8b] transition">
+            <a href="#" className="text-white hover:text-[#f2c737] transition">
               <Twitter className="w-5 h-5 sm:w-6 sm:h-6" />
             </a>
-            <a href="#" className="text-white hover:text-[#effe8b] transition">
+            <a href="#" className="text-white hover:text-[#f2c737] transition">
               <Instagram className="w-5 h-5 sm:w-6 sm:h-6" />
             </a>
-            <a href="#" className="text-white hover:text-[#effe8b] transition">
+            <a href="#" className="text-white hover:text-[#f2c737] transition">
               <Facebook className="w-5 h-5 sm:w-6 sm:h-6" />
             </a>
-            <a href="#" className="text-white hover:text-[#effe8b] transition">
+            <a href="#" className="text-white hover:text-[#f2c737] transition">
               <Youtube className="w-5 h-5 sm:w-6 sm:h-6" />
             </a>
           </div>

@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { axiosInstance } from "../../utils/axios";
+import Header from "../../components/Header";
+import MobileMenu from "../../components/MobileMenu";
+import Sidebar from "./components/Sidebar";
+import Footer from "../../components/Footer";
 
 export default function ProfilePage() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+  
   const [editMode, setEditMode] = useState(false);
   const { user, updateUser } = useAuth();
 
@@ -28,7 +37,6 @@ export default function ProfilePage() {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Simplified useEffect - always update from user context
   useEffect(() => {
     console.log("ProfilePage: User context updated", user);
     
@@ -56,7 +64,7 @@ export default function ProfilePage() {
         addresses: formattedAddresses,
       });
     }
-  }, [user]); // Only depends on user
+  }, [user]);
 
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -78,7 +86,6 @@ export default function ProfilePage() {
   };
 
   const saveAddress = () => {
-    // Validate required fields
     if (!newAddress.name.trim()) {
       alert("Please enter an address name (e.g., Home, Office)");
       return;
@@ -92,9 +99,8 @@ export default function ProfilePage() {
 
     let updatedAddresses = [...profile.addresses];
     
-    // CRITICAL: Ensure we preserve all fields including name
     const addressToSave = {
-      name: newAddress.name.trim(), // Make sure name is trimmed
+      name: newAddress.name.trim(),
       houseNumber: newAddress.houseNumber.trim(),
       streetNo: newAddress.streetNo.trim(),
       city: newAddress.city.trim(),
@@ -108,7 +114,6 @@ export default function ProfilePage() {
       updatedAddresses.push(addressToSave);
     }
 
-    // Handle default address logic
     if (newAddress.isDefault) {
       updatedAddresses = updatedAddresses.map((addr, idx) => ({
         ...addr,
@@ -156,7 +161,6 @@ export default function ProfilePage() {
 
   const handleAddNewAddress = () => {
     setEditingAddressIndex(null);
-    // Suggest a default name based on existing addresses
     const addressCount = profile.addresses.length;
     const defaultNames = ["Home", "Office", "Work", "Parents", "Other"];
     const suggestedName = addressCount < defaultNames.length 
@@ -174,11 +178,9 @@ export default function ProfilePage() {
     setShowAddressForm(true);
   };
 
-  // Improved hasChanges function with better address comparison
   const hasChanges = () => {
     const userAddresses = user?.addresses || [];
     
-    // Normalize both address arrays for comparison
     const normalizeAddress = (addr) => ({
       name: addr.name || '',
       houseNumber: addr.houseNumber || '',
@@ -191,7 +193,6 @@ export default function ProfilePage() {
     const normalizedProfileAddresses = profile.addresses.map(normalizeAddress);
     const normalizedUserAddresses = userAddresses.map(normalizeAddress);
     
-    // Deep compare with JSON.stringify
     const addressesChanged = JSON.stringify(normalizedProfileAddresses) !== JSON.stringify(normalizedUserAddresses);
     
     const hasChange = 
@@ -206,8 +207,6 @@ export default function ProfilePage() {
       emailChanged: profile.email !== (user?.email || ""),
       phoneChanged: profile.phone !== (user?.phoneNumber || ""),
       addressesChanged,
-      profileAddresses: normalizedProfileAddresses,
-      userAddresses: normalizedUserAddresses,
       hasImageChange: newImageFile !== null,
       totalChange: hasChange
     });
@@ -221,7 +220,6 @@ export default function ProfilePage() {
   
     console.log("=== SAVE PROFILE START ===");
     console.log("Current profile addresses:", profile.addresses);
-    console.log("Original user addresses:", user?.addresses);
   
     if (!hasChanges()) {
       alert("No changes to save.");
@@ -255,7 +253,6 @@ export default function ProfilePage() {
       formData.append("email", profile.email);
       formData.append("phoneNumber", profile.phone);
       
-      // CRITICAL: Send addresses as proper JSON with names preserved
       const addressesToSend = profile.addresses.map((addr, index) => ({
         name: addr.name || `Address ${index + 1}`,
         houseNumber: addr.houseNumber || "",
@@ -288,18 +285,13 @@ export default function ProfilePage() {
       );
     
       console.log("API Response:", response.data);
-      console.log("User in response:", response.data.user);
-      console.log("Addresses in response:", response.data.user?.addresses);
     
       if (response.data.success) {
         alert("Profile updated successfully!");
         
-        // CRITICAL: Update user context with the response data
         if (response.data.user) {
-          // Get addresses from response
           const responseAddresses = response.data.user.addresses || [];
           
-          // Format addresses properly
           const formattedAddresses = responseAddresses.map((addr, index) => ({
             name: addr.name || `Address ${index + 1}`,
             houseNumber: addr.houseNumber || "",
@@ -315,11 +307,9 @@ export default function ProfilePage() {
           };
           
           console.log("Updating user context with:", updatedUser);
-          console.log("Formatted addresses:", formattedAddresses);
           
           updateUser(updatedUser);
           
-          // ALSO update the local profile state immediately
           setProfile({
             ...profile,
             name: response.data.user.userName || profile.name,
@@ -330,13 +320,10 @@ export default function ProfilePage() {
           });
         }
         
-        // Reset all edit states
         setEditMode(false);
         setNewImageFile(null);
         setShowAddressForm(false);
         setEditingAddressIndex(null);
-        
-        console.log("Save completed. Current profile addresses:", profile.addresses);
         
       } else {
         alert("Error: " + response.data.message);
@@ -356,13 +343,11 @@ export default function ProfilePage() {
   const handleCancel = () => {
     console.log("Canceling changes");
     
-    // Reset all edit states
     setEditMode(false);
     setNewImageFile(null);
     setShowAddressForm(false);
     setEditingAddressIndex(null);
     
-    // Reset to original user data
     if (user) {
       const formattedAddresses = (user.addresses || []).map((addr, index) => ({
         name: addr.name || `Address ${index + 1}`,
@@ -384,7 +369,6 @@ export default function ProfilePage() {
       });
     }
     
-    // Reset address form
     setNewAddress({
       name: "",
       houseNumber: "",
@@ -396,352 +380,373 @@ export default function ProfilePage() {
   };
 
   return (
-    <form onSubmit={handleSave} className="max-w-4xl mx-auto p-6" noValidate>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-        <p className="text-gray-600 mt-2">Manage your personal information and addresses</p>
-      </div>
-
-      {/* Profile Picture */}
-      <div className="mb-12">
-        <div
-          className={`relative w-32 h-32 group ${editMode ? "cursor-pointer" : ""}`}
-        >
-          <div className="w-32 h-32 rounded-full border-4 border-gray-800 overflow-hidden">
-            <img
-              src={profile.profilePic}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
+    <div className="bg-[#f2c737] min-h-screen">
+      <Header onMenuToggle={toggleMobileMenu} />
+      {isMobileMenuOpen && (
+        <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+      )}
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Sidebar */}
+          <div className="lg:w-64 flex-shrink-0">
+            <Sidebar />
           </div>
-          {editMode && (
-            <>
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full border-4 border-dashed border-gray-800">
-                <svg
-                  className="w-12 h-12 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
+
+          {/* Main Content */}
+          <div className="flex-1 bg-white rounded-3xl p-6 lg:p-8 shadow-xl border-2 border-black">
+            <form onSubmit={handleSave} noValidate>
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+                <p className="text-gray-600 mt-2">Manage your personal information and addresses</p>
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-              />
-            </>
-          )}
-        </div>
-        {editMode && (
-          <p className="text-sm text-gray-600 mt-3">
-            Click to change profile picture
-          </p>
-        )}
-      </div>
 
-      {/* Basic Information */}
-      <div className="bg-white rounded-2xl p-8 mb-8 shadow-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Basic Information</h2>
-        
-        <div className="grid md:grid-cols-2 gap-8 mb-6">
-          <InputField
-            label="Name"
-            name="name"
-            value={profile.name}
-            editMode={editMode}
-            onChange={handleChange}
-          />
-          <InputField
-            label="Email"
-            name="email"
-            value={profile.email}
-            editMode={editMode}
-            onChange={handleChange}
-            readOnly={true}
-          />
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8">
-          <InputField
-            label="Phone"
-            name="phone"
-            value={profile.phone}
-            editMode={editMode}
-            onChange={handleChange}
-            placeholder="10-digit Indian number"
-          />
-        </div>
-      </div>
-
-      {/* Addresses Section */}
-      <div className="bg-white rounded-2xl p-8 mb-8 shadow-lg">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Saved Addresses</h2>
-          {editMode && !showAddressForm && (
-            <button
-              type="button"
-              onClick={handleAddNewAddress}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Add New Address
-            </button>
-          )}
-        </div>
-
-        {profile.addresses.length === 0 && !showAddressForm ? (
-          <div className="text-center py-8 text-gray-500">
-            <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <p className="text-lg">No addresses saved yet.</p>
-            {editMode && (
-              <p className="mt-2">Click "Add New Address" to add your first address</p>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4 mb-6">
-            {profile.addresses.map((addr, index) => (
-              <div key={index} className="border border-gray-200 rounded-xl p-6 hover:border-blue-300 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-lg text-gray-900">
-                          {addr.name}
-                        </span>
-                        {addr.isDefault && (
-                          <span className="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
-                            Default
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-gray-700 space-y-1">
-                      <p className="font-medium">{addr.houseNumber}, {addr.streetNo}</p>
-                      <p>{addr.city}, {addr.pincode}</p>
-                    </div>
+              {/* Profile Picture */}
+              <div className="mb-12">
+                <div
+                  className={`relative w-32 h-32 group ${editMode ? "cursor-pointer" : ""}`}
+                >
+                  <div className="w-32 h-32 rounded-full border-4 border-[#f2c737] overflow-hidden">
+                    <img
+                      src={profile.profilePic}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   {editMode && (
-                    <div className="flex gap-4 ml-6">
-                      <button
-                        type="button"
-                        onClick={() => editAddress(index)}
-                        className="text-blue-600 hover:text-blue-800 font-medium px-3 py-1 rounded hover:bg-blue-50 flex items-center gap-1"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    <>
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full border-4 border-dashed border-[#f2c737]">
+                        <svg
+                          className="w-12 h-12 text-[#f2c737]"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
                         </svg>
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (window.confirm("Are you sure you want to delete this address?")) {
-                            deleteAddress(index);
-                          }
-                        }}
-                        className="text-red-600 hover:text-red-800 font-medium px-3 py-1 rounded hover:bg-red-50 flex items-center gap-1"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Delete
-                      </button>
-                    </div>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                    </>
                   )}
                 </div>
+                {editMode && (
+                  <p className="text-sm text-gray-600 mt-3">
+                    Click to change profile picture
+                  </p>
+                )}
               </div>
-            ))}
+
+              {/* Basic Information */}
+              <div className="bg-gray-50 rounded-2xl p-8 mb-8 border border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Basic Information</h2>
+                
+                <div className="grid md:grid-cols-2 gap-8 mb-6">
+                  <InputField
+                    label="Name"
+                    name="name"
+                    value={profile.name}
+                    editMode={editMode}
+                    onChange={handleChange}
+                  />
+                  <InputField
+                    label="Email"
+                    name="email"
+                    value={profile.email}
+                    editMode={editMode}
+                    onChange={handleChange}
+                    readOnly={true}
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                  <InputField
+                    label="Phone"
+                    name="phone"
+                    value={profile.phone}
+                    editMode={editMode}
+                    onChange={handleChange}
+                    placeholder="10-digit Indian number"
+                  />
+                </div>
+              </div>
+
+              {/* Addresses Section */}
+              <div className="bg-gray-50 rounded-2xl p-8 mb-8 border border-gray-200">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">Saved Addresses</h2>
+                  {editMode && !showAddressForm && (
+                    <button
+                      type="button"
+                      onClick={handleAddNewAddress}
+                      className="bg-[#f2c737] text-[#1a1a1a] px-4 py-2 rounded-lg hover:bg-[#e0b530] transition-colors flex items-center gap-2 font-semibold border border-black"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add New Address
+                    </button>
+                  )}
+                </div>
+
+                {profile.addresses.length === 0 && !showAddressForm ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <p className="text-lg">No addresses saved yet.</p>
+                    {editMode && (
+                      <p className="mt-2">Click "Add New Address" to add your first address</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4 mb-6">
+                    {profile.addresses.map((addr, index) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-xl p-6 hover:border-[#f2c737] transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-3">
+                                <span className="font-bold text-lg text-gray-900">
+                                  {addr.name}
+                                </span>
+                                {addr.isDefault && (
+                                  <span className="bg-[#f2c737] text-[#1a1a1a] text-xs font-semibold px-3 py-1 rounded-full border border-black">
+                                    Default
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-gray-700 space-y-1">
+                              <p className="font-medium">{addr.houseNumber}, {addr.streetNo}</p>
+                              <p>{addr.city}, {addr.pincode}</p>
+                            </div>
+                          </div>
+                          {editMode && (
+                            <div className="flex gap-4 ml-6">
+                              <button
+                                type="button"
+                                onClick={() => editAddress(index)}
+                                className="text-[#f2c737] hover:text-[#e0b530] font-medium px-3 py-1 rounded hover:bg-[#f2c737]/10 flex items-center gap-1"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm("Are you sure you want to delete this address?")) {
+                                    deleteAddress(index);
+                                  }
+                                }}
+                                className="text-red-600 hover:text-red-800 font-medium px-3 py-1 rounded hover:bg-red-50 flex items-center gap-1"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add/Edit Address Form */}
+                {editMode && showAddressForm && (
+                  <div className="mt-8 p-6 border-2 border-[#f2c737] rounded-xl bg-[#f2c737]/10">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      {editingAddressIndex !== null ? "Edit Address" : "Add New Address"}
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
+                          Address Name *
+                          <span className="text-gray-500 text-xs ml-2">(e.g., Home, Office, Work)</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={newAddress.name}
+                          onChange={handleAddressChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f2c737] focus:border-[#f2c737] transition-all"
+                          required
+                          placeholder="Enter a name for this address"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
+                          House Number / Flat No *
+                        </label>
+                        <input
+                          type="text"
+                          name="houseNumber"
+                          value={newAddress.houseNumber}
+                          onChange={handleAddressChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f2c737] focus:border-[#f2c737] transition-all"
+                          required
+                          placeholder="e.g., 123, Building A, Flat 301"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
+                          Street / Area *
+                        </label>
+                        <input
+                          type="text"
+                          name="streetNo"
+                          value={newAddress.streetNo}
+                          onChange={handleAddressChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f2c737] focus:border-[#f2c737] transition-all"
+                          required
+                          placeholder="e.g., Main Street, Downtown"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
+                          City *
+                        </label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={newAddress.city}
+                          onChange={handleAddressChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f2c737] focus:border-[#f2c737] transition-all"
+                          required
+                          placeholder="e.g., Mumbai"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-700 text-sm font-medium mb-2">
+                          Pincode *
+                        </label>
+                        <input
+                          type="tel"
+                          name="pincode"
+                          value={newAddress.pincode}
+                          onChange={handleAddressChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f2c737] focus:border-[#f2c737] transition-all"
+                          required
+                          placeholder="e.g., 400001"
+                          maxLength="6"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center mt-6">
+                      <input
+                        type="checkbox"
+                        id="isDefault"
+                        checked={newAddress.isDefault}
+                        onChange={(e) =>
+                          setNewAddress({ ...newAddress, isDefault: e.target.checked })
+                        }
+                        className="w-5 h-5 text-[#f2c737] rounded focus:ring-[#f2c737]"
+                      />
+                      <label htmlFor="isDefault" className="ml-2 text-gray-700 font-medium">
+                        Set as default address
+                        <span className="text-gray-500 text-sm ml-2">(This will be your primary delivery address)</span>
+                      </label>
+                    </div>
+
+                    <div className="flex gap-4 mt-6">
+                      <button
+                        type="button"
+                        onClick={saveAddress}
+                        className="bg-[#f2c737] text-[#1a1a1a] px-6 py-3 rounded-lg font-medium hover:bg-[#e0b530] transition-colors flex items-center gap-2 border border-black"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        {editingAddressIndex !== null ? "Update Address" : "Save Address"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetAddressForm}
+                        className="bg-gray-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-600 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 justify-end">
+                {!editMode ? (
+                  <button
+                    type="button"
+                    onClick={() => setEditMode(true)}
+                    className="bg-black text-[#f2c737] px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors flex items-center gap-2 border border-black"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Profile
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      className="bg-gray-300 text-gray-800 px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-400 transition-colors"
+                      disabled={loading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="bg-[#f2c737] text-[#1a1a1a] px-8 py-3 rounded-lg font-semibold text-lg hover:bg-[#e0b530] transition-colors flex items-center gap-2 border border-black"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <svg className="animate-spin h-5 w-5 text-[#1a1a1a]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Save Changes
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+              </div>
+            </form>
           </div>
-        )}
-
-        {/* Add/Edit Address Form */}
-        {editMode && showAddressForm && (
-          <div className="mt-8 p-6 border-2 border-blue-300 rounded-xl bg-blue-50">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              {editingAddressIndex !== null ? "Edit Address" : "Add New Address"}
-            </h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Address Name *
-                  <span className="text-gray-500 text-xs ml-2">(e.g., Home, Office, Work)</span>
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={newAddress.name}
-                  onChange={handleAddressChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  required
-                  placeholder="Enter a name for this address"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  House Number / Flat No *
-                </label>
-                <input
-                  type="text"
-                  name="houseNumber"
-                  value={newAddress.houseNumber}
-                  onChange={handleAddressChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  required
-                  placeholder="e.g., 123, Building A, Flat 301"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Street / Area *
-                </label>
-                <input
-                  type="text"
-                  name="streetNo"
-                  value={newAddress.streetNo}
-                  onChange={handleAddressChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  required
-                  placeholder="e.g., Main Street, Downtown"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  City *
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={newAddress.city}
-                  onChange={handleAddressChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  required
-                  placeholder="e.g., Mumbai"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-medium mb-2">
-                  Pincode *
-                </label>
-                <input
-                  type="tel"
-                  name="pincode"
-                  value={newAddress.pincode}
-                  onChange={handleAddressChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  required
-                  placeholder="e.g., 400001"
-                  maxLength="6"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center mt-6">
-              <input
-                type="checkbox"
-                id="isDefault"
-                checked={newAddress.isDefault}
-                onChange={(e) =>
-                  setNewAddress({ ...newAddress, isDefault: e.target.checked })
-                }
-                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="isDefault" className="ml-2 text-gray-700 font-medium">
-                Set as default address
-                <span className="text-gray-500 text-sm ml-2">(This will be your primary delivery address)</span>
-              </label>
-            </div>
-
-            <div className="flex gap-4 mt-6">
-              <button
-                type="button"
-                onClick={saveAddress}
-                className="bg-green-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                {editingAddressIndex !== null ? "Update Address" : "Save Address"}
-              </button>
-              <button
-                type="button"
-                onClick={resetAddressForm}
-                className="bg-gray-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-600 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-4 justify-end">
-        {!editMode ? (
-          <button
-            type="button"
-            onClick={() => setEditMode(true)}
-            className="bg-black text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Edit Profile
-          </button>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="bg-gray-300 text-gray-800 px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-400 transition-colors"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  Save Changes
-                </>
-              )}
-            </button>
-          </>
-        )}
-      </div>
-    </form>
+      
+      <Footer />
+    </div>
   );
 }
 
@@ -771,7 +776,7 @@ function InputField({
           onChange={onChange}
           readOnly={readOnly}
           placeholder={placeholder}
-          className={`w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
+          className={`w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-[#f2c737] focus:border-[#f2c737] transition-all ${
             readOnly ? "bg-gray-100 cursor-not-allowed" : "bg-white"
           }`}
         />

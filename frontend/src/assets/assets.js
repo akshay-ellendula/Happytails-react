@@ -4,7 +4,8 @@ import img3 from './img3.jpg'
 import img4 from './img4.jpg'
 import img5 from './img5.jpg'
 import projectLogo from './projectLogo.png'
+import goldenRetriever from './golden-retriever.webp';
 
 export const images = {
-    img1,img2,img3,img4,img5,projectLogo
+    img1,img2,img3,img4,img5,projectLogo,goldenRetriever
 }

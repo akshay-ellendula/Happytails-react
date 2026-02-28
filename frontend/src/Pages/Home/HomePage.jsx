@@ -15,12 +15,7 @@ function HomePage() {
 
   return (
     <>
-      {/* The <style jsx global> block that was here has been removed.
-        It was causing the console errors and is not needed because
-        these styles are already in your src/index.css file.
-      */}
-
-      <div className="bg-[#effe8b] font-outfit overflow-x-hidden">
+      <div className="font-outfit overflow-x-hidden">
         <Header onMenuToggle={toggleMobileMenu} />
         
         {isMobileMenuOpen && (

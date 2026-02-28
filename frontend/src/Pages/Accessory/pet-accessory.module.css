@@ -23,7 +23,7 @@
     padding: 10px 20px;
     border-radius: 30px;
     background-color: #1a1a1a;
-    color: #effe8b;
+    color: #f2c737;
     cursor: pointer;
     border: none;
     font-size: 1rem;
@@ -34,12 +34,11 @@
     margin-bottom: 0;
 }
 
-
 /* ... (Navbar, Header, Breadcrumb styles) ... */
 
 .navbar {
     margin: 5px 75px 5px 75px;
-    background-color: #effe8b;
+    background-color: #f2c737;
 }
 
 .header {
@@ -47,7 +46,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem 3rem;
-    background-color: #effe8b;
+    background-color: #f2c737;
 }
 
 .header a {
@@ -97,7 +96,7 @@
     font-weight: 600;
     font-family: Arial, sans-serif;
     color: black;
-    background-color: #effe8b; 
+    background-color: #f2c737; 
     padding: 10px;
     margin-left: 15px;
     margin-top: 20px;
@@ -128,7 +127,7 @@
 }
 
 .filter_container {
-    all: unset; /* Stops global <form> styles from interfering */
+    all: unset;
     display: flex;
     flex-direction: column;
     min-width: 300px;
@@ -176,7 +175,7 @@
     font-weight: 900;
     font-size: 1.3rem;
     border: none;
-    background: #effe8b;
+    background: #f2c737;
     text-align: center;
     cursor: pointer;
 }
@@ -186,18 +185,17 @@
 .checkbox-input { 
     opacity: 0;
     position: absolute;
-    pointer-events: none; /* Lets clicks pass through to the label */
+    pointer-events: none;
 }
 
 .checkbox-input + label {
     position: relative;
-    padding-left: 30px; /* Make space for the icon container */
+    padding-left: 30px;
     cursor: pointer;
     color: #1a1a1a;
     line-height: 40px; 
 }
 
-/* This is the box */
 .checkbox-input + label::before {
     content: "";
     position: absolute;
@@ -209,18 +207,16 @@
     outline: 1px solid #1a1a1a;
 }
 
-/* This is the new icon container */
 .checkbox_icon_container {
     position: absolute;
-    left: 2px; /* Small offset to center in the 18px box */
+    left: 2px;
     top: 50%;
     transform: translateY(-50%);
     display: flex; 
     align-items: center;
     justify-content: center;
-    color: #1a1a1a; /* Color of the checkmark */
+    color: #1a1a1a;
 }
-
 
 .clear-filters {
     margin-bottom: 20px;
@@ -262,6 +258,7 @@
     transition: transform 0.3s ease-in-out;
     cursor: pointer;
 }
+
 .cart_product_details .p { 
     margin: 5px 0;
 }
@@ -304,29 +301,28 @@
 /* --- ALL CART STYLES RE-ADDED BELOW --- */
 
 .cart {
-    all: unset; /* Stops global <div> styles from interfering */
+    all: unset;
     height: 100%;
     width: 550px;
     position: fixed;
     z-index: 1000;
     top: 0;
-    right: -110%; /* This hides it off-screen */
+    right: -110%;
     background-color: #1a1a1a;
     overflow-x: hidden;
     transition: 0.5s;
     padding: 30px;
     padding-top: 20px;
-    color: #effe8b;
+    color: #f2c737;
     overflow-y: hidden;
 }
 
-/* This is the class that opens the cart */
 .cart.open {
     right: 0;
 }
 
 .close-btn {
-    color: #effe8b;
+    color: #f2c737;
     cursor: pointer;
     font-size: 2rem;
     display: block;
@@ -352,7 +348,7 @@
 .cart_product_container {
     overflow-y: auto;
     max-height: 500px;
-    scrollbar-color: #effe8b #1a1a1a;
+    scrollbar-color: #f2c737 #1a1a1a;
 }
 
 .cart_product {
@@ -393,7 +389,7 @@
 
 .hr-cart { 
     border: 0;
-    border-top: 1px solid #effe8b;
+    border-top: 1px solid #f2c737;
     margin: 10px 0;
 }
 
@@ -438,7 +434,7 @@
 }
 
 .checkout_button button {
-    background-color: #effe8b;
+    background-color: #f2c737;
     color: #1a1a1a;
     width: 100%;
     border-radius: 8px;
@@ -450,8 +446,8 @@
 }
 
 .checkout_button button:hover {
-    background-color: #1a1a1a ;
-    color: #effe8b;
+    background-color: #1a1a1a;
+    color: #f2c737;
 }
 
 /* --- FOOTER & SIDENAV STYLES --- */
@@ -540,7 +536,7 @@
 }
 
 .side-navbar a:hover {
-    color: #effe8b;
+    color: #f2c737;
 }
 
 .side-navbar .close-btn {
@@ -571,7 +567,6 @@
     display: none;
 }
 
-/* This .close-btn rule is for the side-navbar */
 .side-navbar .close-btn { 
     display: block;
 }
@@ -613,7 +608,7 @@
         transform: translateX(100%);
         height: 100%;
         background: #1a1a1a;
-        color: #effe8b;
+        color: #f2c737;
         box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
         transition: transform 0.3s ease-in-out;
         padding: 20px;
@@ -629,24 +624,23 @@
         margin-left: 50px;
     }
 
-    /* --- Mobile Checkbox Styles --- */
     .checkbox-input + label {
-        color: #effe8b;
+        color: #f2c737;
     }
 
     .checkbox-input + label::before {
-        outline: 1px solid #effe8b;
+        outline: 1px solid #f2c737;
     }
     
     .checkbox_icon_container {
-        color: #effe8b; 
+        color: #f2c737; 
     }
 
     .close-filters {
         outline: none;
         border: none;
         background-color: #1a1a1a;
-        color: #effe8b;
+        color: #f2c737;
         display: block;
         margin-bottom: 50px;
         font-size: 2rem; 
@@ -655,7 +649,7 @@
         right: 20px;
     }
     .expand-button {
-        color: #effe8b;
+        color: #f2c737;
         background-color: #1a1a1a;
     }
     
@@ -664,9 +658,7 @@
         margin-left: 0;
     }
     
-    /* --- Mobile Cart Styles --- */
     .cart {
-        /* You may need all:unset here too if it's broken on mobile */
         width: 250px
     }
     .cart_image {
@@ -690,5 +682,5 @@
 
 .product_card_link {
   text-decoration: none;
-  color: inherit; /* This makes the text color the same as the parent */
+  color: inherit;
 }

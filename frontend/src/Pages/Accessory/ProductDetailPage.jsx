@@ -2,14 +2,11 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-// UPDATED: Removed AccessoryNavbar
 import Footer from "../../components/Footer";
-import { axiosInstance } from "../../utils/axios"; // This is needed for fetchProduct
-import { useCart } from "../../context/CartContext"; // ADDED
-// UPDATED: Import Header and MobileMenu
+import { axiosInstance } from "../../utils/axios";
+import { useCart } from "../../context/CartContext";
 import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
-// --- Import Social Icons ---
 import {
   Facebook,
   Instagram,
@@ -17,50 +14,40 @@ import {
   ArrowLeft,
   ShoppingCart,
   Package,
-  Star,
 } from "lucide-react";
-// --- End Import ---
 
-// UPDATED: Removed 'user' prop as Header gets it from context
 const ProductDetailPage = () => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // State for user selections
   const [selectedSize, setSelectedSize] = useState("default");
   const [selectedColor, setSelectedColor] = useState("default");
   const [quantity, setQuantity] = useState(1);
 
-  // State for UI feedback
   const [cartMessage, setCartMessage] = useState({ text: "", type: "error" });
   const [showCartMessage, setShowCartMessage] = useState(false);
 
-  // UPDATED: Add mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  // Get functions from global cart context
-  const { openCart, addToCart } = useCart(); // ADDED
+  const { openCart, addToCart } = useCart();
 
-  // Fetch product data on component mount
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        setError(null); // Clear previous errors
+        setError(null);
 
-        // Use axiosInstance to fetch product data
         const response = await axiosInstance.get(`/products/getProduct/${id}`);
 
-        console.log("API Response (Detail Page):", response.data); // Debug log
+        console.log("API Response (Detail Page):", response.data);
 
         if (response.data.success) {
           setProduct(response.data.product);
-          // Pre-select defaults if only one option exists
           const variants = response.data.product?.variants || [];
           const uniqueSizes = [
             ...new Set(variants.map((v) => v.size).filter((s) => s !== null)),
@@ -72,14 +59,12 @@ const ProductDetailPage = () => {
             setSelectedSize(uniqueSizes[0]);
           }
           if (uniqueColors.length === 1 && uniqueSizes.length <= 1) {
-            // Only preselect color if size is also single or non-existent
             setSelectedColor(uniqueColors[0]);
           }
         } else {
           setError(response.data.message || "Product not found.");
         }
       } catch (err) {
-        // Axios errors have a 'response' property for server errors
         const message =
           err.response?.data?.message ||
           `Network error: ${err.message}. Could not fetch product details.`;
@@ -90,16 +75,13 @@ const ProductDetailPage = () => {
       }
     };
     fetchProduct();
-  }, [id]); // Dependency array ensures fetch runs when 'id' changes
-
-  // --- Reactive Logic ---
-  // (All useMemo hooks for availableSizes, availableColors, currentVariant, and priceDisplay remain exactly the same)
+  }, [id]);
 
   const availableSizes = useMemo(() => {
     if (!product) return [];
     return [
       ...new Set(product.variants.map((v) => v.size).filter((s) => s !== null)),
-    ].sort(); // Sort for consistent order
+    ].sort();
   }, [product]);
 
   const availableColors = useMemo(() => {
@@ -186,8 +168,6 @@ const ProductDetailPage = () => {
     );
   }, [currentVariant]);
 
-  // --- Event Handlers ---
-
   const handleSizeChange = (e) => {
     setSelectedSize(e.target.value);
     setSelectedColor("default");
@@ -205,13 +185,11 @@ const ProductDetailPage = () => {
     setTimeout(() => setShowCartMessage(false), 4000);
   };
 
-  // --- MODIFIED handleAddToCart ---
   const handleAddToCart = () => {
-    setShowCartMessage(false); // Clear previous message
+    setShowCartMessage(false);
     const hasSizes = availableSizes.length > 0;
     const hasColors = product.variants.some((v) => v.color !== null);
 
-    // Validation based on selections
     if (hasSizes && selectedSize === "default") {
       displayMessage("Please select a size.");
       return;
@@ -231,7 +209,6 @@ const ProductDetailPage = () => {
       return;
     }
 
-    // --- Use Global Context Function ---
     const result = addToCart(product, currentVariant, quantity);
 
     if (result.success) {
@@ -239,16 +216,13 @@ const ProductDetailPage = () => {
     } else {
       displayMessage(result.message, "error");
     }
-    // The context's addToCart function automatically opens the cart.
   };
-
-  // --- Render Logic ---
 
   if (loading) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "#effe8b" }}
+        style={{ backgroundColor: "#f2c737" }}
       >
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-gray-900 mx-auto mb-4"></div>
@@ -264,7 +238,7 @@ const ProductDetailPage = () => {
     return (
       <div
         className="min-h-screen flex items-center justify-center p-5"
-        style={{ backgroundColor: "#effe8b" }}
+        style={{ backgroundColor: "#f2c737" }}
       >
         <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg shadow-lg max-w-md">
           <p className="text-red-800 font-semibold text-lg">Error: {error}</p>
@@ -277,7 +251,7 @@ const ProductDetailPage = () => {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "#effe8b" }}
+        style={{ backgroundColor: "#f2c737" }}
       >
         <p className="text-xl font-semibold text-gray-700">
           Product not found.
@@ -285,14 +259,12 @@ const ProductDetailPage = () => {
       </div>
     );
 
-  // Determine if selectors should be shown
   const showSizeSelector = availableSizes.length > 0;
   const showColorSelector = product.variants.some((v) => v.color !== null);
   const isColorDisabled = showSizeSelector && selectedSize === "default";
 
   return (
     <>
-      {/* UPDATED: Use Header and MobileMenu */}
       <Header onMenuToggle={toggleMobileMenu} />
       {isMobileMenuOpen && (
         <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
@@ -300,12 +272,11 @@ const ProductDetailPage = () => {
 
       <div
         className="min-h-screen font-['Outfit',sans-serif]"
-        style={{ backgroundColor: "#effe8b" }}
+        style={{ backgroundColor: "#f2c737" }}
       >
-        {/* Back Navigation */}
         <div
           className="sticky top-0 z-10"
-          style={{ backgroundColor: "#effe8b" }}
+          style={{ backgroundColor: "#f2c737" }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <Link
@@ -318,10 +289,8 @@ const ProductDetailPage = () => {
           </div>
         </div>
 
-        {/* Product Container */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 lg:pt-12 pb-8 lg:pb-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-            {/* Image Section */}
             <div className="relative">
               <div className="lg:sticky lg:top-24">
                 <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white">
@@ -334,21 +303,17 @@ const ProductDetailPage = () => {
               </div>
             </div>
 
-            {/* Details Section */}
             <div className="space-y-6">
-              {/* Product Title */}
               <div>
                 <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
                   {product.product_name}
                 </h1>
               </div>
 
-              {/* Price */}
               <div className="py-4 border-y border-gray-200">
                 {priceDisplay}
               </div>
 
-              {/* Size Selector */}
               {showSizeSelector && (
                 <div className="space-y-3">
                   <label
@@ -379,7 +344,6 @@ const ProductDetailPage = () => {
                 </div>
               )}
 
-              {/* Color Selector */}
               {showColorSelector && (
                 <div className="space-y-3">
                   <label
@@ -409,7 +373,6 @@ const ProductDetailPage = () => {
                     >
                       {isColorDisabled ? "Select size first" : "Select Color"}
                     </option>
-                    {/* Only map available colors based on selected size */}
                     {!isColorDisabled &&
                       availableColors.map((color) => (
                         <option key={color} value={color}>
@@ -420,7 +383,6 @@ const ProductDetailPage = () => {
                 </div>
               )}
 
-              {/* Quantity & Stock */}
               <div className="space-y-3">
                 <label
                   htmlFor="quantity"
@@ -463,12 +425,11 @@ const ProductDetailPage = () => {
                 </div>
               </div>
 
-              {/* Add to Cart Button */}
               <button
                 id="addToCartBtn"
                 onClick={handleAddToCart}
                 disabled={!currentVariant || currentVariant.stock_quantity < 1}
-                className="w-full py-4 px-6 bg-gray-900 text-yellow-300 font-bold text-lg rounded-lg hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
+                className="w-full py-4 px-6 bg-gray-900 text-[#f2c737] font-bold text-lg rounded-lg hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
               >
                 <ShoppingCart className="w-6 h-6" />
                 {currentVariant?.stock_quantity > 0
@@ -476,7 +437,6 @@ const ProductDetailPage = () => {
                   : "Out of Stock"}
               </button>
 
-              {/* Cart Action Message */}
               {showCartMessage && (
                 <div
                   className={`p-4 rounded-lg font-semibold ${
@@ -490,7 +450,6 @@ const ProductDetailPage = () => {
                 </div>
               )}
 
-              {/* Product Description (Optional) */}
               {product.product_description && (
                 <div className="pt-6 border-t border-gray-200">
                   <h4 className="text-xl font-bold text-gray-900 mb-3">
@@ -502,7 +461,6 @@ const ProductDetailPage = () => {
                 </div>
               )}
 
-              {/* Share Section */}
               <div className="pt-6 border-t border-gray-200">
                 <h4 className="text-xl font-bold text-gray-900 mb-4">
                   Share This Product
@@ -520,7 +478,7 @@ const ProductDetailPage = () => {
                     href="#"
                     aria-label="Share on Instagram"
                     title="Share on Instagram"
-                    className="w-12 h-12 flex items-center justify-center rounded-full bg-linear-to-br from-purple-600 via-pink-600 to-orange-500 text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
+                    className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
                   >
                     <Instagram className="w-6 h-6" />
                   </a>

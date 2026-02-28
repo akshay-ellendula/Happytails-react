@@ -12,7 +12,7 @@ const Header = ({ onMenuToggle }) => {
   };
 
   return (
-    <header className="bg-[#effe8b] border-b-2 border-black sticky top-0 z-50">
+    <header className="bg-[#f2c737] border-b-2 border-black sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <div className="flex items-center space-x-4 sm:space-x-14">
@@ -67,7 +67,6 @@ const Header = ({ onMenuToggle }) => {
                   className="flex items-center space-x-2"
                   title="View Profile"
                 >
-                  {/* UPDATED: Conditionally render profile pic or initial */}
                   {user && user.profilePic ? (
                     <img
                       src={user.profilePic}
@@ -75,7 +74,7 @@ const Header = ({ onMenuToggle }) => {
                       className="w-10 h-10 rounded-full border-2 border-black object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-yellow-400 rounded-full items-center justify-center text-[#1a1a1a] font-bold border border-black flex">
+                    <div className="w-10 h-10 bg-[#f2c737] rounded-full items-center justify-center text-[#1a1a1a] font-bold border border-black flex">
                       {user?.userName
                         ? user.userName.charAt(0).toUpperCase()
                         : "U"}

@@ -3,7 +3,6 @@ import React, { useState } from "react";
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
   
-  // UPDATED: Removed "Logout" from this array
   const links = [
     { name: "My Profile", href: "/profile" },
     { name: "My Orders", href: "/my_orders" },
@@ -13,16 +12,16 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-64 bg-dark rounded-3xl p-8 h-fit sticky top-8">
+      <aside className="hidden lg:block w-64 bg-black rounded-3xl p-8 h-fit sticky top-8 border-2 border-[#f2c737]">
         <div className="flex flex-col gap-6">
           {links.map((link, i) => (
             <a
               key={i}
               href={link.href}
-              className={`text-primary text-lg text-center py-4 rounded-3xl font-medium transition-all duration-300 ${
+              className={`text-lg text-center py-4 rounded-3xl font-medium transition-all duration-300 border border-black ${
                 i === 0
-                  ? "bg-primary text-dark"
-                  : "hover:bg-primary hover:text-dark"
+                  ? "bg-[#f2c737] text-black"
+                  : "text-[#f2c737] hover:bg-[#f2c737] hover:text-black"
               }`}
             >
               {link.name}
@@ -35,7 +34,7 @@ export default function Sidebar() {
       <div className="lg:hidden flex justify-end">
         <button
           onClick={() => setOpen(true)}
-          className="bg-dark text-primary px-6 py-3 rounded-lg font-medium text-lg transition-transform hover:scale-105"
+          className="bg-black text-[#f2c737] px-6 py-3 rounded-lg font-medium text-lg transition-transform hover:scale-105 border border-[#f2c737]"
         >
           More
         </button>
@@ -43,10 +42,10 @@ export default function Sidebar() {
 
       {/* Mobile Sidebar */}
       {open && (
-        <div className="fixed inset-y-0 right-0 w-64 bg-dark transform transition-transform duration-300 z-50 lg:hidden">
+        <div className="fixed inset-y-0 right-0 w-64 bg-black transform transition-transform duration-300 z-50 lg:hidden border-l-2 border-[#f2c737]">
           <button
             onClick={() => setOpen(false)}
-            className="absolute top-4 right-6 text-primary text-4xl"
+            className="absolute top-4 right-6 text-[#f2c737] text-4xl"
           >
             &times;
           </button>
@@ -55,10 +54,10 @@ export default function Sidebar() {
               <a
                 key={i}
                 href={link.href}
-                className={`text-primary text-lg text-center py-4 rounded-3xl font-medium transition-all ${
+                className={`text-lg text-center py-4 rounded-3xl font-medium transition-all border border-black ${
                   i === 0
-                    ? "bg-primary text-dark"
-                    : "hover:bg-primary hover:text-dark"
+                    ? "bg-[#f2c737] text-black"
+                    : "text-[#f2c737] hover:bg-[#f2c737] hover:text-black"
                 }`}
               >
                 {link.name}

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './pet-accessory.module.css';
-// UPDATED: Import Header and MobileMenu
 import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
 import ProductFilters from './components/ProductFilters';
@@ -21,13 +20,12 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
     const [visibleProducts, setVisibleProducts] = useState(allProducts);
     const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     
-    // UPDATED: Add mobile menu state
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const toggleMobileMenu = () => {
         setIsMobileMenuOpen(!isMobileMenuOpen);
     };
 
-    const { openCart } = useCart(); // This is now used by the Header
+    const { openCart } = useCart();
     
     const applyFilters = useCallback(() => {
         const { productTypes, colors, sizes, maxPrice } = filterState;
@@ -100,12 +98,11 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
 
     return (
         <div style={{
-            backgroundColor: "#effe8b", 
+            backgroundColor: "#f2c737", 
             minHeight: "100vh",
             margin: 0,
             padding: 0
         }}>
-            {/* UPDATED: Use Header and MobileMenu */}
             <Header onMenuToggle={toggleMobileMenu} />
             {isMobileMenuOpen && (
                 <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
@@ -117,13 +114,12 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
             </div>
 
             <div className={styles.breadcrumb}>
-                <a href= "/">Home</a>
+                <a href="/">Home</a>
                 <span> {'>'} </span>
                 <a href="/pet_accessory">Accessories</a>
             </div>
 
             <div className={styles.main_container}>
-                {/* Filters */}
                 <ProductFilters
                     filters={initialFilters}
                     filterState={filterState}
@@ -133,11 +129,9 @@ const ProductAccessoryPage = ({ user, productsData, filters: initialFilters }) =
                     setIsMobileOpen={setIsFilterPanelOpen}
                 />
 
-                {/* Product Grid */}
                 <ProductGrid products={visibleProducts} />
             </div>
 
-            {/* Footer */}
             <Footer />
         </div>
     );
