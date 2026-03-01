@@ -31,6 +31,9 @@ router.get(
   vendorController.getVendorAnalytics
 );
 
+// ─── Top Selling Products ────────────────────────────────────────
+router.get("/products/top3", protectRoute(["vendor"]), vendorController.getVendorTop3Products);
+
 // --- Product Management ---
 router.get(
   "/products",

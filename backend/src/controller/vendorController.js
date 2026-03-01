@@ -78,6 +78,103 @@ const serviceProviderLogin = async (req, res, next) => {
   }
 };
 
+
+const getVendorTop3Products = async (req, res) => {
+  if (!req.user || req.user.role !== "vendor") {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const vendorId = new mongoose.Types.ObjectId(req.user.vendorId);
+
+  try {
+    const topProducts = await OrderItem.aggregate([
+      // 1. Only order items for this vendor
+      { $match: { vendor_id: vendorId } },
+
+      // 2. Join with the actual Product to verify it still belongs to this vendor
+      {
+        $lookup: {
+          from: "products",
+          localField: "product_id",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      { $unwind: { path: "$product", preserveNullAndEmptyArrays: false } }, // drop if product not found or mismatch
+
+      // 3. Extra safety: ensure product.vendor_id matches (in case of data inconsistency)
+      { $match: { "product.vendor_id": vendorId } },
+
+      // 4. Join with Order to get status
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: { path: "$order", preserveNullAndEmptyArrays: false } },
+
+      // 5. Only count "successful" orders – adjust statuses to your real ones
+      {
+        $match: {
+          "order.status": {
+            $in: ["Delivered", "Confirmed", "Completed", "Shipped"],
+            // If you want to include more: add "Processing", etc.
+            // Or use $nin: ["Cancelled", "Refunded", "Failed"]
+          },
+        },
+      },
+
+      // 6. Group → calculate revenue & quantity
+      {
+        $group: {
+          _id: "$product_id",
+          product_name: { $first: "$product_name" },
+          total_revenue: { $sum: { $multiply: ["$price", "$quantity"] } },
+          total_quantity: { $sum: "$quantity" },
+        },
+      },
+
+      // 7. Sort by revenue descending (highest income first)
+      { $sort: { total_revenue: -1 } },
+
+      // 8. Limit to top 3
+      { $limit: 3 },
+
+      // 9. Get primary image (optional)
+      {
+        $lookup: {
+          from: "productimages",
+          let: { pid: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$product_id", "$$pid"] }, is_primary: true } },
+          ],
+          as: "primary_image",
+        },
+      },
+      { $unwind: { path: "$primary_image", preserveNullAndEmptyArrays: true } },
+    ]);
+
+    const result = topProducts.map((p) => ({
+      product_id: p._id.toString(),
+      product_name: p.product_name,
+      revenue: Number(p.total_revenue.toFixed(2)),
+      quantity: p.total_quantity,
+      image: p.primary_image?.image_data || null,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      topProducts: result,
+    });
+  } catch (err) {
+    console.error("Top 3 products error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 const logout = (req, res) => {
   res.clearCookie("jwt");
   res.status(200).json({ success: true, message: "Logged out successfully" });
@@ -1025,6 +1122,8 @@ const getVendorCustomers = async (req, res, next) => {
   }
 };
 
+
+
 // --- 6. PROFILE UPDATE ---
 const updateVendorProfile = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
@@ -1683,6 +1782,7 @@ const vendorController = {
   deleteOrder,
   deleteSelectedOrders,
   getVendorDashboard,
+  getVendorTop3Products
 };
 
 export default vendorController;
