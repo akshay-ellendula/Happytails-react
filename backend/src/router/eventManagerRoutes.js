@@ -4,7 +4,7 @@ import {
     getEventManagers, geteventManager, putEventManager, 
     deleteEventManager, changeActiveStatus, getEventsAttendees,
     getEventAttendees, getEventManagerEvents, getEventManagerRevenue,
-    getMyProfile, updateMyProfile, changePassword 
+    getMyProfile, updateMyProfile, changePassword , getManagerEventDetails
 } from '../controller/eventManagerController.js';
 import upload from '../middleware/uploadMiddleware.js';
 
@@ -25,4 +25,5 @@ router.route('/:id')
     .get(protectRoute(['admin', 'eventManager']), geteventManager)
     .put(protectRoute(['admin', 'eventManager']), putEventManager)
     .delete(protectRoute(['admin']), deleteEventManager);
+router.get('/events/:eventId/details', protectRoute(['eventManager']), getManagerEventDetails);
 export default router;

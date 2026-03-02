@@ -3,14 +3,14 @@ import { axiosInstance } from '../../utils/axios'; // Adjust path
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 const TicketDetails = ({ setCurrentPage, ticketData }) => {
+
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchDetails = async () => {
-      // If ticketData passed from list view has the DB ID, use it.
-      // Note: The list view object has `.id` (database _id) and `.ticketId` (string ID)
+
       const idToFetch = ticketData?.id || ticketData?._id;
       
       if (!idToFetch) {
@@ -21,7 +21,7 @@ const TicketDetails = ({ setCurrentPage, ticketData }) => {
 
       try {
         const res = await axiosInstance.get(`/tickets/${idToFetch}`);
-        setTicket(res.data); // This is the raw Mongoose object with populated fields
+        setTicket(res.data);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching ticket details:", err);
