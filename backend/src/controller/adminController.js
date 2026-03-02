@@ -108,9 +108,9 @@ const getTopSpenders = async (req, res, next) => {
                     id,
                     name: customer.name,
                     email: customer.email || "",
-                    spentOnProducts: spends.spentOnProducts,
-                    spentOnEvents: spends.spentOnEvents,
-                    totalSpent: spends.spentOnProducts + spends.spentOnEvents
+                    spentOnProducts: spends.spentOnProducts* 0.1,
+                    spentOnEvents: spends.spentOnEvents* 0.1,
+                    totalSpent: (spends.spentOnProducts + spends.spentOnEvents)* 0.1
                 };
             })
             .filter(Boolean);   // remove null entries
@@ -126,6 +126,82 @@ const getTopSpenders = async (req, res, next) => {
     }
 };
 
+
+const getUsersWithRevenue = async (req, res, next) => {
+    try {
+        // Get basic user list (same fields as your original getUsers)
+        const customers = await Customer.find()
+            .select('_id userName email createdAt')
+            .lean(); // lean() = faster + plain JS objects
+
+        if (customers.length === 0) {
+            return res.json({ success: true, users: [] });
+        }
+
+        // Get product spending
+        const orderAgg = await Order.aggregate([
+            {
+                $group: {
+                    _id: "$customer_id",
+                    spentOnProducts: { $sum: "$total_amount" }
+                }
+            }
+        ]);
+
+        // Get event spending
+        const ticketAgg = await Ticket.aggregate([
+            {
+                $group: {
+                    _id: "$customerId",
+                    spentOnEvents: { $sum: "$price" }
+                }
+            }
+        ]);
+
+        const spendingMap = new Map();
+
+        orderAgg.forEach(o => {
+            spendingMap.set(o._id.toString(), { spentOnProducts: o.spentOnProducts || 0 });
+        });
+
+        ticketAgg.forEach(t => {
+            const key = t._id.toString();
+            if (spendingMap.has(key)) {
+                spendingMap.get(key).spentOnEvents = t.spentOnEvents || 0;
+            } else {
+                spendingMap.set(key, { spentOnEvents: t.spentOnEvents || 0, spentOnProducts: 0 });
+            }
+        });
+
+        // Enrich users with revenue
+        const enrichedUsers = customers.map(user => {
+            const idStr = user._id.toString();
+            const spends = spendingMap.get(idStr) || { spentOnProducts: 0, spentOnEvents: 0 };
+
+            const totalSpent = spends.spentOnProducts + spends.spentOnEvents;
+            const revenue = totalSpent * 0.10; // 10% commission
+
+            return {
+                id: user._id,
+                name: user.userName,
+                email: user.email,
+                joined_date: user.createdAt,
+                revenue: Number(revenue.toFixed(2)),     // for sorting & display
+                spentOnProducts: spends.spentOnProducts,
+                spentOnEvents: spends.spentOnEvents,
+                totalSpent
+            };
+        });
+
+        res.json({
+            success: true,
+            users: enrichedUsers
+        });
+    } catch (err) {
+        console.error("Error in getUsersWithRevenue:", err);
+        next(err);
+    }
+};
 
 const getTopEventManagers = async (req, res, next) => {
     try {
@@ -2436,6 +2512,7 @@ export {
     deleteUser,
     getUserStats,
     adminGetUsers,
+    getUsersWithRevenue,
 
     // admin-products.ejs, admin-product-details.ejs, admin-add-product.ejs
     getTopOrderedProducts,

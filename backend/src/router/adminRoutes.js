@@ -8,6 +8,7 @@ import {
     deleteUser,
     getUserStats,
     adminGetUsers,
+    getUsersWithRevenue,
 
     // admin-products.ejs, admin-product-details.ejs, admin-add-product.ejs
     getTopOrderedProducts,
@@ -75,6 +76,8 @@ router.get('/stats', protectRoute(['admin']), dashBoardStats);
 router.get('/revenue-chart', protectRoute(['admin']), getRevenueChartData);
 // After the other customer routes
 router.get('/customers/top-spenders', protectRoute(['admin']), getTopSpenders);
+// Add this line near your other customer routes
+router.get('/customers/with-revenue', protectRoute(['admin']), getUsersWithRevenue);
 
 
 // =======================================================
