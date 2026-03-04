@@ -323,3 +323,58 @@ export const updateMyProfile = async (req, res, next) => {
         next(error); // Pass error to error handling middleware
     }
 };
+
+// Example Backend Controller Function
+export const getManagerEventDetails = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const event = await Event.findById(eventId);
+
+    if (!event) return res.status(404).json({ message: 'Event not found' });
+
+    // Fetch all successful orders/tickets for this event
+    const tickets = await Ticket.find({ eventId, status: 'purchased' }).populate('customerId');
+
+    let totalTicketsSold = 0;
+    let grossRevenue = 0;
+    
+    // Map attendees and calculate revenues
+    const attendees = tickets.map(ticket => {
+      totalTicketsSold += ticket.quantity;
+      grossRevenue += ticket.totalPrice;
+
+      return {
+        _id: ticket._id,
+        orderId: ticket.orderId || ticket._id,
+        customerName: ticket.customerId ? ticket.customerId.name : 'Guest',
+        email: ticket.customerId ? ticket.customerId.email : 'N/A',
+        ticketType: ticket.ticketType,
+        quantity: ticket.quantity,
+        amountPaid: ticket.totalPrice,
+      };
+    });
+
+    // Tax logic (Assuming 18% GST for example)
+    const taxRate = 0.18;
+    const totalTaxes = (grossRevenue * taxRate).toFixed(2);
+    const netRevenue = (grossRevenue - totalTaxes).toFixed(2);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        event,
+        financials: {
+          totalTicketsSold,
+          grossRevenue,
+          totalTaxes,
+          netRevenue
+        },
+        attendees
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error fetching event details' });
+  }
+};

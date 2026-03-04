@@ -10,6 +10,7 @@ import Analytics from "./Analytics.jsx";
 import Settings from "./Settings";
 import CreateEvent from "./CreateEvent.jsx";
 import EditEvent from "./EditEvent.jsx";
+import EventDetailsView from "./EventDetailsView.jsx"; // Import the new details view
 
 // Icons
 import {
@@ -177,6 +178,13 @@ const EventManagerPages = () => {
           <EditEvent
             setCurrentPage={handlePageChange}
             eventData={currentEvent}
+          />
+        );
+      case "event-details":
+        return (
+          <EventDetailsView 
+            event={currentEvent} 
+            setCurrentPage={handlePageChange} 
           />
         );
       default:
