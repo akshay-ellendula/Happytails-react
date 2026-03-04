@@ -9,10 +9,12 @@ import "./admin-styles.css";
 
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
+  const [vendorsWithRevenue, setVendorsWithRevenue] = useState([]);
   const [stats, setStats] = useState({});
   const [topVendors, setTopVendors] = useState([]);     // ← added
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
 
   const VENDORS_PER_PAGE = 10;
   const [page, setPage] = useState(1);
@@ -49,17 +51,31 @@ export default function Vendors() {
     }
   };
 
+  // Fetch vendors with revenue data
+  const loadVendorsWithRevenue = async () => {
+    try {
+      const res = await axiosInstance.get("/admin/vendors/with-revenue");
+      if (res.data.success) {
+        setVendorsWithRevenue(res.data.vendors || []);
+      }
+    } catch (err) {
+      console.error("Error loading vendors with revenue:", err);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      await Promise.all([loadVendors(), loadStats(), loadTopVendors()]);
+      await Promise.all([loadVendors(), loadStats(), loadTopVendors(), loadVendorsWithRevenue()]);
       setLoading(false);
     };
     fetchData();
   }, []);
 
-  // Filtering
-  const filtered = vendors.filter((v) => {
+  // Data source & filtering & sorting
+  const tableData = vendorsWithRevenue.length > 0 ? vendorsWithRevenue : vendors;
+
+  const filtered = tableData.filter((v) => {
     const s = search.toLowerCase();
     return (
       v.name?.toLowerCase().includes(s) ||
@@ -68,9 +84,22 @@ export default function Vendors() {
     );
   });
 
+  const sortedVendors = [...filtered].sort((a, b) => {
+    if (sortBy === "newest") {
+      return new Date(b.joined_date) - new Date(a.joined_date);
+    }
+    if (sortBy === "revenue-desc") {
+      return (b.revenue || 0) - (a.revenue || 0);
+    }
+    if (sortBy === "revenue-asc") {
+      return (a.revenue || 0) - (b.revenue || 0);
+    }
+    return 0;
+  });
+
   // Pagination
-  const totalPages = Math.ceil(filtered.length / VENDORS_PER_PAGE);
-  const paginated = filtered.slice(
+  const totalPages = Math.ceil(sortedVendors.length / VENDORS_PER_PAGE);
+  const paginated = sortedVendors.slice(
     (page - 1) * VENDORS_PER_PAGE,
     page * VENDORS_PER_PAGE
   );
@@ -103,6 +132,18 @@ export default function Vendors() {
       key: "email",
       render: (email) => (
         <div className="text-gray-800">{email || 'N/A'}</div>
+      ),
+    },
+    {
+      label: "Revenue",
+      key: "revenue",
+      render: (revenue) => (
+        <div className="text-gray-800 font-medium">
+          ₹{(revenue || 0).toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </div>
       ),
     },
     {
@@ -240,27 +281,28 @@ export default function Vendors() {
             )}
           </div>
 
-          {/* Search Bar – your original version */}
+          {/* Search Bar + Sort Filter */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">Shop Manager List</h2>
-                <p className="text-gray-600">Manage all shop manager accounts</p>
+                <p className="text-gray-600 mt-1">Manage all shop manager accounts</p>
               </div>
-              <div className="flex gap-4">
-                <div className="relative">
+
+              <div className="flex items-center gap-4">
+                <div className="relative w-80 md:w-96">
                   <input
                     type="text"
-                    placeholder="Search managers by name, email, or shop..."
-                    className="w-80 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all duration-300"
+                    placeholder="Search by name, email, or shop..."
+                    className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all duration-300"
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value);
-                      setPage(1);           // ← added reset to page 1 on search change
+                      setPage(1);
                     }}
                   />
                   <svg
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -268,24 +310,26 @@ export default function Vendors() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
-                <Button className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white px-6 py-3 rounded-lg shadow hover:shadow-lg transition-all duration-300">
-                  Filter
-                </Button>
+
+                <select
+                  value={sortBy}
+                  onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-white text-gray-700 font-medium transition-all duration-300 min-w-[220px] cursor-pointer hover:border-yellow-400 shadow-sm"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="revenue-desc">Revenue: High to Low</option>
+                  <option value="revenue-asc">Revenue: Low to High</option>
+                </select>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-sm text-gray-500">
-              <div>
-                Showing {((page - 1) * VENDORS_PER_PAGE) + 1}–{Math.min(page * VENDORS_PER_PAGE, filtered.length)} of {filtered.length} managers
-                {search && (
-                  <span className="ml-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                    Searching for: "{search}"
-                  </span>
-                )}
-              </div>
-              <div className="text-gray-600">
-                Page {page} of {totalPages}
-              </div>
+            <div className="text-sm text-gray-500 mb-4 flex items-center gap-3">
+              Showing {sortedVendors.length} of {tableData.length} managers
+              {search && (
+                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs">
+                  Searching: "{search}"
+                </span>
+              )}
             </div>
           </div>
 
@@ -301,7 +345,7 @@ export default function Vendors() {
                 </div>
 
                 {/* No results message */}
-                {filtered.length === 0 && search && (
+                {sortedVendors.length === 0 && search && (
                   <div className="p-8 text-center">
                     <div className="h-16 w-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">
                       <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -319,7 +363,7 @@ export default function Vendors() {
                   </div>
                 )}
 
-                {filtered.length === 0 && !search && (
+                {sortedVendors.length === 0 && !search && (
                   <div className="p-8 text-center">
                     <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                       <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -339,11 +383,10 @@ export default function Vendors() {
                     <button
                       onClick={() => setPage(prev => Math.max(prev - 1, 1))}
                       disabled={page === 1}
-                      className={`px-4 py-2 rounded-lg transition ${
-                        page === 1
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                      }`}
+                      className={`px-4 py-2 rounded-lg transition ${page === 1
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                        }`}
                     >
                       Previous
                     </button>
@@ -359,11 +402,10 @@ export default function Vendors() {
                           <button
                             key={i}
                             onClick={() => setPage(pageNum)}
-                            className={`px-4 py-2 rounded-lg transition ${
-                              page === pageNum
-                                ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow'
-                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                            }`}
+                            className={`px-4 py-2 rounded-lg transition ${page === pageNum
+                              ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow'
+                              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                              }`}
                           >
                             {pageNum}
                           </button>
@@ -380,11 +422,10 @@ export default function Vendors() {
                     <button
                       onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
                       disabled={page === totalPages}
-                      className={`px-4 py-2 rounded-lg transition ${
-                        page === totalPages
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                      }`}
+                      className={`px-4 py-2 rounded-lg transition ${page === totalPages
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                        }`}
                     >
                       Next
                     </button>

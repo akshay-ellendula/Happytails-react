@@ -18,7 +18,7 @@ const verifyToken = (token) => {
     return jwt.verify(token, process.env.JWT_SECRET_KEY);
 };
 
-const getUsers = async (req, res ,next) => {
+const getUsers = async (req, res, next) => {
     try {
         const users = await Customer.find()
             .select('_id userName email createdAt')
@@ -108,9 +108,9 @@ const getTopSpenders = async (req, res, next) => {
                     id,
                     name: customer.name,
                     email: customer.email || "",
-                    spentOnProducts: spends.spentOnProducts* 0.1,
-                    spentOnEvents: spends.spentOnEvents* 0.1,
-                    totalSpent: (spends.spentOnProducts + spends.spentOnEvents)* 0.1
+                    spentOnProducts: spends.spentOnProducts * 0.1,
+                    spentOnEvents: spends.spentOnEvents * 0.1,
+                    totalSpent: (spends.spentOnProducts + spends.spentOnEvents) * 0.1
                 };
             })
             .filter(Boolean);   // remove null entries
@@ -312,7 +312,7 @@ const getTopVendors = async (req, res, next) => {
     }
 };
 
-const getUser = async (req, res,next) => {
+const getUser = async (req, res, next) => {
     try {
         const userId = req.params.id;
         const user = await Customer.findById(userId)
@@ -374,11 +374,11 @@ const getUser = async (req, res,next) => {
 
     } catch (err) {
         console.error("Error in getUser:", err);
-       next(err);
+        next(err);
     }
 };
 
-const updateUser = async (req, res,next) => {
+const updateUser = async (req, res, next) => {
     try {
         const userId = req.params.id;
         const { userName, phoneNumber, houseNumber, streetNo, city, pincode } = req.body;
@@ -406,11 +406,11 @@ const updateUser = async (req, res,next) => {
         );
         res.json({ success: true, message: 'Customer updated successfully' });
     } catch (err) {
-       next(err);
-      }
+        next(err);
+    }
 };
 
-const deleteUser = async (req, res,next) => {
+const deleteUser = async (req, res, next) => {
     try {
         const userId = req.params.id;
         const user = await Customer.findById(userId);
@@ -419,11 +419,11 @@ const deleteUser = async (req, res,next) => {
         await Customer.deleteOne({ _id: userId });
         res.json({ success: true, message: 'Customer deleted successfully' });
     } catch (err) {
-       next(err);
-      }
+        next(err);
+    }
 };
 
-const getProductData = async (req, res,next) => {
+const getProductData = async (req, res, next) => {
     try {
         const productId = req.params.id;
 
@@ -456,22 +456,22 @@ const getProductData = async (req, res,next) => {
                     _id: 0,
                     totalSales: 1,
                     // Applying 94% retention rate for vendor revenue based on your shared information
-                    revenue: { $multiply: ['$totalRevenue', 0.94] }, 
+                    revenue: { $multiply: ['$totalRevenue', 0.94] },
                     uniqueCustomers: { $size: '$uniqueCustomers' }
                 }
             }
         ]);
 
         const result = metrics.length > 0 ? metrics[0] : { totalSales: 0, revenue: 0, uniqueCustomers: 0 };
-        
+
         res.json({ success: true, metrics: result });
     } catch (err) {
         console.error('Error in getProductData for metrics:', err);
-       next(err);
-      }
+        next(err);
+    }
 };
 
-const getProductCustomers = async (req, res,next) => {
+const getProductCustomers = async (req, res, next) => {
     try {
         const productId = req.params.id;
 
@@ -511,14 +511,14 @@ const getProductCustomers = async (req, res,next) => {
             { $sort: { date: -1 } }
         ]);
 
-        res.json({ success: true, customers }); 
+        res.json({ success: true, customers });
     } catch (err) {
         console.error('Error in getProductCustomers:', err);
-       next(err);
-      }
+        next(err);
+    }
 };
 
-const getProducts = async (req, res,next) => {
+const getProducts = async (req, res, next) => {
     try {
         const products = await Product.aggregate([
             {
@@ -568,11 +568,11 @@ const getProducts = async (req, res,next) => {
         res.json({ success: true, products });
     } catch (err) {
         console.error('Error fetching products:', err);
-       next(err);
-     }
+        next(err);
+    }
 };
 
-const getUserStats = async (req, res,next) => {
+const getUserStats = async (req, res, next) => {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -589,11 +589,11 @@ const getUserStats = async (req, res,next) => {
             stats: { total, monthly, weekly, daily }
         });
     } catch (err) {
-      next(err);
-     }
+        next(err);
+    }
 };
 
-const getProductStats = async (req, res,next) => {
+const getProductStats = async (req, res, next) => {
     try {
         const today = new Date();
         const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -734,11 +734,11 @@ const getProductStats = async (req, res,next) => {
             }
         });
     } catch (err) {
-         next(err);
-      }
+        next(err);
+    }
 };
 
-const dashBoardStats = async (req, res,next) => {
+const dashBoardStats = async (req, res, next) => {
     try {
         const now = new Date();
         now.setUTCHours(0, 0, 0, 0);
@@ -834,10 +834,10 @@ const dashBoardStats = async (req, res,next) => {
     } catch (err) {
         console.error('Error fetching dashboard stats:', err);
         next(err);
-     }
+    }
 };
 
-const getRevenueChartData = async (req, res,next) => {
+const getRevenueChartData = async (req, res, next) => {
     try {
         const now = new Date();
         now.setUTCHours(0, 0, 0, 0);
@@ -882,10 +882,10 @@ const getRevenueChartData = async (req, res,next) => {
     } catch (err) {
         console.error('Error fetching revenue chart data:', err);
         next(err);
-      }
+    }
 };
 
-const adminGetUsers = async (req, res,next) => {
+const adminGetUsers = async (req, res, next) => {
     try {
         const users = await Customer.find()
             .select('_id userName email createdAt')
@@ -901,10 +901,11 @@ const adminGetUsers = async (req, res,next) => {
             }))
         });
     } catch (err) {
-        next(err);  }
+        next(err);
+    }
 };
 
-const getVendors = async (req, res,next) => {
+const getVendors = async (req, res, next) => {
     try {
         const vendors = await Vendor.find()
             .select('_id name email store_name store_location created_at')
@@ -922,10 +923,78 @@ const getVendors = async (req, res,next) => {
         });
     } catch (err) {
         next(err);
-       }
+    }
 };
 
-const getVendorStats = async (req, res,next) => {
+const getVendorsWithRevenue = async (req, res, next) => {
+    try {
+        const vendors = await Vendor.find()
+            .select('_id name email store_name store_location created_at')
+            .lean();
+
+        if (vendors.length === 0) {
+            return res.json({ success: true, vendors: [] });
+        }
+
+        // Same aggregation approach as getTopVendors
+        const revenueAgg = await OrderItem.aggregate([
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'product_id',
+                    foreignField: '_id',
+                    as: 'product'
+                }
+            },
+            { $unwind: '$product' },
+            {
+                $lookup: {
+                    from: 'orders',
+                    localField: 'order_id',
+                    foreignField: '_id',
+                    as: 'order'
+                }
+            },
+            { $unwind: '$order' },
+            {
+                $group: {
+                    _id: '$product.vendor_id',
+                    totalSales: { $sum: '$order.subtotal' }
+                }
+            }
+        ]);
+
+        const revenueMap = new Map();
+        revenueAgg.forEach(r => {
+            revenueMap.set(r._id.toString(), r.totalSales || 0);
+        });
+
+        const enrichedVendors = vendors.map(vendor => {
+            const idStr = vendor._id.toString();
+            const totalSales = revenueMap.get(idStr) || 0;
+
+            return {
+                id: vendor._id,
+                name: vendor.name,
+                email: vendor.email,
+                store_name: vendor.store_name,
+                store_location: vendor.store_location,
+                joined_date: vendor.created_at,
+                revenue: Number(totalSales.toFixed(2))
+            };
+        });
+
+        res.json({
+            success: true,
+            vendors: enrichedVendors
+        });
+    } catch (err) {
+        console.error("Error in getVendorsWithRevenue:", err);
+        next(err);
+    }
+};
+
+const getVendorStats = async (req, res, next) => {
     try {
         const now = new Date();
         now.setUTCHours(0, 0, 0, 0);
@@ -1073,10 +1142,11 @@ const getVendorStats = async (req, res,next) => {
         });
     } catch (err) {
         console.error('Error fetching vendor stats:', err);
-        next(err);  }
+        next(err);
+    }
 };
 
-const adminGetVendors = async (req, res,next) => {
+const adminGetVendors = async (req, res, next) => {
     try {
         const vendors = await Vendor.find()
             .select('_id name email created_at')
@@ -1092,11 +1162,11 @@ const adminGetVendors = async (req, res,next) => {
             }))
         });
     } catch (err) {
-       next(err);
-      }
+        next(err);
+    }
 };
 
-const getVendorRevenueMetrics = async (req, res,next) => {
+const getVendorRevenueMetrics = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         if (!mongoose.Types.ObjectId.isValid(vendorId)) {
@@ -1243,10 +1313,10 @@ const getVendorRevenueMetrics = async (req, res,next) => {
     } catch (err) {
         console.error('Error fetching vendor revenue metrics:', err);
         next(err);
-     }
+    }
 };
 
-const getVendorProducts = async (req, res,next) => {
+const getVendorProducts = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         const products = await Product.aggregate([
@@ -1284,10 +1354,11 @@ const getVendorProducts = async (req, res,next) => {
         res.json({ success: true, products });
     } catch (err) {
         console.error('Error fetching vendor products:', err);
-       next(err); }
+        next(err);
+    }
 };
 
-const getVendorTopCustomers = async (req, res,next) => {
+const getVendorTopCustomers = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         const customers = await OrderItem.aggregate([
@@ -1353,11 +1424,11 @@ const getVendorTopCustomers = async (req, res,next) => {
         ]);
         res.json({ success: true, customers });
     } catch (err) {
-     next(err);
+        next(err);
     }
 };
 
-const getVendor = async (req, res,next) => {
+const getVendor = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         const vendor = await Vendor.findById(vendorId)
@@ -1378,11 +1449,11 @@ const getVendor = async (req, res,next) => {
             }
         });
     } catch (err) {
-       next(err);
+        next(err);
     }
 };
 
-const updateVendor = async (req, res,next) => {
+const updateVendor = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         const { name, contact_number, store_name, store_location } = req.body;
@@ -1403,10 +1474,11 @@ const updateVendor = async (req, res,next) => {
         );
         res.json({ success: true, message: 'Vendor updated successfully' });
     } catch (err) {
-        next(err); }
+        next(err);
+    }
 };
 
-const deleteVendor = async (req, res,next) => {
+const deleteVendor = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         const vendor = await Vendor.findById(vendorId);
@@ -1423,12 +1495,13 @@ const deleteVendor = async (req, res,next) => {
 
         res.json({ success: true, message: 'Vendor deleted successfully' });
     } catch (err) {
-        next(err); }
+        next(err);
+    }
 };
 
 
 // GET: Stats for Event Managers list page
-const getEventManagerStats = async (req, res,next) => {
+const getEventManagerStats = async (req, res, next) => {
     try {
         const total = await EventManager.countDocuments({ isActive: true });
         const lastMonth = new Date();
@@ -1472,21 +1545,22 @@ const getEventManagerStats = async (req, res,next) => {
         });
     } catch (error) {
         console.error("Error fetching event manager stats:", error);
-       next(err);
-     }
+        next(err);
+    }
 };
 
-const getTotalEvents = async (req, res,next) => {
+const getTotalEvents = async (req, res, next) => {
     try {
         const total = await Event.countDocuments();
         res.json({ success: true, total: total || 0 });
     } catch (err) {
         console.error('Error fetching total events:', err);
-        next(err);  }
+        next(err);
+    }
 };
 
 // GET: Single Event Manager Details
-const getEventManager = async (req, res,next) => {
+const getEventManager = async (req, res, next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1512,11 +1586,12 @@ const getEventManager = async (req, res,next) => {
         });
     } catch (error) {
         console.error("Error fetching event manager:", error);
-     next(err); }
+        next(err);
+    }
 };
 
 // GET: All Event Managers (for the list page)
-const getEventManagers = async (req, res,next) => {
+const getEventManagers = async (req, res, next) => {
     try {
         const managers = await EventManager.find({ isActive: true })
             .select("-password")
@@ -1535,11 +1610,12 @@ const getEventManagers = async (req, res,next) => {
         res.json({ success: true, eventManagers });
     } catch (error) {
         console.error("Error fetching event managers:", error);
-        next(err);}
+        next(err);
+    }
 };
 
 // GET: Metrics for Event Manager Details Page
-const getEventManagerMetrics = async (req, res,next) => {
+const getEventManagerMetrics = async (req, res, next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1608,11 +1684,12 @@ const getEventManagerMetrics = async (req, res,next) => {
         });
     } catch (error) {
         console.error("Error fetching metrics:", error);
-        next(err);  }
+        next(err);
+    }
 };
 
 // GET: Upcoming Events
-const getUpcomingEvents = async (req, res,next) => {
+const getUpcomingEvents = async (req, res, next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1640,12 +1717,12 @@ const getUpcomingEvents = async (req, res,next) => {
         res.json({ success: true, events: formatted });
     } catch (error) {
         console.error("Error fetching upcoming events:", error);
-       next(err);
-     }
+        next(err);
+    }
 };
 
 // GET: Past Events
-const getPastEvents = async (req, res,next) => {
+const getPastEvents = async (req, res, next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1670,7 +1747,8 @@ const getPastEvents = async (req, res,next) => {
         res.json({ success: true, events: formatted });
     } catch (error) {
         console.error("Error fetching past events:", error);
-        next(err); }
+        next(err);
+    }
 };
 
 // PUT: Update Event Manager
@@ -1886,7 +1964,7 @@ const getProduct = async (req, res) => {
 
         // 2. Get main price/stock/sku from the first variant (assumed main display variant)
         const mainVariant = variants[0];
-        
+
         // 3. Extract Vendor details for the frontend
         const vendorDetails = product.vendor_id ? {
             store_name: product.vendor_id.store_name,
@@ -1903,7 +1981,7 @@ const getProduct = async (req, res) => {
                 product_type: product.product_type,
                 product_description: product.product_description,
                 created_at: product.created_at,
-                
+
                 // Fields mapped to top-level for ProductDetails.jsx consumption
                 image: imageUrl, // <--- FIX: This is the URL used by the <img> tag
                 regular_price: mainVariant?.regular_price,
@@ -1911,7 +1989,7 @@ const getProduct = async (req, res) => {
                 sku: mainVariant?.sku || product.sku,
                 brand: product.brand || null,
                 vendor: vendorDetails, // <--- FIX: Vendor details for Shop Owner/Email
-                
+
                 // Nested data (retained for completeness/editing forms)
                 variants: variants,
                 images: images
@@ -2014,24 +2092,24 @@ const updateProduct = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-  try {
-    res.clearCookie("token", {  // Change "token" if your cookie name is different (check login code)
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
-    return res.status(200).json({ success: true, message: "Logged out" });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Logout failed" });
-  }
+    try {
+        res.clearCookie("token", {  // Change "token" if your cookie name is different (check login code)
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            path: "/",
+        });
+        return res.status(200).json({ success: true, message: "Logged out" });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: "Logout failed" });
+    }
 };
 // adminController.js
 
 const getEventsData = async (req, res) => {
     try {
         const now = new Date();
-        
+
         const [
             totalEvents,
             upcomingEvents, // Count events with date_time >= now
@@ -2040,8 +2118,8 @@ const getEventsData = async (req, res) => {
             events
         ] = await Promise.all([
             Event.countDocuments(),
-            Event.countDocuments({ date_time: { $gte: now } }), 
-            Event.countDocuments({ date_time: { $lt: now } }),   
+            Event.countDocuments({ date_time: { $gte: now } }),
+            Event.countDocuments({ date_time: { $lt: now } }),
             Ticket.aggregate([
                 { $group: { _id: null, totalTickets: { $sum: '$numberOfTickets' } } }
             ]),
@@ -2055,15 +2133,15 @@ const getEventsData = async (req, res) => {
                 .lean()
         ]);
 
-        const ticketsSold = ticketAggregation.length > 0 
-            ? ticketAggregation[0].totalTickets 
+        const ticketsSold = ticketAggregation.length > 0
+            ? ticketAggregation[0].totalTickets
             : 0;
 
         // Transform events: replace _id → id (string) for frontend consistency
         const formattedEvents = events.map(event => {
             const obj = { ...event };
-            obj.id = obj._id.toString();   
-            delete obj._id;                
+            obj.id = obj._id.toString();
+            delete obj._id;
             return {
                 id: obj.id,
                 title: obj.title,
@@ -2536,6 +2614,7 @@ export {
     updateVendor,
     deleteVendor,
     getTopVendors,
+    getVendorsWithRevenue,
 
     // admin-events.ejs, admin-em-details.ejs, admin-event-details.ejs
     getTopEvents,

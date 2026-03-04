@@ -32,6 +32,7 @@ import {
     updateVendor,
     deleteVendor,
     getTopVendors,
+    getVendorsWithRevenue,
 
     // admin-events.ejs, admin-em-details.ejs, admin-event-details.ejs
     getTopEvents,
@@ -63,8 +64,8 @@ import {
     getTopSpenders
 
 } from '../controller/adminController.js'; // Corrected import syntax for controller functions
-import upload from '../middleware/uploadMiddleware.js'; 
-import protectRoute from '../middleware/authMiddleware.js'; 
+import upload from '../middleware/uploadMiddleware.js';
+import protectRoute from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 // =======================================================
@@ -85,7 +86,7 @@ router.get('/customers/with-revenue', protectRoute(['admin']), getUsersWithReven
 // =======================================================
 router.get('/customers', protectRoute(['admin']), getUsers);
 router.get('/customers/stats', protectRoute(['admin']), getUserStats);
-router.get('/customers/latest', protectRoute(['admin']), adminGetUsers); 
+router.get('/customers/latest', protectRoute(['admin']), adminGetUsers);
 router.get('/customers/:id', protectRoute(['admin']), getUser);
 router.put('/customers/:id', protectRoute(['admin']), updateUser);
 router.delete('/customers/:id', protectRoute(['admin']), deleteUser);
@@ -95,6 +96,7 @@ router.delete('/customers/:id', protectRoute(['admin']), deleteUser);
 // 4. VENDOR (SHOP MANAGER) MANAGEMENT
 // =======================================================
 router.get('/vendors/top-vendors', protectRoute(['admin']), getTopVendors);
+router.get('/vendors/with-revenue', protectRoute(['admin']), getVendorsWithRevenue);
 router.get('/vendors', protectRoute(['admin']), getVendors);
 router.get('/vendors/stats', protectRoute(['admin']), getVendorStats);
 router.get('/vendors/latest', protectRoute(['admin']), adminGetVendors);
@@ -113,18 +115,18 @@ router.get('/products/top-ordered', protectRoute(['admin']), getTopOrderedProduc
 router.get('/products', protectRoute(['admin']), getProducts);
 router.get('/products/stats', protectRoute(['admin']), getProductStats);
 router.post(
-    '/products/add', 
+    '/products/add',
     protectRoute(['admin']),
-    upload.array('images', 5), 
+    upload.array('images', 5),
     addProduct
 );
 router.get('/products/:id', protectRoute(['admin']), getProduct);
-router.get('/products/:id/data', protectRoute(['admin']), getProductData); 
+router.get('/products/:id/data', protectRoute(['admin']), getProductData);
 router.get('/products/:id/customers', protectRoute(['admin']), getProductCustomers);
 router.put(
-    '/products/:id', 
+    '/products/:id',
     protectRoute(['admin']),
-    upload.array('images', 5), 
+    upload.array('images', 5),
     updateProduct
 );
 router.delete('/products/:id', protectRoute(['admin']), deleteProduct);
@@ -141,9 +143,9 @@ router.get('/event-managers/:id/metrics', protectRoute(['admin']), getEventManag
 router.get('/event-managers/:id/upcoming-events', protectRoute(['admin']), getUpcomingEvents);
 router.get('/event-managers/:id/past-events', protectRoute(['admin']), getPastEvents);
 router.put(
-    '/event-managers/:id', 
+    '/event-managers/:id',
     protectRoute(['admin']),
-    upload.single('profilePicFile'), 
+    upload.single('profilePicFile'),
     updateEventManager
 );
 router.delete('/event-managers/:id', protectRoute(['admin']), deleteEventManager);
@@ -159,10 +161,10 @@ router.get('/events/revenue', protectRoute(['admin']), getEventRevenue);
 router.get('/events/:id', protectRoute(['admin']), getEvent);
 router.get('/events/:id/attendees', protectRoute(['admin']), getEventAttendees);
 router.put(
-    '/events/:id', 
+    '/events/:id',
     protectRoute(['admin']),
     upload.fields([
-        { name: 'thumbnail', maxCount: 1 }, 
+        { name: 'thumbnail', maxCount: 1 },
         { name: 'banner', maxCount: 1 }
     ]),
     updateEvent
