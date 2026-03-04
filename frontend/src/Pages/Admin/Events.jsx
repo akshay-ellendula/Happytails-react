@@ -10,10 +10,12 @@ import "./admin-styles.css";
 
 export default function Events() {
   const [events, setEvents] = useState([]);
+  const [eventsWithRevenue, setEventsWithRevenue] = useState([]);
   const [stats, setStats] = useState({});
   const [topEvents, setTopEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
 
   const navigate = useNavigate();
 
@@ -57,21 +59,48 @@ export default function Events() {
     }
   };
 
+  // Fetch events with revenue
+  const loadEventsWithRevenue = async () => {
+    try {
+      const res = await axiosInstance.get("/admin/events/with-revenue");
+      if (res.data.success) {
+        setEventsWithRevenue(res.data.events || []);
+      }
+    } catch (err) {
+      console.error("Error loading events with revenue:", err);
+    }
+  };
+
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
-      await Promise.all([loadEvents(), loadTopEvents()]);
+      await Promise.all([loadEvents(), loadTopEvents(), loadEventsWithRevenue()]);
       setLoading(false);
     };
     fetchAll();
   }, []);
 
-  // Safe search filter
-  const filteredEvents = events.filter((evt) => {
-    const managerName = evt.event_manager_id?.userName?.toLowerCase() || "";
+  // Data source & filtering & sorting
+  const tableData = eventsWithRevenue.length > 0 ? eventsWithRevenue : events;
+
+  const filteredEvents = tableData.filter((evt) => {
+    const managerName = evt.event_manager_id?.userName?.toLowerCase() || evt.managerName?.toLowerCase() || "";
     const eventName = evt.title?.toLowerCase() || "";
     const searchTerm = search.toLowerCase();
     return eventName.includes(searchTerm) || managerName.includes(searchTerm);
+  });
+
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+    if (sortBy === "newest") {
+      return new Date(b.date_time) - new Date(a.date_time);
+    }
+    if (sortBy === "revenue-desc") {
+      return (b.revenue || 0) - (a.revenue || 0);
+    }
+    if (sortBy === "revenue-asc") {
+      return (a.revenue || 0) - (b.revenue || 0);
+    }
+    return 0;
   });
 
   const columns = [
@@ -121,6 +150,18 @@ export default function Events() {
       ),
     },
     {
+      label: "Revenue",
+      key: "revenue",
+      render: (revenue) => (
+        <div className="text-gray-800 font-medium">
+          ₹{(revenue || 0).toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </div>
+      ),
+    },
+    {
       label: "Status",
       key: "date_time",
       render: (val) => {
@@ -131,11 +172,10 @@ export default function Events() {
         );
         const isUpcoming = new Date(val) > new Date();
         return (
-          <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${
-            isUpcoming
-              ? 'bg-gradient-to-r from-green-100 to-green-50 text-green-800 border border-green-200'
-              : 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-800 border border-gray-200'
-          }`}>
+          <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${isUpcoming
+            ? 'bg-gradient-to-r from-green-100 to-green-50 text-green-800 border border-green-200'
+            : 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-800 border border-gray-200'
+            }`}>
             {isUpcoming ? "Upcoming" : "Completed"}
           </span>
         );
@@ -285,39 +325,58 @@ export default function Events() {
             )}
           </div>
 
-          {/* ─── Search & Controls ────────────────────────────────── */}
+          {/* ─── Search & Sort Controls ────────────────────────────────── */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">Event List</h2>
-                <p className="text-gray-600">Manage all events and view details</p>
+                <p className="text-gray-600 mt-1">Manage all events and view details</p>
               </div>
 
-              <div className="relative w-96">
-                <input
-                  type="text"
-                  placeholder="Search by event title or manager name..."
-                  className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all duration-300"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <svg
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              <div className="flex items-center gap-4">
+                <div className="relative w-80 md:w-96">
+                  <input
+                    type="text"
+                    placeholder="Search by event title or manager name..."
+                    className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all duration-300"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
                   />
-                </svg>
+                  <svg
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-white text-gray-700 font-medium transition-all duration-300 min-w-[220px] cursor-pointer hover:border-yellow-400 shadow-sm"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="revenue-desc">Revenue: High to Low</option>
+                  <option value="revenue-asc">Revenue: Low to High</option>
+                </select>
               </div>
             </div>
 
-            {/* Insert your original showing X-Y of Z + page info here if you have it */}
+            <div className="text-sm text-gray-500 mb-4 flex items-center gap-3">
+              Showing {sortedEvents.length} of {tableData.length} events
+              {search && (
+                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs">
+                  Searching: "{search}"
+                </span>
+              )}
+            </div>
           </div>
 
           {/* ─── Main Table Area ──────────────────────────────────── */}
@@ -328,16 +387,10 @@ export default function Events() {
           ) : (
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="p-6">
-                <Table columns={columns} data={filteredEvents} />
+                <Table columns={columns} data={sortedEvents} />
               </div>
 
-              {/* 
-                PASTE YOUR ORIGINAL NO-RESULTS BLOCKS HERE 
-                (the ones with emoji, heading, description, clear button, etc.)
-              */}
-
-              {/* Example fallback if you haven't pasted yet */}
-              {filteredEvents.length === 0 && (
+              {sortedEvents.length === 0 && (
                 <div className="p-12 text-center">
                   <div className="text-6xl mb-4">📅</div>
                   <h3 className="text-xl font-semibold text-gray-700 mb-2">

@@ -2457,6 +2457,65 @@ const getTopEvents = async (req, res, next) => {
     }
 };
 
+const getEventsWithRevenue = async (req, res, next) => {
+    try {
+        // Get all events with manager info (same as getEventsData)
+        const events = await Event.find({})
+            .populate({
+                path: 'eventManagerId',
+                model: 'EventManager',
+                select: 'userName email companyName profilePic'
+            })
+            .sort({ date_time: -1 })
+            .lean();
+
+        if (events.length === 0) {
+            return res.json({ success: true, events: [] });
+        }
+
+        // Same aggregation as getTopEvents — sum ticket price per event
+        const revenueAgg = await Ticket.aggregate([
+            {
+                $group: {
+                    _id: '$eventId',
+                    totalRevenue: { $sum: '$price' }
+                }
+            }
+        ]);
+
+        const revenueMap = new Map();
+        revenueAgg.forEach(r => {
+            revenueMap.set(r._id.toString(), r.totalRevenue || 0);
+        });
+
+        const enrichedEvents = events.map(event => {
+            const idStr = event._id.toString();
+            const revenue = revenueMap.get(idStr) || 0;
+
+            return {
+                id: idStr,
+                _id: idStr,
+                title: event.title,
+                date_time: event.date_time,
+                venue: event.venue,
+                total_tickets: event.total_tickets,
+                tickets_sold: event.tickets_sold,
+                event_manager_id: event.eventManagerId,
+                managerName: event.eventManagerId?.userName || 'N/A',
+                revenue: Number(revenue.toFixed(2))
+            };
+        });
+
+        res.json({
+            success: true,
+            events: enrichedEvents
+        });
+    } catch (err) {
+        console.error("Error in getEventsWithRevenue:", err);
+        next(err);
+    }
+};
+
 const getOrderStats = async (req, res) => {
     try {
         const today = new Date();
@@ -2634,6 +2693,7 @@ export {
     getEventAttendees,
     updateEvent,
     getEventRevenue,
+    getEventsWithRevenue,
 
     // admin-orders.ejs , admin-order-details.ejs
     getOrders,

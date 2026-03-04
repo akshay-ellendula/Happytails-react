@@ -52,6 +52,7 @@ import {
     getEventAttendees,
     updateEvent,
     getEventRevenue,
+    getEventsWithRevenue,
 
     // admin-orders.ejs, admin-order-details.ejs
     getOrders,
@@ -158,6 +159,7 @@ router.get('/events/top-events', protectRoute(['admin']), getTopEvents);
 router.get('/events', protectRoute(['admin']), getEventsData);
 router.get('/events/total', protectRoute(['admin']), getTotalEvents);
 router.get('/events/revenue', protectRoute(['admin']), getEventRevenue);
+router.get('/events/with-revenue', protectRoute(['admin']), getEventsWithRevenue);
 router.get('/events/:id', protectRoute(['admin']), getEvent);
 router.get('/events/:id/attendees', protectRoute(['admin']), getEventAttendees);
 router.put(
