@@ -572,6 +572,96 @@ const getProducts = async (req, res, next) => {
     }
 };
 
+const getProductsWithRevenue = async (req, res, next) => {
+    try {
+        // Get products with vendor and variant info (same as getProducts)
+        const products = await Product.aggregate([
+            {
+                $lookup: {
+                    from: 'vendors',
+                    localField: 'vendor_id',
+                    foreignField: '_id',
+                    as: 'vendor'
+                }
+            },
+            { $unwind: '$vendor' },
+            {
+                $lookup: {
+                    from: 'productvariants',
+                    localField: '_id',
+                    foreignField: 'product_id',
+                    as: 'variants'
+                }
+            },
+            { $unwind: '$variants' },
+            {
+                $group: {
+                    _id: '$_id',
+                    id: { $first: '$_id' },
+                    product_name: { $first: '$product_name' },
+                    product_category: { $first: '$product_category' },
+                    regular_price: { $first: '$variants.regular_price' },
+                    stock_quantity: { $first: '$variants.stock_quantity' },
+                    created_at: { $first: '$created_at' },
+                    vendor: { $first: '$vendor.store_name' }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    id: 1,
+                    product_name: 1,
+                    category: '$product_category',
+                    price: '$regular_price',
+                    stock: '$stock_quantity',
+                    added_date: '$created_at',
+                    vendor: 1
+                }
+            },
+            { $sort: { added_date: -1 } }
+        ]);
+
+        if (products.length === 0) {
+            return res.json({ success: true, products: [] });
+        }
+
+        // Aggregate revenue and order count per product from OrderItem
+        const orderAgg = await OrderItem.aggregate([
+            {
+                $group: {
+                    _id: '$product_id',
+                    totalRevenue: { $sum: { $multiply: ['$quantity', '$price'] } },
+                    totalOrders: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const revenueMap = new Map();
+        orderAgg.forEach(r => {
+            revenueMap.set(r._id.toString(), {
+                revenue: r.totalRevenue || 0,
+                totalOrders: r.totalOrders || 0
+            });
+        });
+
+        const enrichedProducts = products.map(product => {
+            const idStr = product.id.toString();
+            const data = revenueMap.get(idStr) || { revenue: 0, totalOrders: 0 };
+
+            return {
+                ...product,
+                revenue: Number(data.revenue.toFixed(2)),
+                totalOrders: data.totalOrders
+            };
+        });
+
+        res.json({ success: true, products: enrichedProducts });
+    } catch (err) {
+        console.error("Error in getProductsWithRevenue:", err);
+        next(err);
+    }
+};
+
 const getUserStats = async (req, res, next) => {
     try {
         const today = new Date();
@@ -2722,6 +2812,7 @@ export {
     updateProduct,
     getProductData,
     getProductCustomers,
+    getProductsWithRevenue,
 
     // admin-shop-manager.ejs, admin-sm-details.ejs
     getVendors,

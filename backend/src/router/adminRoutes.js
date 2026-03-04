@@ -20,6 +20,7 @@ import {
     updateProduct,
     getProductData,
     getProductCustomers,
+    getProductsWithRevenue,
 
     // admin-shop-manager.ejs, admin-sm-details.ejs
     getVendors,
@@ -116,6 +117,7 @@ router.delete('/vendors/:id', protectRoute(['admin']), deleteVendor);
 router.get('/products/top-ordered', protectRoute(['admin']), getTopOrderedProducts);
 router.get('/products', protectRoute(['admin']), getProducts);
 router.get('/products/stats', protectRoute(['admin']), getProductStats);
+router.get('/products/with-revenue', protectRoute(['admin']), getProductsWithRevenue);
 router.post(
     '/products/add',
     protectRoute(['admin']),

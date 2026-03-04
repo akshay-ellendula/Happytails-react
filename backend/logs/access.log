@@ -5266,3 +5266,5 @@ GET /api/products/getProducts 304 833.620 ms
 GET /api/products/getProducts 304 1169.673 ms
 GET /api/products/getProducts - - ms
 GET /api/events/public - - ms
+GET /api/admin/products 304 104.488 ms
+GET /api/admin/products/top-ordered 304 79.998 ms
