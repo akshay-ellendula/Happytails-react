@@ -10,10 +10,12 @@ import "./admin-styles.css";
 
 export default function EventManagers() {
   const [managers, setManagers] = useState([]);
+  const [managersWithRevenue, setManagersWithRevenue] = useState([]);
   const [stats, setStats] = useState({});
   const [topManagers, setTopManagers] = useState([]);   // ← NEW
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const navigate = useNavigate();
 
   // Fetch Event Managers
@@ -52,24 +54,51 @@ export default function EventManagers() {
     }
   };
 
+  // Fetch event managers with revenue
+  const getManagersWithRevenue = async () => {
+    try {
+      const res = await axiosInstance.get("/admin/event-managers/with-revenue");
+      if (res.data.success) {
+        setManagersWithRevenue(res.data.eventManagers || []);
+      }
+    } catch (err) {
+      console.error("Error fetching managers with revenue:", err);
+    }
+  };
+
   // Fetch data on mount
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      await Promise.all([getEventManagers(), getStats(), getTopManagers()]);
+      await Promise.all([getEventManagers(), getStats(), getTopManagers(), getManagersWithRevenue()]);
       setLoading(false);
     };
     fetchData();
   }, []);
 
-  // Filter managers based on search
-  const filteredManagers = managers.filter((manager) => {
+  // Data source & filtering & sorting
+  const tableData = managersWithRevenue.length > 0 ? managersWithRevenue : managers;
+
+  const filteredManagers = tableData.filter((manager) => {
     const term = searchTerm.toLowerCase();
     return (
       manager.name?.toLowerCase().includes(term) ||
       manager.organization?.toLowerCase().includes(term) ||
       manager.email?.toLowerCase().includes(term)
     );
+  });
+
+  const sortedManagers = [...filteredManagers].sort((a, b) => {
+    if (sortBy === "newest") {
+      return new Date(b.joined_date) - new Date(a.joined_date);
+    }
+    if (sortBy === "revenue-desc") {
+      return (b.revenue || 0) - (a.revenue || 0);
+    }
+    if (sortBy === "revenue-asc") {
+      return (a.revenue || 0) - (b.revenue || 0);
+    }
+    return 0;
   });
 
   const columns = [
@@ -100,6 +129,18 @@ export default function EventManagers() {
       key: "email",
       render: (email) => (
         <div className="text-gray-800">{email || 'N/A'}</div>
+      ),
+    },
+    {
+      label: "Revenue",
+      key: "revenue",
+      render: (revenue) => (
+        <div className="text-gray-800 font-medium">
+          ₹{(revenue || 0).toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </div>
       ),
     },
     {
@@ -235,41 +276,52 @@ export default function EventManagers() {
           </div>
           {/* ====================== END TOP 3 ====================== */}
 
-          {/* Search Bar and Header - your original version */}
+          {/* Search Bar + Sort Filter */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">Event Manager List</h2>
-                <p className="text-gray-600">Manage all event manager accounts</p>
+                <p className="text-gray-600 mt-1">Manage all event manager accounts</p>
               </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search by name, organization or email..."
-                  className="w-96 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all duration-300"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <svg 
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
+
+              <div className="flex items-center gap-4">
+                <div className="relative w-80 md:w-96">
+                  <input
+                    type="text"
+                    placeholder="Search by name, organization or email..."
+                    className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all duration-300"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <svg
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-white text-gray-700 font-medium transition-all duration-300 min-w-[220px] cursor-pointer hover:border-yellow-400 shadow-sm"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                  <option value="newest">Newest First</option>
+                  <option value="revenue-desc">Revenue: High to Low</option>
+                  <option value="revenue-asc">Revenue: Low to High</option>
+                </select>
               </div>
             </div>
-            
-            <div className="flex items-center justify-between text-sm text-gray-500">
-              <div>
-                Showing {filteredManagers.length} of {managers.length} managers
-                {searchTerm && (
-                  <span className="ml-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                    Searching for: "{searchTerm}"
-                  </span>
-                )}
-              </div>
+
+            <div className="text-sm text-gray-500 mb-4 flex items-center gap-3">
+              Showing {sortedManagers.length} of {tableData.length} managers
+              {searchTerm && (
+                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs">
+                  Searching: "{searchTerm}"
+                </span>
+              )}
             </div>
           </div>
 
@@ -280,11 +332,11 @@ export default function EventManagers() {
           ) : (
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="p-6">
-                <Table columns={columns} data={filteredManagers} />
+                <Table columns={columns} data={sortedManagers} />
               </div>
-              
+
               {/* No results message - your original version */}
-              {filteredManagers.length === 0 && searchTerm && (
+              {sortedManagers.length === 0 && searchTerm && (
                 <div className="p-8 text-center">
                   <div className="h-16 w-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,8 +353,8 @@ export default function EventManagers() {
                   </button>
                 </div>
               )}
-              
-              {filteredManagers.length === 0 && !searchTerm && (
+
+              {sortedManagers.length === 0 && !searchTerm && (
                 <div className="p-8 text-center">
                   <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

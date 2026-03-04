@@ -46,6 +46,7 @@ import {
     getPastEvents,
     updateEventManager,
     deleteEventManager,
+    getEventManagersWithRevenue,
     getEventsData,
     deleteEvent,
     getEvent,
@@ -139,6 +140,7 @@ router.delete('/products/:id', protectRoute(['admin']), deleteProduct);
 router.get('/event-managers/top-managers', protectRoute(['admin']), getTopEventManagers);
 router.get('/event-managers', protectRoute(['admin']), getEventManagers);
 router.get('/event-managers/stats', protectRoute(['admin']), getEventManagerStats);
+router.get('/event-managers/with-revenue', protectRoute(['admin']), getEventManagersWithRevenue);
 router.get('/event-managers/:id', protectRoute(['admin']), getEventManager);
 router.get('/event-managers/:id/metrics', protectRoute(['admin']), getEventManagerMetrics);
 router.get('/event-managers/:id/upcoming-events', protectRoute(['admin']), getUpcomingEvents);

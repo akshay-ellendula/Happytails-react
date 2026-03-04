@@ -1614,6 +1614,67 @@ const getEventManagers = async (req, res, next) => {
     }
 };
 
+// GET: All Event Managers with Revenue (for filtering)
+const getEventManagersWithRevenue = async (req, res, next) => {
+    try {
+        const managers = await EventManager.find({ isActive: true })
+            .select("-password")
+            .lean();
+
+        if (managers.length === 0) {
+            return res.json({ success: true, eventManagers: [] });
+        }
+
+        // Same aggregation as getTopEventManagers — Ticket → Event → EventManager
+        const revenueAgg = await Ticket.aggregate([
+            {
+                $lookup: {
+                    from: 'events',
+                    localField: 'eventId',
+                    foreignField: '_id',
+                    as: 'event'
+                }
+            },
+            { $unwind: '$event' },
+            {
+                $group: {
+                    _id: '$event.eventManagerId',
+                    totalRevenue: { $sum: '$price' }
+                }
+            }
+        ]);
+
+        const revenueMap = new Map();
+        revenueAgg.forEach(r => {
+            revenueMap.set(r._id.toString(), r.totalRevenue || 0);
+        });
+
+        const enrichedManagers = managers.map(m => {
+            const idStr = m._id.toString();
+            const revenue = revenueMap.get(idStr) || 0;
+
+            return {
+                id: idStr,
+                name: m.userName,
+                email: m.email,
+                organization: m.companyName || "Not specified",
+                phone: m.phoneNumber || "N/A",
+                joined_date: m.createdAt,
+                profilePic: m.profilePic,
+                revenue: Number(revenue.toFixed(2))
+            };
+        });
+
+        res.json({
+            success: true,
+            eventManagers: enrichedManagers
+        });
+    } catch (err) {
+        console.error("Error in getEventManagersWithRevenue:", err);
+        next(err);
+    }
+};
+
 // GET: Metrics for Event Manager Details Page
 const getEventManagerMetrics = async (req, res, next) => {
     try {
@@ -2687,6 +2748,7 @@ export {
     getPastEvents,
     updateEventManager,
     deleteEventManager,
+    getEventManagersWithRevenue,
     getEventsData,
     deleteEvent,
     getEvent,
