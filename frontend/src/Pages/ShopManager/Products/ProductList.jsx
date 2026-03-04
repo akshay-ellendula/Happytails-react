@@ -36,7 +36,9 @@ const ProductList = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axiosInstance.get("/vendors/products", { params: filters });
+      const res = await axiosInstance.get("/vendors/products", {
+        params: filters,
+      });
       if (res.data.success) setProducts(res.data.products || []);
     } catch (err) {
       console.error("Error fetching products:", err);
@@ -74,8 +76,10 @@ const ProductList = () => {
   };
 
   const getStockBadge = (quantity) => {
-    if (quantity > 15) return { text: "In Stock", color: "bg-emerald-100 text-emerald-800" };
-    if (quantity > 0) return { text: "Low Stock", color: "bg-yellow-100 text-yellow-800" };
+    if (quantity > 15)
+      return { text: "In Stock", color: "bg-emerald-100 text-emerald-800" };
+    if (quantity > 0)
+      return { text: "Low Stock", color: "bg-yellow-100 text-yellow-800" };
     return { text: "Out of Stock", color: "bg-red-100 text-red-800" };
   };
 
@@ -83,7 +87,7 @@ const ProductList = () => {
     (p) =>
       search === "" ||
       p.product_name?.toLowerCase().includes(search.toLowerCase()) ||
-      p.product_category?.toLowerCase().includes(search.toLowerCase())
+      p.product_category?.toLowerCase().includes(search.toLowerCase()),
   );
 
   if (loading) {
@@ -108,7 +112,9 @@ const ProductList = () => {
         <div className="flex items-center gap-4">
           <div className="text-right">
             <p className="text-sm text-gray-500">Total Products</p>
-            <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {products.length}
+            </p>
           </div>
           <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
             <Package className="text-emerald-600" size={24} />
@@ -124,12 +130,16 @@ const ProductList = () => {
               <TrendingUp className="text-green-600" size={20} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Top 3 Best Sellers</h2>
-              <p className="text-sm text-gray-600">By total revenue – all time</p>
+              <h2 className="text-xl font-bold text-gray-900">
+                Top 3 Best Sellers
+              </h2>
+              <p className="text-sm text-gray-600">
+                By total revenue – all time
+              </p>
             </div>
           </div>
           <Link
-            to="/shop/products"
+            to="/shop/products/view-all"
             className="hidden sm:flex items-center gap-1.5 text-emerald-600 hover:text-emerald-800 text-sm font-medium"
           >
             View All <ArrowRight size={16} />
@@ -176,12 +186,20 @@ const ProductList = () => {
 
                     <div className="grid grid-cols-2 gap-4 lg:gap-6 text-sm mt-2 lg:mt-3">
                       <div>
-                        <p className="text-gray-500 text-xs uppercase tracking-wide">Sold</p>
-                        <p className="font-bold text-gray-800 text-base lg:text-lg">{prod.quantity}</p>
+                        <p className="text-gray-500 text-xs uppercase tracking-wide">
+                          Sold
+                        </p>
+                        <p className="font-bold text-gray-800 text-base lg:text-lg">
+                          {prod.quantity}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs uppercase tracking-wide">Revenue</p>
-                        <p className="font-bold text-gray-800 text-base lg:text-lg">₹{prod.revenue}</p>
+                        <p className="text-gray-500 text-xs uppercase tracking-wide">
+                          Revenue
+                        </p>
+                        <p className="font-bold text-gray-800 text-base lg:text-lg">
+                          ₹{prod.revenue}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -194,9 +212,12 @@ const ProductList = () => {
             <div className="w-16 h-16 lg:w-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <TrendingUp className="text-gray-400" size={32} />
             </div>
-            <h3 className="text-base lg:text-lg font-medium text-gray-700 mb-2">No sales yet</h3>
+            <h3 className="text-base lg:text-lg font-medium text-gray-700 mb-2">
+              No sales yet
+            </h3>
             <p className="text-sm mb-5 lg:mb-6">
-              Your top selling products will appear here once orders start coming in.
+              Your top selling products will appear here once orders start
+              coming in.
             </p>
             <Link
               to="/shop/products/add"
@@ -229,7 +250,9 @@ const ProductList = () => {
                   <button
                     onClick={() => setViewMode("grid")}
                     className={`p-2 rounded-lg ${
-                      viewMode === "grid" ? "bg-blue-100 text-blue-600" : "text-gray-400 hover:text-gray-600"
+                      viewMode === "grid"
+                        ? "bg-blue-100 text-blue-600"
+                        : "text-gray-400 hover:text-gray-600"
                     }`}
                   >
                     <Grid size={20} />
@@ -237,7 +260,9 @@ const ProductList = () => {
                   <button
                     onClick={() => setViewMode("list")}
                     className={`p-2 rounded-lg ${
-                      viewMode === "list" ? "bg-blue-100 text-blue-600" : "text-gray-400 hover:text-gray-600"
+                      viewMode === "list"
+                        ? "bg-blue-100 text-blue-600"
+                        : "text-gray-400 hover:text-gray-600"
                     }`}
                   >
                     <List size={20} />
@@ -279,7 +304,14 @@ const ProductList = () => {
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
           <p className="text-sm text-blue-700 font-medium">Total Value</p>
           <p className="text-2xl font-bold text-blue-900 mt-1">
-            ₹{products.reduce((sum, p) => sum + (p.regular_price || 0) * (p.stock_quantity || 0), 0).toLocaleString("en-IN")}
+            ₹
+            {products
+              .reduce(
+                (sum, p) =>
+                  sum + (p.regular_price || 0) * (p.stock_quantity || 0),
+                0,
+              )
+              .toLocaleString("en-IN")}
           </p>
         </div>
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
@@ -291,7 +323,12 @@ const ProductList = () => {
         <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
           <p className="text-sm text-yellow-700 font-medium">Low Stock</p>
           <p className="text-2xl font-bold text-yellow-900 mt-1">
-            {products.filter((p) => (p.stock_quantity || 0) > 0 && (p.stock_quantity || 0) <= 15).length}
+            {
+              products.filter(
+                (p) =>
+                  (p.stock_quantity || 0) > 0 && (p.stock_quantity || 0) <= 15,
+              ).length
+            }
           </p>
         </div>
         <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border border-red-200">
@@ -328,7 +365,7 @@ const ProductList = () => {
                     )}
                     <span
                       className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-medium ${getCategoryColor(
-                        product.product_category
+                        product.product_category,
                       )}`}
                     >
                       {product.product_category || "other"}
@@ -344,7 +381,12 @@ const ProductList = () => {
                       <div>
                         <p className="text-xs text-gray-500">Price</p>
                         <p className="font-bold text-gray-900">
-                          ₹{(product.sale_price || product.regular_price || 0).toFixed(2)}
+                          ₹
+                          {(
+                            product.sale_price ||
+                            product.regular_price ||
+                            0
+                          ).toFixed(2)}
                         </p>
                       </div>
                       <span
@@ -356,7 +398,11 @@ const ProductList = () => {
 
                     <div className="mt-4 flex gap-2">
                       <button
-                        onClick={() => navigate(`/shop/products/edit/${product._id || product.id}`)}
+                        onClick={() =>
+                          navigate(
+                            `/shop/products/edit/${product._id || product.id}`,
+                          )
+                        }
                         className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
                       >
                         Edit
@@ -380,9 +426,13 @@ const ProductList = () => {
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="text-gray-400" size={32} />
           </div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">No products found</h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">
+            No products found
+          </h3>
           <p className="text-gray-500 mb-6">
-            {search ? "Try different keywords" : "Add your first product to get started"}
+            {search
+              ? "Try different keywords"
+              : "Add your first product to get started"}
           </p>
           <Link
             to="/shop/products/add"

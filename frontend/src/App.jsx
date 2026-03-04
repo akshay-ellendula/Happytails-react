@@ -58,10 +58,12 @@ import ShopDashboard from "./Pages/ShopManager/Dashboard/ShopDashboard";
 import ProductList from "./Pages/ShopManager/Products/ProductList";
 import AddProduct from "./Pages/ShopManager/Products/AddProduct";
 import EditProduct from "./Pages/ShopManager/Products/EditProduct";
+import ViewAllProducts from "./Pages/ShopManager/Products/ViewAllProducts";
 import OrderList from "./Pages/ShopManager/Orders/OrderList";
 import ManagerOrderDetails from "./pages/ShopManager/Orders/ManagerOrderDetails";
 import CustomerList from "./Pages/ShopManager/Customers/CustomerList";
 import CustomerDetails from "./Pages/ShopManager/Customers/CustomerDetails";
+import ViewAllCustomers from "./Pages/ShopManager/Customers/ViewAllCustomers";
 import ShopAnalytics from "./Pages/ShopManager/Analytics/ShopAnalytics";
 import ShopProfile from "./Pages/ShopManager/Profile/ShopProfile";
 
@@ -184,10 +186,12 @@ function AppRoutes() {
         <Route path="products" element={<ProductList />} />
         <Route path="products/add" element={<AddProduct />} />
         <Route path="products/edit/:productId" element={<EditProduct />} />
+        <Route path="products/view-all" element={<ViewAllProducts />} />
         <Route path="orders" element={<OrderList />} />
         <Route path="orders/:orderId" element={<ManagerOrderDetails />} />
         <Route path="customers" element={<CustomerList />} />
         <Route path="customers/:customerId" element={<CustomerDetails />} />
+        <Route path="customers/view-all" element={<ViewAllCustomers />} />
         <Route path="analytics" element={<ShopAnalytics />} />
         <Route path="profile" element={<ShopProfile />} />
         <Route index element={<Navigate to="dashboard" replace />} />
