@@ -1324,14 +1324,8 @@ const getVendorRevenueMetrics = async (req, res, next) => {
                             ]
                         }
                     },
-                    quarterly_revenue: {
-                        $sum: {
-                            $cond: [
-                                { $gte: ['$order.order.order_date', quarterStart] },
-                                { $multiply: ['$order.subtotal', 0.92] },
-                                0
-                            ]
-                        }
+                    total_revenue: {
+                        $sum: { $multiply: ['$order.subtotal', 0.92] }
                     }
                 }
             }
@@ -1396,7 +1390,7 @@ const getVendorRevenueMetrics = async (req, res, next) => {
                 today_revenue: revenueMetrics.length > 0 ? revenueMetrics[0].today_revenue : 0,
                 weekly_revenue: revenueMetrics.length > 0 ? revenueMetrics[0].weekly_revenue : 0,
                 monthly_revenue: revenueMetrics.length > 0 ? revenueMetrics[0].monthly_revenue : 0,
-                quarterly_revenue: revenueMetrics.length > 0 ? revenueMetrics[0].quarterly_revenue : 0,
+                total_revenue: revenueMetrics.length > 0 ? revenueMetrics[0].total_revenue : 0,
                 monthly_breakdown: monthlyBreakdown
             }
         });

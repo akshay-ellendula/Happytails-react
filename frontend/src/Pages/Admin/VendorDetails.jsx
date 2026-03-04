@@ -282,10 +282,10 @@ export default function VendorDetails() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
             <Sidebar />
-            
+
             <div className="flex-1 ml-64">
                 <Header title="Shop Manager Details" />
-                
+
                 <main className="p-6">
                     {/* Header with Back Button */}
                     <div className="mb-8">
@@ -371,7 +371,7 @@ export default function VendorDetails() {
                     {/* Revenue Details */}
                     <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
                         <h3 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-200">Revenue Details</h3>
-                        
+
                         {loadingRevenue ? (
                             <div className="flex justify-center p-8"><Loader /></div>
                         ) : (
@@ -421,9 +421,9 @@ export default function VendorDetails() {
                                 <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 border-l-4 border-amber-500">
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <h3 className="text-sm text-gray-600 uppercase tracking-wider">Quarterly Revenue</h3>
+                                            <h3 className="text-sm text-gray-600 uppercase tracking-wider">Total Revenue</h3>
                                             <p className="text-3xl font-bold text-gray-800 mt-2">
-                                                ₹{revenue?.quarterly_revenue?.toFixed(2) || "0.00"}
+                                                ₹{revenue?.total_revenue?.toFixed(2) || "0.00"}
                                             </p>
                                         </div>
                                         <div className="h-12 w-12 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600 text-xl">
