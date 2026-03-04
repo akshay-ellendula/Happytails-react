@@ -12,12 +12,13 @@ const generateToken = (payload) => {
     return jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
 };
 
+
 // Verify JWT token
 const verifyToken = (token) => {
     return jwt.verify(token, process.env.JWT_SECRET_KEY);
 };
 
-const getUsers = async (req, res) => {
+const getUsers = async (req, res, next) => {
     try {
         const users = await Customer.find()
             .select('_id userName email createdAt')
@@ -32,11 +33,286 @@ const getUsers = async (req, res) => {
             }))
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err)
     }
 };
 
-const getUser = async (req, res) => {
+
+const getTopSpenders = async (req, res, next) => {
+    try {
+        // 1. Total spent on products
+        const orderAgg = await Order.aggregate([
+            {
+                $group: {
+                    _id: "$customer_id",
+                    spentOnProducts: { $sum: "$total_amount" }
+                }
+            }
+        ]);
+
+        // 2. Total spent on events
+        const ticketAgg = await Ticket.aggregate([
+            {
+                $group: {
+                    _id: "$customerId",
+                    spentOnEvents: { $sum: "$price" }
+                }
+            }
+        ]);
+
+        // Merge both
+        const spendingMap = new Map();
+
+        orderAgg.forEach(o => {
+            spendingMap.set(o._id.toString(), {
+                spentOnProducts: o.spentOnProducts || 0,
+                spentOnEvents: 0
+            });
+        });
+
+        ticketAgg.forEach(t => {
+            const key = t._id.toString();
+            if (spendingMap.has(key)) {
+                spendingMap.get(key).spentOnEvents = t.spentOnEvents || 0;
+            } else {
+                spendingMap.set(key, {
+                    spentOnProducts: 0,
+                    spentOnEvents: t.spentOnEvents || 0
+                });
+            }
+        });
+
+        if (spendingMap.size === 0) {
+            return res.json({ success: true, topSpenders: [] });
+        }
+
+        // Fetch ONLY existing customers
+        const customerIds = Array.from(spendingMap.keys()).map(id =>
+            new mongoose.Types.ObjectId(id)
+        );
+
+        const customers = await Customer.find({ _id: { $in: customerIds } })
+            .select("userName email");
+
+        const customerMap = new Map(
+            customers.map(c => [c._id.toString(), { name: c.userName, email: c.email }])
+        );
+
+        // Build final array → SKIP deleted customers
+        let topSpenders = Array.from(spendingMap.entries())
+            .map(([id, spends]) => {
+                const customer = customerMap.get(id);
+                if (!customer) return null;           // ← IMPORTANT: skip deleted users
+
+                return {
+                    id,
+                    name: customer.name,
+                    email: customer.email || "",
+                    spentOnProducts: spends.spentOnProducts * 0.1,
+                    spentOnEvents: spends.spentOnEvents * 0.1,
+                    totalSpent: (spends.spentOnProducts + spends.spentOnEvents) * 0.1
+                };
+            })
+            .filter(Boolean);   // remove null entries
+
+        // Sort & take top 3
+        topSpenders.sort((a, b) => b.totalSpent - a.totalSpent);
+        topSpenders = topSpenders.slice(0, 3);
+
+        res.json({ success: true, topSpenders });
+    } catch (err) {
+        console.error("Error in getTopSpenders:", err);
+        next(err);
+    }
+};
+
+
+const getUsersWithRevenue = async (req, res, next) => {
+    try {
+        // Get basic user list (same fields as your original getUsers)
+        const customers = await Customer.find()
+            .select('_id userName email createdAt')
+            .lean(); // lean() = faster + plain JS objects
+
+        if (customers.length === 0) {
+            return res.json({ success: true, users: [] });
+        }
+
+        // Get product spending
+        const orderAgg = await Order.aggregate([
+            {
+                $group: {
+                    _id: "$customer_id",
+                    spentOnProducts: { $sum: "$total_amount" }
+                }
+            }
+        ]);
+
+        // Get event spending
+        const ticketAgg = await Ticket.aggregate([
+            {
+                $group: {
+                    _id: "$customerId",
+                    spentOnEvents: { $sum: "$price" }
+                }
+            }
+        ]);
+
+        const spendingMap = new Map();
+
+        orderAgg.forEach(o => {
+            spendingMap.set(o._id.toString(), { spentOnProducts: o.spentOnProducts || 0 });
+        });
+
+        ticketAgg.forEach(t => {
+            const key = t._id.toString();
+            if (spendingMap.has(key)) {
+                spendingMap.get(key).spentOnEvents = t.spentOnEvents || 0;
+            } else {
+                spendingMap.set(key, { spentOnEvents: t.spentOnEvents || 0, spentOnProducts: 0 });
+            }
+        });
+
+        // Enrich users with revenue
+        const enrichedUsers = customers.map(user => {
+            const idStr = user._id.toString();
+            const spends = spendingMap.get(idStr) || { spentOnProducts: 0, spentOnEvents: 0 };
+
+            const totalSpent = spends.spentOnProducts + spends.spentOnEvents;
+            const revenue = totalSpent * 0.10; // 10% commission
+
+            return {
+                id: user._id,
+                name: user.userName,
+                email: user.email,
+                joined_date: user.createdAt,
+                revenue: Number(revenue.toFixed(2)),     // for sorting & display
+                spentOnProducts: spends.spentOnProducts,
+                spentOnEvents: spends.spentOnEvents,
+                totalSpent
+            };
+        });
+
+        res.json({
+            success: true,
+            users: enrichedUsers
+        });
+    } catch (err) {
+        console.error("Error in getUsersWithRevenue:", err);
+        next(err);
+    }
+};
+
+const getTopEventManagers = async (req, res, next) => {
+    try {
+        const topManagers = await Ticket.aggregate([
+            {
+                $lookup: {
+                    from: 'events',
+                    localField: 'eventId',
+                    foreignField: '_id',
+                    as: 'event'
+                }
+            },
+            { $unwind: '$event' },
+            {
+                $lookup: {
+                    from: 'eventmanagers',
+                    localField: 'event.eventManagerId',
+                    foreignField: '_id',
+                    as: 'manager'
+                }
+            },
+            { $unwind: '$manager' },
+            {
+                $group: {
+                    _id: '$event.eventManagerId',
+                    name: { $first: '$manager.userName' },
+                    email: { $first: '$manager.email' },
+                    organization: { $first: '$manager.companyName' },
+                    totalRevenue: { $sum: '$price' }
+                }
+            },
+            { $sort: { totalRevenue: -1 } },
+            { $limit: 3 },
+            {
+                $project: {
+                    id: '$_id',
+                    name: 1,
+                    email: 1,
+                    organization: 1,
+                    totalRevenue: 1
+                }
+            }
+        ]);
+
+        res.json({ success: true, topManagers: topManagers || [] });
+    } catch (err) {
+        console.error("Error in getTopEventManagers:", err);
+        next(err);
+    }
+};
+
+const getTopVendors = async (req, res, next) => {
+    try {
+        const topVendors = await OrderItem.aggregate([
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'product_id',
+                    foreignField: '_id',
+                    as: 'product'
+                }
+            },
+            { $unwind: '$product' },
+            {
+                $lookup: {
+                    from: 'orders',
+                    localField: 'order_id',
+                    foreignField: '_id',
+                    as: 'order'
+                }
+            },
+            { $unwind: '$order' },
+            {
+                $lookup: {
+                    from: 'vendors',
+                    localField: 'product.vendor_id',
+                    foreignField: '_id',
+                    as: 'vendor'
+                }
+            },
+            { $unwind: '$vendor' },
+            {
+                $group: {
+                    _id: '$product.vendor_id',
+                    name: { $first: '$vendor.name' },
+                    store_name: { $first: '$vendor.store_name' },
+                    email: { $first: '$vendor.email' },
+                    totalSales: { $sum: '$order.subtotal' }
+                }
+            },
+            { $sort: { totalSales: -1 } },
+            { $limit: 3 },
+            {
+                $project: {
+                    id: '$_id',
+                    name: 1,
+                    store_name: 1,
+                    email: 1,
+                    totalSales: 1
+                }
+            }
+        ]);
+
+        res.json({ success: true, topVendors: topVendors || [] });
+    } catch (err) {
+        console.error("Error in getTopVendors:", err);
+        next(err);
+    }
+};
+
+const getUser = async (req, res, next) => {
     try {
         const userId = req.params.id;
         const user = await Customer.findById(userId)
@@ -98,11 +374,11 @@ const getUser = async (req, res) => {
 
     } catch (err) {
         console.error("Error in getUser:", err);
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const updateUser = async (req, res) => {
+const updateUser = async (req, res, next) => {
     try {
         const userId = req.params.id;
         const { userName, phoneNumber, houseNumber, streetNo, city, pincode } = req.body;
@@ -130,11 +406,11 @@ const updateUser = async (req, res) => {
         );
         res.json({ success: true, message: 'Customer updated successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to update Customer' });
+        next(err);
     }
 };
 
-const deleteUser = async (req, res) => {
+const deleteUser = async (req, res, next) => {
     try {
         const userId = req.params.id;
         const user = await Customer.findById(userId);
@@ -143,11 +419,11 @@ const deleteUser = async (req, res) => {
         await Customer.deleteOne({ _id: userId });
         res.json({ success: true, message: 'Customer deleted successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to delete Customer' });
+        next(err);
     }
 };
 
-const getProductData = async (req, res) => {
+const getProductData = async (req, res, next) => {
     try {
         const productId = req.params.id;
 
@@ -180,22 +456,22 @@ const getProductData = async (req, res) => {
                     _id: 0,
                     totalSales: 1,
                     // Applying 94% retention rate for vendor revenue based on your shared information
-                    revenue: { $multiply: ['$totalRevenue', 0.94] }, 
+                    revenue: { $multiply: ['$totalRevenue', 0.94] },
                     uniqueCustomers: { $size: '$uniqueCustomers' }
                 }
             }
         ]);
 
         const result = metrics.length > 0 ? metrics[0] : { totalSales: 0, revenue: 0, uniqueCustomers: 0 };
-        
+
         res.json({ success: true, metrics: result });
     } catch (err) {
         console.error('Error in getProductData for metrics:', err);
-        res.status(500).json({ success: false, message: 'Failed to load product metrics' });
+        next(err);
     }
 };
 
-const getProductCustomers = async (req, res) => {
+const getProductCustomers = async (req, res, next) => {
     try {
         const productId = req.params.id;
 
@@ -235,14 +511,14 @@ const getProductCustomers = async (req, res) => {
             { $sort: { date: -1 } }
         ]);
 
-        res.json({ success: true, customers }); 
+        res.json({ success: true, customers });
     } catch (err) {
         console.error('Error in getProductCustomers:', err);
-        res.status(500).json({ success: false, message: 'Failed to load product customers' });
+        next(err);
     }
 };
 
-const getProducts = async (req, res) => {
+const getProducts = async (req, res, next) => {
     try {
         const products = await Product.aggregate([
             {
@@ -292,11 +568,101 @@ const getProducts = async (req, res) => {
         res.json({ success: true, products });
     } catch (err) {
         console.error('Error fetching products:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const getUserStats = async (req, res) => {
+const getProductsWithRevenue = async (req, res, next) => {
+    try {
+        // Get products with vendor and variant info (same as getProducts)
+        const products = await Product.aggregate([
+            {
+                $lookup: {
+                    from: 'vendors',
+                    localField: 'vendor_id',
+                    foreignField: '_id',
+                    as: 'vendor'
+                }
+            },
+            { $unwind: '$vendor' },
+            {
+                $lookup: {
+                    from: 'productvariants',
+                    localField: '_id',
+                    foreignField: 'product_id',
+                    as: 'variants'
+                }
+            },
+            { $unwind: '$variants' },
+            {
+                $group: {
+                    _id: '$_id',
+                    id: { $first: '$_id' },
+                    product_name: { $first: '$product_name' },
+                    product_category: { $first: '$product_category' },
+                    regular_price: { $first: '$variants.regular_price' },
+                    stock_quantity: { $first: '$variants.stock_quantity' },
+                    created_at: { $first: '$created_at' },
+                    vendor: { $first: '$vendor.store_name' }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    id: 1,
+                    product_name: 1,
+                    category: '$product_category',
+                    price: '$regular_price',
+                    stock: '$stock_quantity',
+                    added_date: '$created_at',
+                    vendor: 1
+                }
+            },
+            { $sort: { added_date: -1 } }
+        ]);
+
+        if (products.length === 0) {
+            return res.json({ success: true, products: [] });
+        }
+
+        // Aggregate revenue and order count per product from OrderItem
+        const orderAgg = await OrderItem.aggregate([
+            {
+                $group: {
+                    _id: '$product_id',
+                    totalRevenue: { $sum: { $multiply: ['$quantity', '$price'] } },
+                    totalOrders: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const revenueMap = new Map();
+        orderAgg.forEach(r => {
+            revenueMap.set(r._id.toString(), {
+                revenue: r.totalRevenue || 0,
+                totalOrders: r.totalOrders || 0
+            });
+        });
+
+        const enrichedProducts = products.map(product => {
+            const idStr = product.id.toString();
+            const data = revenueMap.get(idStr) || { revenue: 0, totalOrders: 0 };
+
+            return {
+                ...product,
+                revenue: Number(data.revenue.toFixed(2)),
+                totalOrders: data.totalOrders
+            };
+        });
+
+        res.json({ success: true, products: enrichedProducts });
+    } catch (err) {
+        console.error("Error in getProductsWithRevenue:", err);
+        next(err);
+    }
+};
+
+const getUserStats = async (req, res, next) => {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -313,11 +679,11 @@ const getUserStats = async (req, res) => {
             stats: { total, monthly, weekly, daily }
         });
     } catch (err) {
-        res.status(500).json({ success: false });
+        next(err);
     }
 };
 
-const getProductStats = async (req, res) => {
+const getProductStats = async (req, res, next) => {
     try {
         const today = new Date();
         const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -458,11 +824,11 @@ const getProductStats = async (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const dashBoardStats = async (req, res) => {
+const dashBoardStats = async (req, res, next) => {
     try {
         const now = new Date();
         now.setUTCHours(0, 0, 0, 0);
@@ -557,11 +923,11 @@ const dashBoardStats = async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching dashboard stats:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const getRevenueChartData = async (req, res) => {
+const getRevenueChartData = async (req, res, next) => {
     try {
         const now = new Date();
         now.setUTCHours(0, 0, 0, 0);
@@ -605,11 +971,11 @@ const getRevenueChartData = async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching revenue chart data:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const adminGetUsers = async (req, res) => {
+const adminGetUsers = async (req, res, next) => {
     try {
         const users = await Customer.find()
             .select('_id userName email createdAt')
@@ -625,11 +991,11 @@ const adminGetUsers = async (req, res) => {
             }))
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const getVendors = async (req, res) => {
+const getVendors = async (req, res, next) => {
     try {
         const vendors = await Vendor.find()
             .select('_id name email store_name store_location created_at')
@@ -646,11 +1012,79 @@ const getVendors = async (req, res) => {
             }))
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const getVendorStats = async (req, res) => {
+const getVendorsWithRevenue = async (req, res, next) => {
+    try {
+        const vendors = await Vendor.find()
+            .select('_id name email store_name store_location created_at')
+            .lean();
+
+        if (vendors.length === 0) {
+            return res.json({ success: true, vendors: [] });
+        }
+
+        // Same aggregation approach as getTopVendors
+        const revenueAgg = await OrderItem.aggregate([
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'product_id',
+                    foreignField: '_id',
+                    as: 'product'
+                }
+            },
+            { $unwind: '$product' },
+            {
+                $lookup: {
+                    from: 'orders',
+                    localField: 'order_id',
+                    foreignField: '_id',
+                    as: 'order'
+                }
+            },
+            { $unwind: '$order' },
+            {
+                $group: {
+                    _id: '$product.vendor_id',
+                    totalSales: { $sum: '$order.subtotal' }
+                }
+            }
+        ]);
+
+        const revenueMap = new Map();
+        revenueAgg.forEach(r => {
+            revenueMap.set(r._id.toString(), r.totalSales || 0);
+        });
+
+        const enrichedVendors = vendors.map(vendor => {
+            const idStr = vendor._id.toString();
+            const totalSales = revenueMap.get(idStr) || 0;
+
+            return {
+                id: vendor._id,
+                name: vendor.name,
+                email: vendor.email,
+                store_name: vendor.store_name,
+                store_location: vendor.store_location,
+                joined_date: vendor.created_at,
+                revenue: Number(totalSales.toFixed(2))
+            };
+        });
+
+        res.json({
+            success: true,
+            vendors: enrichedVendors
+        });
+    } catch (err) {
+        console.error("Error in getVendorsWithRevenue:", err);
+        next(err);
+    }
+};
+
+const getVendorStats = async (req, res, next) => {
     try {
         const now = new Date();
         now.setUTCHours(0, 0, 0, 0);
@@ -798,11 +1232,11 @@ const getVendorStats = async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching vendor stats:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const adminGetVendors = async (req, res) => {
+const adminGetVendors = async (req, res, next) => {
     try {
         const vendors = await Vendor.find()
             .select('_id name email created_at')
@@ -818,11 +1252,11 @@ const adminGetVendors = async (req, res) => {
             }))
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const getVendorRevenueMetrics = async (req, res) => {
+const getVendorRevenueMetrics = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         if (!mongoose.Types.ObjectId.isValid(vendorId)) {
@@ -890,14 +1324,8 @@ const getVendorRevenueMetrics = async (req, res) => {
                             ]
                         }
                     },
-                    quarterly_revenue: {
-                        $sum: {
-                            $cond: [
-                                { $gte: ['$order.order.order_date', quarterStart] },
-                                { $multiply: ['$order.subtotal', 0.92] },
-                                0
-                            ]
-                        }
+                    total_revenue: {
+                        $sum: { $multiply: ['$order.subtotal', 0.92] }
                     }
                 }
             }
@@ -962,17 +1390,17 @@ const getVendorRevenueMetrics = async (req, res) => {
                 today_revenue: revenueMetrics.length > 0 ? revenueMetrics[0].today_revenue : 0,
                 weekly_revenue: revenueMetrics.length > 0 ? revenueMetrics[0].weekly_revenue : 0,
                 monthly_revenue: revenueMetrics.length > 0 ? revenueMetrics[0].monthly_revenue : 0,
-                quarterly_revenue: revenueMetrics.length > 0 ? revenueMetrics[0].quarterly_revenue : 0,
+                total_revenue: revenueMetrics.length > 0 ? revenueMetrics[0].total_revenue : 0,
                 monthly_breakdown: monthlyBreakdown
             }
         });
     } catch (err) {
         console.error('Error fetching vendor revenue metrics:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const getVendorProducts = async (req, res) => {
+const getVendorProducts = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         const products = await Product.aggregate([
@@ -1010,11 +1438,11 @@ const getVendorProducts = async (req, res) => {
         res.json({ success: true, products });
     } catch (err) {
         console.error('Error fetching vendor products:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const getVendorTopCustomers = async (req, res) => {
+const getVendorTopCustomers = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         const customers = await OrderItem.aggregate([
@@ -1080,11 +1508,11 @@ const getVendorTopCustomers = async (req, res) => {
         ]);
         res.json({ success: true, customers });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const getVendor = async (req, res) => {
+const getVendor = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         const vendor = await Vendor.findById(vendorId)
@@ -1105,11 +1533,11 @@ const getVendor = async (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
-const updateVendor = async (req, res) => {
+const updateVendor = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         const { name, contact_number, store_name, store_location } = req.body;
@@ -1130,11 +1558,11 @@ const updateVendor = async (req, res) => {
         );
         res.json({ success: true, message: 'Vendor updated successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to update vendor' });
+        next(err);
     }
 };
 
-const deleteVendor = async (req, res) => {
+const deleteVendor = async (req, res, next) => {
     try {
         const vendorId = req.params.id;
         const vendor = await Vendor.findById(vendorId);
@@ -1151,13 +1579,13 @@ const deleteVendor = async (req, res) => {
 
         res.json({ success: true, message: 'Vendor deleted successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
 
 // GET: Stats for Event Managers list page
-const getEventManagerStats = async (req, res) => {
+const getEventManagerStats = async (req, res, next) => {
     try {
         const total = await EventManager.countDocuments({ isActive: true });
         const lastMonth = new Date();
@@ -1201,22 +1629,22 @@ const getEventManagerStats = async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching event manager stats:", error);
-        res.status(500).json({ success: false, message: "Server error" });
+        next(err);
     }
 };
 
-const getTotalEvents = async (req, res) => {
+const getTotalEvents = async (req, res, next) => {
     try {
         const total = await Event.countDocuments();
         res.json({ success: true, total: total || 0 });
     } catch (err) {
         console.error('Error fetching total events:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
+        next(err);
     }
 };
 
 // GET: Single Event Manager Details
-const getEventManager = async (req, res) => {
+const getEventManager = async (req, res, next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1242,12 +1670,12 @@ const getEventManager = async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching event manager:", error);
-        res.status(500).json({ success: false, message: "Server error" });
+        next(err);
     }
 };
 
 // GET: All Event Managers (for the list page)
-const getEventManagers = async (req, res) => {
+const getEventManagers = async (req, res, next) => {
     try {
         const managers = await EventManager.find({ isActive: true })
             .select("-password")
@@ -1266,12 +1694,73 @@ const getEventManagers = async (req, res) => {
         res.json({ success: true, eventManagers });
     } catch (error) {
         console.error("Error fetching event managers:", error);
-        res.status(500).json({ success: false, message: "Server error" });
+        next(err);
+    }
+};
+
+// GET: All Event Managers with Revenue (for filtering)
+const getEventManagersWithRevenue = async (req, res, next) => {
+    try {
+        const managers = await EventManager.find({ isActive: true })
+            .select("-password")
+            .lean();
+
+        if (managers.length === 0) {
+            return res.json({ success: true, eventManagers: [] });
+        }
+
+        // Same aggregation as getTopEventManagers — Ticket → Event → EventManager
+        const revenueAgg = await Ticket.aggregate([
+            {
+                $lookup: {
+                    from: 'events',
+                    localField: 'eventId',
+                    foreignField: '_id',
+                    as: 'event'
+                }
+            },
+            { $unwind: '$event' },
+            {
+                $group: {
+                    _id: '$event.eventManagerId',
+                    totalRevenue: { $sum: '$price' }
+                }
+            }
+        ]);
+
+        const revenueMap = new Map();
+        revenueAgg.forEach(r => {
+            revenueMap.set(r._id.toString(), r.totalRevenue || 0);
+        });
+
+        const enrichedManagers = managers.map(m => {
+            const idStr = m._id.toString();
+            const revenue = revenueMap.get(idStr) || 0;
+
+            return {
+                id: idStr,
+                name: m.userName,
+                email: m.email,
+                organization: m.companyName || "Not specified",
+                phone: m.phoneNumber || "N/A",
+                joined_date: m.createdAt,
+                profilePic: m.profilePic,
+                revenue: Number(revenue.toFixed(2))
+            };
+        });
+
+        res.json({
+            success: true,
+            eventManagers: enrichedManagers
+        });
+    } catch (err) {
+        console.error("Error in getEventManagersWithRevenue:", err);
+        next(err);
     }
 };
 
 // GET: Metrics for Event Manager Details Page
-const getEventManagerMetrics = async (req, res) => {
+const getEventManagerMetrics = async (req, res, next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1340,12 +1829,12 @@ const getEventManagerMetrics = async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching metrics:", error);
-        res.status(500).json({ success: false, message: "Server error" });
+        next(err);
     }
 };
 
 // GET: Upcoming Events
-const getUpcomingEvents = async (req, res) => {
+const getUpcomingEvents = async (req, res, next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1373,12 +1862,12 @@ const getUpcomingEvents = async (req, res) => {
         res.json({ success: true, events: formatted });
     } catch (error) {
         console.error("Error fetching upcoming events:", error);
-        res.status(500).json({ success: false, message: "Server error" });
+        next(err);
     }
 };
 
 // GET: Past Events
-const getPastEvents = async (req, res) => {
+const getPastEvents = async (req, res, next) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1403,7 +1892,7 @@ const getPastEvents = async (req, res) => {
         res.json({ success: true, events: formatted });
     } catch (error) {
         console.error("Error fetching past events:", error);
-        res.status(500).json({ success: false, message: "Server error" });
+        next(err);
     }
 };
 
@@ -1620,7 +2109,7 @@ const getProduct = async (req, res) => {
 
         // 2. Get main price/stock/sku from the first variant (assumed main display variant)
         const mainVariant = variants[0];
-        
+
         // 3. Extract Vendor details for the frontend
         const vendorDetails = product.vendor_id ? {
             store_name: product.vendor_id.store_name,
@@ -1637,7 +2126,7 @@ const getProduct = async (req, res) => {
                 product_type: product.product_type,
                 product_description: product.product_description,
                 created_at: product.created_at,
-                
+
                 // Fields mapped to top-level for ProductDetails.jsx consumption
                 image: imageUrl, // <--- FIX: This is the URL used by the <img> tag
                 regular_price: mainVariant?.regular_price,
@@ -1645,7 +2134,7 @@ const getProduct = async (req, res) => {
                 sku: mainVariant?.sku || product.sku,
                 brand: product.brand || null,
                 vendor: vendorDetails, // <--- FIX: Vendor details for Shop Owner/Email
-                
+
                 // Nested data (retained for completeness/editing forms)
                 variants: variants,
                 images: images
@@ -1746,21 +2235,26 @@ const updateProduct = async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to update product' });
     }
 };
-const logout = (req, res) => {
-    res.clearCookie('jwt', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-    });
-    res.json({ success: true, message: 'Logged out successfully' });
-};
 
+const logout = async (req, res) => {
+    try {
+        res.clearCookie("token", {  // Change "token" if your cookie name is different (check login code)
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            path: "/",
+        });
+        return res.status(200).json({ success: true, message: "Logged out" });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: "Logout failed" });
+    }
+};
 // adminController.js
 
 const getEventsData = async (req, res) => {
     try {
         const now = new Date();
-        
+
         const [
             totalEvents,
             upcomingEvents, // Count events with date_time >= now
@@ -1769,8 +2263,8 @@ const getEventsData = async (req, res) => {
             events
         ] = await Promise.all([
             Event.countDocuments(),
-            Event.countDocuments({ date_time: { $gte: now } }), 
-            Event.countDocuments({ date_time: { $lt: now } }),   
+            Event.countDocuments({ date_time: { $gte: now } }),
+            Event.countDocuments({ date_time: { $lt: now } }),
             Ticket.aggregate([
                 { $group: { _id: null, totalTickets: { $sum: '$numberOfTickets' } } }
             ]),
@@ -1784,15 +2278,15 @@ const getEventsData = async (req, res) => {
                 .lean()
         ]);
 
-        const ticketsSold = ticketAggregation.length > 0 
-            ? ticketAggregation[0].totalTickets 
+        const ticketsSold = ticketAggregation.length > 0
+            ? ticketAggregation[0].totalTickets
             : 0;
 
         // Transform events: replace _id → id (string) for frontend consistency
         const formattedEvents = events.map(event => {
             const obj = { ...event };
-            obj.id = obj._id.toString();   
-            delete obj._id;                
+            obj.id = obj._id.toString();
+            delete obj._id;
             return {
                 id: obj.id,
                 title: obj.title,
@@ -2077,6 +2571,96 @@ const getOrderDetails = async (req, res) => {
     }
 };
 
+const getTopEvents = async (req, res, next) => {
+    try {
+        const topEvents = await Ticket.aggregate([
+            {
+                $lookup: {
+                    from: 'events',
+                    localField: 'eventId',
+                    foreignField: '_id',
+                    as: 'event'
+                }
+            },
+            { $unwind: '$event' },
+            {
+                $group: {
+                    _id: '$eventId',
+                    title: { $first: '$event.title' },
+                    venue: { $first: '$event.venue' },
+                    totalRevenue: { $sum: '$price' }
+                }
+            },
+            { $sort: { totalRevenue: -1 } },
+            { $limit: 3 }
+        ]);
+
+        res.json({ success: true, topEvents: topEvents || [] });
+    } catch (err) {
+        console.error("Error in getTopEvents:", err);
+        next(err);
+    }
+};
+
+const getEventsWithRevenue = async (req, res, next) => {
+    try {
+        // Get all events with manager info (same as getEventsData)
+        const events = await Event.find({})
+            .populate({
+                path: 'eventManagerId',
+                model: 'EventManager',
+                select: 'userName email companyName profilePic'
+            })
+            .sort({ date_time: -1 })
+            .lean();
+
+        if (events.length === 0) {
+            return res.json({ success: true, events: [] });
+        }
+
+        // Same aggregation as getTopEvents — sum ticket price per event
+        const revenueAgg = await Ticket.aggregate([
+            {
+                $group: {
+                    _id: '$eventId',
+                    totalRevenue: { $sum: '$price' }
+                }
+            }
+        ]);
+
+        const revenueMap = new Map();
+        revenueAgg.forEach(r => {
+            revenueMap.set(r._id.toString(), r.totalRevenue || 0);
+        });
+
+        const enrichedEvents = events.map(event => {
+            const idStr = event._id.toString();
+            const revenue = revenueMap.get(idStr) || 0;
+
+            return {
+                id: idStr,
+                _id: idStr,
+                title: event.title,
+                date_time: event.date_time,
+                venue: event.venue,
+                total_tickets: event.total_tickets,
+                tickets_sold: event.tickets_sold,
+                event_manager_id: event.eventManagerId,
+                managerName: event.eventManagerId?.userName || 'N/A',
+                revenue: Number(revenue.toFixed(2))
+            };
+        });
+
+        res.json({
+            success: true,
+            events: enrichedEvents
+        });
+    } catch (err) {
+        console.error("Error in getEventsWithRevenue:", err);
+        next(err);
+    }
+};
+
 const getOrderStats = async (req, res) => {
     try {
         const today = new Date();
@@ -2104,6 +2688,36 @@ const getOrderStats = async (req, res) => {
     } catch (err) {
         console.error('Error fetching order stats:', err);
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+const getTopOrderedProducts = async (req, res, next) => {
+    try {
+        const topProducts = await OrderItem.aggregate([
+            {
+                $lookup: {
+                    from: 'products',
+                    localField: 'product_id',
+                    foreignField: '_id',
+                    as: 'product'
+                }
+            },
+            { $unwind: '$product' },
+            {
+                $group: {
+                    _id: '$product_id',
+                    product_name: { $first: '$product.product_name' },
+                    category: { $first: '$product.product_category' },
+                    totalOrdered: { $sum: '$quantity' }
+                }
+            },
+            { $sort: { totalOrdered: -1 } },
+            { $limit: 3 }
+        ]);
+
+        res.json({ success: true, topOrderedProducts: topProducts || [] });
+    } catch (err) {
+        console.error("Error in getTopOrderedProducts:", err);
+        next(err);
     }
 };
 
@@ -2180,8 +2794,10 @@ export {
     deleteUser,
     getUserStats,
     adminGetUsers,
+    getUsersWithRevenue,
 
     // admin-products.ejs, admin-product-details.ejs, admin-add-product.ejs
+    getTopOrderedProducts,
     getProducts,
     getProductStats,
     deleteProduct,
@@ -2190,6 +2806,7 @@ export {
     updateProduct,
     getProductData,
     getProductCustomers,
+    getProductsWithRevenue,
 
     // admin-shop-manager.ejs, admin-sm-details.ejs
     getVendors,
@@ -2201,8 +2818,12 @@ export {
     getVendorTopCustomers,
     updateVendor,
     deleteVendor,
+    getTopVendors,
+    getVendorsWithRevenue,
 
     // admin-events.ejs, admin-em-details.ejs, admin-event-details.ejs
+    getTopEvents,
+    getTopEventManagers,
     getEventManagers,
     getEventManagerStats,
     getTotalEvents,
@@ -2212,19 +2833,22 @@ export {
     getPastEvents,
     updateEventManager,
     deleteEventManager,
+    getEventManagersWithRevenue,
     getEventsData,
     deleteEvent,
     getEvent,
     getEventAttendees,
     updateEvent,
     getEventRevenue,
+    getEventsWithRevenue,
 
-    // admin-orders.ejs, admin-order-details.ejs
+    // admin-orders.ejs , admin-order-details.ejs
     getOrders,
     getOrderDetails,
     getOrderStats,
 
-    // admin-dashboard.ejs
+    //admin-dashboard.ejs
     dashBoardStats,
+    getTopSpenders,
     getRevenueChartData,
 };

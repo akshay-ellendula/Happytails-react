@@ -37,7 +37,7 @@ import MyEventsPage from "./pages/MyEventsPage/MyEventsPage";
 import TrackOrderPage from "./pages/TrackOrderPage/TrackOrderPage";
 
 // --- Pages: Admin ---
-import AdminLoginPage from "./pages/AdminLogin/AdminLoginPage"; // Check capitalization here (pages vs Pages)
+import AdminLoginPage from "./Pages/AdminLogin/AdminLoginPage"; // Check capitalization here (pages vs Pages)
 import Dashboard from "./Pages/Admin/Dashboard";
 import Users from "./Pages/Admin/Users";
 import UserDetails from "./Pages/Admin/UserDetails";
@@ -48,9 +48,9 @@ import Orders from "./Pages/Admin/Orders";
 import Vendors from "./Pages/Admin/Vendors";
 import VendorDetails from "./Pages/Admin/VendorDetails";
 import EventManagerDetails from "./Pages/Admin/EventManagerDetails";
-import EventDetails from './Pages/Admin/EventDetails';
-import ProductDetails from './Pages/Admin/ProductDetails';
-import OrderDetails from './Pages/Admin/OrderDetails';
+import EventDetails from "./Pages/Admin/EventDetails";
+import ProductDetails from "./Pages/Admin/ProductDetails";
+import OrderDetails from "./Pages/Admin/OrderDetails";
 
 // --- Pages: Service Providers ---
 import EventManagerPage from "./Pages/EventManager/EventManagerPage";
@@ -59,10 +59,12 @@ import ShopDashboard from "./Pages/ShopManager/Dashboard/ShopDashboard";
 import ProductList from "./Pages/ShopManager/Products/ProductList";
 import AddProduct from "./Pages/ShopManager/Products/AddProduct";
 import EditProduct from "./Pages/ShopManager/Products/EditProduct";
+import ViewAllProducts from "./Pages/ShopManager/Products/ViewAllProducts";
 import OrderList from "./Pages/ShopManager/Orders/OrderList";
 import ManagerOrderDetails from "./pages/ShopManager/Orders/ManagerOrderDetails";
 import CustomerList from "./Pages/ShopManager/Customers/CustomerList";
 import CustomerDetails from "./Pages/ShopManager/Customers/CustomerDetails";
+import ViewAllCustomers from "./Pages/ShopManager/Customers/ViewAllCustomers";
 import ShopAnalytics from "./Pages/ShopManager/Analytics/ShopAnalytics";
 import ShopProfile from "./Pages/ShopManager/Profile/ShopProfile";
 
@@ -125,8 +127,24 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="/my_events" element={<ProtectedRoute> <MyEventsPage /> </ProtectedRoute>} />
-      <Route path="/track-order/:orderId" element={<ProtectedRoute> <TrackOrderPage /> </ProtectedRoute>} />
+      <Route
+        path="/my_events"
+        element={
+          <ProtectedRoute>
+            {" "}
+            <MyEventsPage />{" "}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/track-order/:orderId"
+        element={
+          <ProtectedRoute>
+            {" "}
+            <TrackOrderPage />{" "}
+          </ProtectedRoute>
+        }
+      />
       {/* --- Protected: Booking --- */}
       <Route
         path="/booking"
@@ -147,6 +165,15 @@ function AppRoutes() {
         }
       />
 
+      <Route
+        path="/event-manager/events/:eventId"
+        element={
+          <RoleBasedRoute allowedRoles={["eventManager"]}>
+            <EventDetails />
+          </RoleBasedRoute>
+        }
+      />
+
       {/* --- Connected Shop Manager Routes --- */}
       <Route
         path="/shop"
@@ -160,10 +187,12 @@ function AppRoutes() {
         <Route path="products" element={<ProductList />} />
         <Route path="products/add" element={<AddProduct />} />
         <Route path="products/edit/:productId" element={<EditProduct />} />
+        <Route path="products/view-all" element={<ViewAllProducts />} />
         <Route path="orders" element={<OrderList />} />
-        <Route path="orders/:orderId" element={<ManagerOrderDetails/>} />
+        <Route path="orders/:orderId" element={<ManagerOrderDetails />} />
         <Route path="customers" element={<CustomerList />} />
         <Route path="customers/:customerId" element={<CustomerDetails />} />
+        <Route path="customers/view-all" element={<ViewAllCustomers />} />
         <Route path="analytics" element={<ShopAnalytics />} />
         <Route path="profile" element={<ShopProfile />} />
         <Route index element={<Navigate to="dashboard" replace />} />
@@ -171,41 +200,88 @@ function AppRoutes() {
 
       {/* --- Protected: Admin --- */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
-      
-      <Route path="/admin/dashboard" element={
-        <RoleBasedRoute allowedRoles={['admin']}> <Dashboard /> </RoleBasedRoute>
-      } />
-      <Route path="/admin/users" element={
-        <RoleBasedRoute allowedRoles={['admin']}> <Users /> </RoleBasedRoute>
-      } />
-      <Route path="/admin/event-managers" element={
-        <RoleBasedRoute allowedRoles={['admin']}> <EventManagers /> </RoleBasedRoute>
-      } />
-      <Route path="/admin/events" element={
-        <RoleBasedRoute allowedRoles={['admin']}> <Events /> </RoleBasedRoute>
-      } />
-      <Route path="/admin/products" element={
-        <RoleBasedRoute allowedRoles={['admin']}> <Products /> </RoleBasedRoute>
-      } />
-      <Route path="/admin/orders" element={
-        <RoleBasedRoute allowedRoles={['admin']}> <Orders /> </RoleBasedRoute>
-      } />
-      <Route path="/admin/vendors" element={
-        <RoleBasedRoute allowedRoles={['admin']}> <Vendors /> </RoleBasedRoute>
-      } />
-     <Route path="/admin/users/:id" element={<UserDetails />} />
-     <Route path="/admin/vendors/:id" element={<VendorDetails />} />
-     <Route path="/admin/event-managers/:id" element={<EventManagerDetails />} />
-    <Route path="/admin/events/:id" element={<EventDetails />} />
-     <Route path="/admin/products/:id" element={<ProductDetails />} />
-     <Route path="/admin/orders/:id" element={<OrderDetails />} />
-     <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
+
+      <Route
+        path="/admin/dashboard"
+        element={
+          <RoleBasedRoute allowedRoles={["admin"]}>
+            {" "}
+            <Dashboard />{" "}
+          </RoleBasedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <RoleBasedRoute allowedRoles={["admin"]}>
+            {" "}
+            <Users />{" "}
+          </RoleBasedRoute>
+        }
+      />
+      <Route
+        path="/admin/event-managers"
+        element={
+          <RoleBasedRoute allowedRoles={["admin"]}>
+            {" "}
+            <EventManagers />{" "}
+          </RoleBasedRoute>
+        }
+      />
+      <Route
+        path="/admin/events"
+        element={
+          <RoleBasedRoute allowedRoles={["admin"]}>
+            {" "}
+            <Events />{" "}
+          </RoleBasedRoute>
+        }
+      />
+      <Route
+        path="/admin/products"
+        element={
+          <RoleBasedRoute allowedRoles={["admin"]}>
+            {" "}
+            <Products />{" "}
+          </RoleBasedRoute>
+        }
+      />
+      <Route
+        path="/admin/orders"
+        element={
+          <RoleBasedRoute allowedRoles={["admin"]}>
+            {" "}
+            <Orders />{" "}
+          </RoleBasedRoute>
+        }
+      />
+      <Route
+        path="/admin/vendors"
+        element={
+          <RoleBasedRoute allowedRoles={["admin"]}>
+            {" "}
+            <Vendors />{" "}
+          </RoleBasedRoute>
+        }
+      />
+      <Route path="/admin/users/:id" element={<UserDetails />} />
+      <Route path="/admin/vendors/:id" element={<VendorDetails />} />
+      <Route
+        path="/admin/event-managers/:id"
+        element={<EventManagerDetails />}
+      />
+      <Route path="/admin/events/:id" element={<EventDetails />} />
+      <Route path="/admin/products/:id" element={<ProductDetails />} />
+      <Route path="/admin/orders/:id" element={<OrderDetails />} />
+      <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
       {/* Catch-all for Admin Root if needed */}
-      <Route path="/admin/*" element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-             <Navigate to="/admin/dashboard" replace />
+      <Route
+        path="/admin/*"
+        element={
+          <RoleBasedRoute allowedRoles={["admin"]}>
+            <Navigate to="/admin/dashboard" replace />
           </RoleBasedRoute>
         }
       />

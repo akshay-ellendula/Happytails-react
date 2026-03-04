@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Use useNavigate for client-side routing
-import { useAuth } from "../../hooks/useAuth"; // Import Auth Context
-import { toast } from "react-hot-toast"; // Use toast for consistent UI
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+import { toast } from "react-hot-toast";
 
 const AdminLoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { signin } = useAuth(); // Get signin function from context
+  const { signin } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -26,75 +26,75 @@ const AdminLoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#effe8b] font-outfit">
+    <div className="min-h-screen bg-gradient-to-br from-[#fff9c4] to-[#effe8b] font-outfit flex flex-col">
       {/* Navbar */}
-      <div className="px-10 py-5">
+      <div className="px-6 py-4 md:px-10 md:py-5">
         <header className="flex items-center justify-between">
           <a
             href="/"
-            className="text-3xl font-semibold hover:scale-110 transition"
+            className="text-2xl md:text-3xl font-bold text-gray-800 hover:scale-105 transition-transform duration-200"
           >
             Happy Tails
           </a>
         </header>
       </div>
 
-      {/* Container */}
-      <div className="bg-white w-[400px] mx-auto mt-10 p-10 rounded-xl shadow-xl">
-        <form onSubmit={handleSubmit} className="flex flex-col items-center">
-          <h1 className="text-2xl font-bold mb-4">Welcome Back!</h1>
-
-          <div className="flex my-4">
-            <a className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center mx-2 cursor-pointer">
-              <img
-                src="/icons/google-logo-search-new-svgrepo-com.svg"
-                alt="google"
-                className="h-7"
-              />
-            </a>
-            <a className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center mx-2 cursor-pointer">
-              <img
-                src="/icons/facebook-3-logo-svgrepo-com.svg"
-                alt="facebook"
-                className="h-7"
-              />
-            </a>
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center px-4">
+        {/* Login Container */}
+        <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 md:p-10 border border-gray-100">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Admin Login</h1>
+            <p className="text-gray-600">Welcome back to Happy Tails Admin Panel</p>
           </div>
 
-          <span className="text-gray-500 text-xs mb-4">
-            or use your account
-          </span>
 
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full bg-gray-200 p-3 rounded-md mb-3 focus:ring-2 focus:ring-black outline-none text-sm"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full bg-gray-200 p-3 rounded-md mb-3 focus:ring-2 focus:ring-black outline-none text-sm"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="admin@happytails.com"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
 
-          <a href="#" className="text-sm mb-3 text-black hover:opacity-70">
-            Forgot your password?
-          </a>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                placeholder="Enter your password"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
 
-          <button
-            type="submit"
-            className="bg-black text-white px-10 py-3 rounded-full text-xs font-semibold uppercase hover:bg-gray-800 transition"
-          >
-            Sign In
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg hover:shadow-xl"
+            >
+              Sign In
+            </button>
+          </form>
+
+
+        </div>
       </div>
+
+      {/* Bottom Decoration */}
+      <div className="h-2 bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400"></div>
     </div>
   );
 };

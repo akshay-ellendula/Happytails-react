@@ -2,39 +2,42 @@ import Event from '../models/eventModel.js';
 import Ticket from '../models/ticketModel.js';
 import mongoose from 'mongoose';
 
+// Helper function to parse dates from the query
+const parseDates = (query) => {
+    let { startDate, endDate } = query;
+    
+    // Default to today if no end date
+    const end = endDate ? new Date(endDate) : new Date();
+    // Default to 30 days ago if no start date
+    const start = startDate ? new Date(startDate) : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    // Set hours to cover the entire day
+    end.setHours(23, 59, 59, 999);
+    start.setHours(0, 0, 0, 0);
+
+    return { start, end };
+};
+
 // ==========================================
 // CONTROLLER: Get Revenue Trends (Line Chart)
-// Supports: 30days (Daily), 3months (Weekly), 6months (Monthly)
 // ==========================================
 export const getRevenueTrends = async (req, res) => {
     try {
         const eventManagerId = req.user.eventManagerId;
-        const { period } = req.query; 
+        const { start, end } = parseDates(req.query);
 
         // 1. Fetch Event IDs for this Manager
         const events = await Event.find({ eventManagerId }).select('_id');
         const eventIds = events.map(e => e._id);
 
-        // 2. Determine Date Range & Grouping Format
-        const endDate = new Date();
-        let startDate = new Date();
-        let groupByFormat;
+        // 2. Determine Date Range & Grouping Format dynamically
+        const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+        let groupByFormat = "%Y-%m-%d"; // Default to daily
         
-        // "Remove unwanted time interval": Logic is strictly mapped to frontend options
-        switch (period) {
-            case '30days':
-                startDate.setDate(endDate.getDate() - 30);
-                groupByFormat = "%Y-%m-%d"; // Group by Day
-                break;
-            case '3months':
-                startDate.setMonth(endDate.getMonth() - 3);
-                groupByFormat = "%Y-%U"; // Group by Week number
-                break;
-            case '6months':
-            default:
-                startDate.setMonth(endDate.getMonth() - 6);
-                groupByFormat = "%Y-%m"; // Group by Month
-                break;
+        if (diffDays > 90) {
+            groupByFormat = "%Y-%m"; // Group by Month if range > 3 months
+        } else if (diffDays > 31) {
+            groupByFormat = "%Y-%U"; // Group by Week if range > 1 month
         }
 
         // 3. Aggregate Data
@@ -42,7 +45,7 @@ export const getRevenueTrends = async (req, res) => {
             {
                 $match: {
                     eventId: { $in: eventIds },
-                    createdAt: { $gte: startDate, $lte: endDate },
+                    createdAt: { $gte: start, $lte: end },
                     status: true // Only count active/paid tickets
                 }
             },
@@ -56,15 +59,12 @@ export const getRevenueTrends = async (req, res) => {
         ]);
 
         // 4. Map for Recharts (XAxis: month/date, Line: revenue)
-        // Note: For a perfect chart, you might want to fill in "0" for missing dates in JS, 
-        // but this returns the actual data points found.
         const formattedData = revenueData.map(item => {
-            // Beautify labels based on format
             let label = item._id;
-            if(period === '6months') {
+            if(groupByFormat === "%Y-%m") {
                 const [year, month] = item._id.split('-');
                 const dateObj = new Date(year, month - 1);
-                label = dateObj.toLocaleString('default', { month: 'short' });
+                label = dateObj.toLocaleString('default', { month: 'short', year: 'numeric' });
             }
             return {
                 month: label, 
@@ -82,45 +82,44 @@ export const getRevenueTrends = async (req, res) => {
 
 // ==========================================
 // CONTROLLER: Get Event Type Distribution (Pie Chart)
-// Groups by Event Category
 // ==========================================
 export const getEventTypeDistribution = async (req, res) => {
     try {
         const eventManagerId = req.user.eventManagerId;
+        const { start, end } = parseDates(req.query);
 
-        // Aggregate: Join Events -> Tickets to count sales per category
-        const categoryStats = await Event.aggregate([
-            { $match: { eventManagerId: new mongoose.Types.ObjectId(eventManagerId) } },
-            {
-                $lookup: {
-                    from: "tickets",
-                    localField: "_id",
-                    foreignField: "eventId",
-                    as: "tickets"
-                }
-            },
-            // Unwind to count individual tickets. 
-            // preserveNullAndEmptyArrays: false removes events with 0 tickets (optional)
-            { $unwind: "$tickets" },
-            {
-                $group: {
-                    _id: "$category", // Group by Category
-                    sold: { $sum: 1 },
-                    revenue: { $sum: "$tickets.price" }
-                }
-            },
-            {
-                $project: {
-                    event: "$_id", // Frontend expects 'event' key for Name
-                    sold: 1,
-                    revenue: 1,
-                    _id: 0
-                }
+        // Fetch events to get categories map
+        const events = await Event.find({ eventManagerId }).select('_id category');
+        const eventMap = {};
+        events.forEach(e => {
+            eventMap[e._id.toString()] = e.category || 'General';
+        });
+
+        // Find tickets in the date range
+        const tickets = await Ticket.find({
+            eventId: { $in: events.map(e => e._id) },
+            createdAt: { $gte: start, $lte: end },
+            status: true
+        });
+
+        // Group by category manually
+        const categoryStats = {};
+        tickets.forEach(t => {
+            const cat = eventMap[t.eventId.toString()];
+            if (!categoryStats[cat]) {
+                categoryStats[cat] = { sold: 0, revenue: 0 };
             }
-        ]);
+            categoryStats[cat].sold += (t.numberOfTickets || 1);
+            categoryStats[cat].revenue += t.price;
+        });
 
-        // If no data, return empty array to prevent frontend crash
-        res.status(200).json(categoryStats || []);
+        const formattedData = Object.keys(categoryStats).map(cat => ({
+            event: cat,
+            sold: categoryStats[cat].sold,
+            revenue: categoryStats[cat].revenue
+        }));
+
+        res.status(200).json(formattedData);
 
     } catch (error) {
         console.error("Error in getEventTypeDistribution:", error);
@@ -130,22 +129,20 @@ export const getEventTypeDistribution = async (req, res) => {
 
 // ==========================================
 // CONTROLLER: Platform Fees Breakdown (Bar Chart)
-// Fixed to last 6 months as typically required for breakdown
 // ==========================================
 export const getPlatformFeeBreakdown = async (req, res) => {
     try {
         const eventManagerId = req.user.eventManagerId;
+        const { start, end } = parseDates(req.query);
+        
         const events = await Event.find({ eventManagerId }).select('_id');
         const eventIds = events.map(e => e._id);
-
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
         const monthlyData = await Ticket.aggregate([
             {
                 $match: {
                     eventId: { $in: eventIds },
-                    createdAt: { $gte: sixMonthsAgo },
+                    createdAt: { $gte: start, $lte: end },
                     status: true
                 }
             },
@@ -191,34 +188,45 @@ export const getPlatformFeeBreakdown = async (req, res) => {
 export const getDashboardAnalytics = async (req, res) => {
     try {
         const eventManagerId = req.user.eventManagerId;
+        const { start, end } = parseDates(req.query);
         
         const events = await Event.find({ eventManagerId });
         const eventIds = events.map(e => e._id);
 
-        // Get All Valid Tickets
-        const tickets = await Ticket.find({ eventId: { $in: eventIds }, status: true });
+        // Get Valid Tickets in date range
+        const tickets = await Ticket.find({ 
+            eventId: { $in: eventIds }, 
+            createdAt: { $gte: start, $lte: end },
+            status: true 
+        });
 
         // 1. Totals
-        const totalEvents = events.length;
+        const totalEvents = events.length; // Total overall events for this manager
         const totalTicketsSold = tickets.reduce((sum, t) => sum + (t.numberOfTickets || 1), 0);
         const totalRevenue = tickets.reduce((sum, t) => sum + t.price, 0);
         const platformFee = totalRevenue * 0.06;
         const netRevenue = totalRevenue - platformFee;
 
-        // 2. Calculate Growth (Current Month vs Previous Month)
-        const now = new Date();
-        const startCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        
-        // Filter tickets
-        const currentTickets = tickets.filter(t => t.createdAt >= startCurrentMonth);
-        const lastTickets = tickets.filter(t => t.createdAt >= startLastMonth && t.createdAt < startCurrentMonth);
+        // 2. Calculate Growth (Current Period vs Previous Period)
+        const periodLength = end.getTime() - start.getTime();
+        const prevStart = new Date(start.getTime() - periodLength);
+        const prevEnd = new Date(start.getTime() - 1); // 1 ms before current start
 
-        const currentRev = currentTickets.reduce((sum, t) => sum + t.price, 0);
-        const lastRev = lastTickets.reduce((sum, t) => sum + t.price, 0);
+        const prevTickets = await Ticket.find({
+            eventId: { $in: eventIds },
+            createdAt: { $gte: prevStart, $lte: prevEnd },
+            status: true
+        });
+
+        const prevRev = prevTickets.reduce((sum, t) => sum + t.price, 0);
         
         // Avoid division by zero
-        const revenueGrowth = lastRev === 0 ? 100 : Math.round(((currentRev - lastRev) / lastRev) * 100);
+        let revenueGrowth = 0;
+        if (prevRev === 0) {
+            revenueGrowth = totalRevenue > 0 ? 100 : 0;
+        } else {
+            revenueGrowth = Math.round(((totalRevenue - prevRev) / prevRev) * 100);
+        }
 
         res.status(200).json({
             basicStats: {
@@ -228,7 +236,6 @@ export const getDashboardAnalytics = async (req, res) => {
                 platformFee: Math.round(platformFee * 100) / 100,
                 netRevenue: Math.round(netRevenue * 100) / 100,
                 revenueGrowth,
-                // Assuming 1 ticket = 1 attendee for simplicity in dashboard
                 totalAttendees: totalTicketsSold 
             }
         });
@@ -245,17 +252,22 @@ export const getDashboardAnalytics = async (req, res) => {
 export const getPerformanceMetrics = async (req, res) => {
     try {
         const eventManagerId = req.user.eventManagerId;
-        const events = await Event.find({ eventManagerId });
+        const { start, end } = parseDates(req.query);
+
+        const events = await Event.find({ eventManagerId }).select('_id');
         const eventIds = events.map(e => e._id);
         
-        const tickets = await Ticket.find({ eventId: { $in: eventIds }, status: true });
+        const tickets = await Ticket.find({ 
+            eventId: { $in: eventIds }, 
+            createdAt: { $gte: start, $lte: end },
+            status: true 
+        });
 
         const totalRevenue = tickets.reduce((sum, t) => sum + t.price, 0);
         const totalTickets = tickets.reduce((sum, t) => sum + (t.numberOfTickets || 1), 0);
-        
         const averageTicketPrice = totalTickets > 0 ? totalRevenue / totalTickets : 0;
 
-        // Calculate Repeat Customers
+        // Calculate Customer LTV
         const customerCounts = {};
         tickets.forEach(t => {
             if(t.customerId) {
@@ -265,17 +277,10 @@ export const getPerformanceMetrics = async (req, res) => {
         });
         
         const uniqueCustomers = Object.keys(customerCounts).length;
-        const repeatCount = Object.values(customerCounts).filter(count => count > 1).length;
-        const repeatCustomerRate = uniqueCustomers > 0 
-            ? Math.round((repeatCount / uniqueCustomers) * 100) 
-            : 0;
-
-        // Customer Lifetime Value
         const clv = uniqueCustomers > 0 ? totalRevenue / uniqueCustomers : 0;
 
         res.status(200).json({
             averageTicketPrice: Math.round(averageTicketPrice * 100) / 100,
-            repeatCustomers: repeatCustomerRate,
             customerLifetimeValue: Math.round(clv)
         });
 
@@ -286,13 +291,18 @@ export const getPerformanceMetrics = async (req, res) => {
 };
 
 // ==========================================
-// CONTROLLER: Attendance (Extra Utility)
+// CONTROLLER: Attendance
 // ==========================================
 export const getAttendanceAnalytics = async (req, res) => {
     try {
-        // Returns event-wise attendance stats
         const eventManagerId = req.user.eventManagerId;
-        const events = await Event.find({ eventManagerId });
+        const { start, end } = parseDates(req.query);
+        
+        // Find events whose date_time falls within the selected filter range
+        const events = await Event.find({ 
+            eventManagerId,
+            date_time: { $gte: start, $lte: end }
+        });
 
         const attendanceData = events.map(event => ({
             name: event.title,

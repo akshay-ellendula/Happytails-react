@@ -1,0 +1,28 @@
+[2026-03-04 06:20:52] ERROR: Cannot read properties of null (reading 'toString') 
+Stack: TypeError: Cannot read properties of null (reading 'toString')
+    at file:///D:/FDFED/REACT_end/Happytails-react/backend/src/controller/adminController.js:951:34
+    at Array.forEach (<anonymous>)
+    at getVendorsWithRevenue (file:///D:/FDFED/REACT_end/Happytails-react/backend/src/controller/adminController.js:950:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-----------------------------------
+[2026-03-04 06:20:52] ERROR: Cannot read properties of null (reading 'toString') 
+Stack: TypeError: Cannot read properties of null (reading 'toString')
+    at file:///D:/FDFED/REACT_end/Happytails-react/backend/src/controller/adminController.js:951:34
+    at Array.forEach (<anonymous>)
+    at getVendorsWithRevenue (file:///D:/FDFED/REACT_end/Happytails-react/backend/src/controller/adminController.js:950:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-----------------------------------
+[2026-03-04 06:21:36] ERROR: Cannot read properties of null (reading 'toString') 
+Stack: TypeError: Cannot read properties of null (reading 'toString')
+    at file:///D:/FDFED/REACT_end/Happytails-react/backend/src/controller/adminController.js:951:34
+    at Array.forEach (<anonymous>)
+    at getVendorsWithRevenue (file:///D:/FDFED/REACT_end/Happytails-react/backend/src/controller/adminController.js:950:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-----------------------------------
+[2026-03-04 06:21:36] ERROR: Cannot read properties of null (reading 'toString') 
+Stack: TypeError: Cannot read properties of null (reading 'toString')
+    at file:///D:/FDFED/REACT_end/Happytails-react/backend/src/controller/adminController.js:951:34
+    at Array.forEach (<anonymous>)
+    at getVendorsWithRevenue (file:///D:/FDFED/REACT_end/Happytails-react/backend/src/controller/adminController.js:950:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+-----------------------------------

@@ -23,7 +23,7 @@ const sendError = (res, message, code = 500) =>
   res.status(code).json({ success: false, message });
 
 // --- 1. LOGIN & AUTH ---
-const serviceProviderLogin = async (req, res) => {
+const serviceProviderLogin = async (req, res, next) => {
   const { email, password, role } = req.body;
 
   if (!email || !password || !role)
@@ -74,7 +74,108 @@ const serviceProviderLogin = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    sendError(res, "Server error");
+    next(error);
+  }
+};
+
+const getVendorTop3Products = async (req, res) => {
+  if (!req.user || req.user.role !== "vendor") {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const vendorId = new mongoose.Types.ObjectId(req.user.vendorId);
+
+  try {
+    const topProducts = await OrderItem.aggregate([
+      // 1. Only order items for this vendor
+      { $match: { vendor_id: vendorId } },
+
+      // 2. Join with the actual Product to verify it still belongs to this vendor
+      {
+        $lookup: {
+          from: "products",
+          localField: "product_id",
+          foreignField: "_id",
+          as: "product",
+        },
+      },
+      { $unwind: { path: "$product", preserveNullAndEmptyArrays: false } }, // drop if product not found or mismatch
+
+      // 3. Extra safety: ensure product.vendor_id matches (in case of data inconsistency)
+      { $match: { "product.vendor_id": vendorId } },
+
+      // 4. Join with Order to get status
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: { path: "$order", preserveNullAndEmptyArrays: false } },
+
+      // 5. Only count "successful" orders – adjust statuses to your real ones
+      {
+        $match: {
+          "order.status": {
+            $in: ["Delivered", "Confirmed", "Completed", "Shipped"],
+            // If you want to include more: add "Processing", etc.
+            // Or use $nin: ["Cancelled", "Refunded", "Failed"]
+          },
+        },
+      },
+
+      // 6. Group → calculate revenue & quantity
+      {
+        $group: {
+          _id: "$product_id",
+          product_name: { $first: "$product_name" },
+          total_revenue: { $sum: { $multiply: ["$price", "$quantity"] } },
+          total_quantity: { $sum: "$quantity" },
+        },
+      },
+
+      // 7. Sort by revenue descending (highest income first)
+      { $sort: { total_revenue: -1 } },
+
+      // 8. Limit to top 3
+      { $limit: 3 },
+
+      // 9. Get primary image (optional)
+      {
+        $lookup: {
+          from: "productimages",
+          let: { pid: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$product_id", "$$pid"] },
+                is_primary: true,
+              },
+            },
+          ],
+          as: "primary_image",
+        },
+      },
+      { $unwind: { path: "$primary_image", preserveNullAndEmptyArrays: true } },
+    ]);
+
+    const result = topProducts.map((p) => ({
+      product_id: p._id.toString(),
+      product_name: p.product_name,
+      revenue: Number(p.total_revenue.toFixed(2)),
+      quantity: p.total_quantity,
+      image: p.primary_image?.image_data || null,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      topProducts: result,
+    });
+  } catch (err) {
+    console.error("Top 3 products error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -83,7 +184,7 @@ const logout = (req, res) => {
   res.status(200).json({ success: true, message: "Logged out successfully" });
 };
 
-const vendorSignup = async (req, res) => {
+const vendorSignup = async (req, res, next) => {
   const {
     name,
     contactnumber,
@@ -132,7 +233,7 @@ const vendorSignup = async (req, res) => {
         role: "vendor",
       },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: "24h" }
+      { expiresIn: "24h" },
     );
 
     res.cookie("jwt", token, {
@@ -154,12 +255,12 @@ const vendorSignup = async (req, res) => {
     });
   } catch (error) {
     console.error("Signup error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- 2. DASHBOARD & ANALYTICS ---
-const getVendorProfile = async (req, res) => {
+const getVendorProfile = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -174,15 +275,16 @@ const getVendorProfile = async (req, res) => {
       phone: vendor.contact_number,
       address: vendor.store_location,
       description: vendor.description || "",
+      createdAt: vendor.createdAt,
     };
 
     sendJson(res, { vendor: vendorData });
   } catch (error) {
     console.error("Profile Error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
-const getVendorAnalytics = async (req, res) => {
+const getVendorAnalytics = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -283,12 +385,12 @@ const getVendorAnalytics = async (req, res) => {
     sendJson(res, { analytics: analyticsData });
   } catch (error) {
     console.error("Analytics Error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- 3. PRODUCTS ---
-const getVendorProducts = async (req, res) => {
+const getVendorProducts = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const { category, sort } = req.query;
@@ -382,12 +484,12 @@ const getVendorProducts = async (req, res) => {
     sendJson(res, { products });
   } catch (error) {
     console.error("getVendorProducts error:", error);
-    sendError(res, error.message || "Server error");
+    next(error);
   }
 };
 
 // --- SUBMIT PRODUCT (MULTER + CLOUDINARY) ---
-const submitProduct = async (req, res) => {
+const submitProduct = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -446,7 +548,7 @@ const submitProduct = async (req, res) => {
           // FIX: Using the imported unified upload helper
           const secureUrl = await uploadToCloudinary(
             file,
-            "pet_store_products"
+            "pet_store_products",
           );
 
           await ProductImage.create({
@@ -464,12 +566,12 @@ const submitProduct = async (req, res) => {
     sendJson(res, { message: "Product added successfully" });
   } catch (error) {
     console.error("Submit Product Error:", error);
-    sendError(res, error.message);
+    next(error);
   }
 };
 
 // --- UPDATE PRODUCT (MULTER + CLOUDINARY) ---
-const updateProduct = async (req, res) => {
+const updateProduct = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const productId = req.params.productId;
@@ -564,7 +666,7 @@ const updateProduct = async (req, res) => {
           // FIX: Using the imported unified upload helper
           const secureUrl = await uploadToCloudinary(
             file,
-            "pet_store_products"
+            "pet_store_products",
           );
 
           await ProductImage.create({
@@ -582,11 +684,11 @@ const updateProduct = async (req, res) => {
     sendJson(res, { message: "Product updated successfully" });
   } catch (error) {
     console.error("Update product error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
-const getProductForEdit = async (req, res) => {
+const getProductForEdit = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -602,12 +704,12 @@ const getProductForEdit = async (req, res) => {
 
     sendJson(res, { product: { ...product.toObject(), variants, images } });
   } catch (error) {
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- 4. ORDERS ---
-const getVendorOrders = async (req, res) => {
+const getVendorOrders = async (req, res, next) => {
   try {
     if (!req.user)
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -688,13 +790,11 @@ const getVendorOrders = async (req, res) => {
     res.json({ success: true, orders });
   } catch (error) {
     console.error("getVendorOrders error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
+    next(error);
   }
 };
 
-const getVendorCustomerDetails = async (req, res) => {
+const getVendorCustomerDetails = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const customerId = req.params.customerId;
@@ -768,11 +868,11 @@ const getVendorCustomerDetails = async (req, res) => {
           };
         }
         acc[item.order_id].items.push(
-          `${item.product_name} (x${item.quantity})`
+          `${item.product_name} (x${item.quantity})`,
         );
         acc[item.order_id].total += item.total;
         return acc;
-      }, {})
+      }, {}),
     );
 
     sendJson(res, {
@@ -788,7 +888,7 @@ const getVendorCustomerDetails = async (req, res) => {
         totalOrders,
         totalRevenue: totalRevenue.toFixed(2),
         avgOrderValue: (totalOrders ? totalRevenue / totalOrders : 0).toFixed(
-          2
+          2,
         ),
         lastPurchase: orders[0]
           ? new Date(orders[0].order_date).toLocaleDateString()
@@ -803,15 +903,15 @@ const getVendorCustomerDetails = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching customer details:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
-const getOrderDetails = async (req, res) => {
+const getOrderDetails = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   try {
     const order = await Order.findById(req.params.orderId).populate(
-      "customer_id"
+      "customer_id",
     );
     if (!order || order.is_deleted)
       return sendError(res, "Order not found", 404);
@@ -855,11 +955,11 @@ const getOrderDetails = async (req, res) => {
     sendJson(res, { order: orderData });
   } catch (error) {
     console.error("Get Order Details Error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
-const updateOrderStatus = async (req, res) => {
+const updateOrderStatus = async (req, res, next) => {
   try {
     const { orderId } = req.params;
     const { status } = req.body;
@@ -959,12 +1059,12 @@ const updateOrderStatus = async (req, res) => {
     sendJson(res, { message: "Status updated", order: formattedOrder });
   } catch (error) {
     console.error("Update Status Error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- 5. CUSTOMERS ---
-const getVendorCustomers = async (req, res) => {
+const getVendorCustomers = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -1022,12 +1122,12 @@ const getVendorCustomers = async (req, res) => {
     sendJson(res, { customers });
   } catch (error) {
     console.error("Error fetching customers:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- 6. PROFILE UPDATE ---
-const updateVendorProfile = async (req, res) => {
+const updateVendorProfile = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
@@ -1046,11 +1146,11 @@ const updateVendorProfile = async (req, res) => {
     });
     sendJson(res, { message: "Profile updated" });
   } catch (error) {
-    sendError(res, "Update failed");
+    next(error);
   }
 };
 
-const deleteProduct = async (req, res) => {
+const deleteProduct = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const productId = req.params.productId;
@@ -1068,11 +1168,11 @@ const deleteProduct = async (req, res) => {
     res.status(200).json({ success: true, message: "Product deleted" });
   } catch (error) {
     console.error("Error deleting product:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
-const deleteOrder = async (req, res) => {
+const deleteOrder = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const orderId = req.params.orderId;
@@ -1097,11 +1197,11 @@ const deleteOrder = async (req, res) => {
       .json({ success: true, message: "Order deleted successfully" });
   } catch (error) {
     console.error("Delete order error:", error);
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
-const deleteSelectedOrders = async (req, res) => {
+const deleteSelectedOrders = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const { orderIds } = req.body;
 
@@ -1113,12 +1213,12 @@ const deleteSelectedOrders = async (req, res) => {
     await Order.updateMany({ _id: { $in: orderIds } }, { is_deleted: true });
     res.status(200).json({ success: true, message: "Selected orders deleted" });
   } catch (error) {
-    sendError(res, "Server error");
+    next(error);
   }
 };
 
 // --- DASHBOARD (JSON) ---
-const getVendorDashboard = async (req, res) => {
+const getVendorDashboard = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId || req.user.eventManagerId;
 
@@ -1207,6 +1307,23 @@ const getVendorDashboard = async (req, res) => {
       { $count: "count" },
     ]);
 
+    // 1b. Total Unique Customers
+    const totalCustomersAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId, is_deleted: { $ne: true } } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      { $match: { "order.is_deleted": { $ne: true } } },
+      { $group: { _id: "$order.customer_id" } }, // Group by customer_id
+      { $count: "count" },
+    ]);
+
     // 2. New Orders (Pending/Confirmed - exclude deleted)
     const newOrdersStats = await OrderItem.aggregate([
       { $match: { vendor_id: vendorObjectId, is_deleted: { $ne: true } } },
@@ -1222,6 +1339,30 @@ const getVendorDashboard = async (req, res) => {
       {
         $match: {
           "order.status": { $in: ["Pending", "Confirmed"] },
+          "order.is_deleted": { $ne: true },
+        },
+      },
+      { $group: { _id: "$order._id" } },
+      { $count: "count" },
+    ]);
+
+    // 2b. Active Orders (Pending, Confirmed, Shipped, Out for Delivery)
+    const activeOrdersStats = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId, is_deleted: { $ne: true } } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Out for Delivery"],
+          },
           "order.is_deleted": { $ne: true },
         },
       },
@@ -1305,24 +1446,301 @@ const getVendorDashboard = async (req, res) => {
     const currentMonth = await getMonthStats(currentMonthStart, now);
     const lastMonth = await getMonthStats(lastMonthStart, lastMonthEnd);
 
+    // Week stats (last 7 days)
+    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const weekStats = await getMonthStats(weekStart, now);
+
+    // Count unique orders contributing to revenue within current month
+    const monthRevenueOrdersAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+          },
+          "order.order_date": { $gte: currentMonthStart, $lt: now },
+        },
+      },
+      { $group: { _id: "$order._id" } },
+      { $count: "count" },
+    ]);
+
+    // Count unique orders for week
+    const weekRevenueOrdersAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+          },
+          "order.order_date": { $gte: weekStart, $lt: now },
+        },
+      },
+      { $group: { _id: "$order._id" } },
+      { $count: "count" },
+    ]);
+
+    // Today's revenue and orders
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const todayStatsAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+          },
+          "order.order_date": { $gte: todayStart, $lt: now },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          revenue: { $sum: { $multiply: ["$price", "$quantity"] } },
+          orders: { $addToSet: "$order._id" },
+          sold: { $sum: "$quantity" },
+        },
+      },
+      {
+        $project: {
+          revenue: 1,
+          orderCount: { $size: "$orders" },
+        },
+      },
+    ]);
+
+    const todayRevenue = todayStatsAgg[0]?.revenue || 0;
+    const todayOrderCount = todayStatsAgg[0]?.orderCount || 0;
+
+    // Top products by revenue (last 90 days to keep relevance)
+    const recentDays = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const topProductsAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      {
+        $match: {
+          "order.status": {
+            $in: ["Pending", "Confirmed", "Shipped", "Delivered"],
+          },
+          "order.order_date": { $gte: recentDays, $lt: now },
+        },
+      },
+      {
+        $group: {
+          _id: "$product_id",
+          product_name: { $first: "$product_name" },
+          revenue: { $sum: { $multiply: ["$price", "$quantity"] } },
+          quantity: { $sum: "$quantity" },
+        },
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 5 },
+    ]);
+
     const calculateChange = (current, previous) => {
       if (previous === 0) return current > 0 ? 100 : 0;
       return ((current - previous) / previous) * 100;
     };
 
+    // --- Dynamic Insights Aggregations ---
+
+    // 1. Peak Hours (Most frequent hour of day for orders)
+    const peakHoursAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      { $match: { "order.status": { $ne: "Cancelled" } } },
+      {
+        $project: {
+          hour: { $hour: "$order.order_date" },
+        },
+      },
+      { $group: { _id: "$hour", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 1 },
+    ]);
+
+    let peakHourText = "No data available";
+    if (peakHoursAgg.length > 0) {
+      const hour = peakHoursAgg[0]._id;
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 || 12;
+      const nextHour = (hour + 1) % 12 || 12;
+      peakHourText = `Most orders between ${displayHour}${ampm} - ${nextHour}${ampm}`;
+    }
+
+    // 2. Best Day (Day of week with most revenue)
+    const bestDayAgg = await OrderItem.aggregate([
+      { $match: { vendor_id: vendorObjectId } },
+      {
+        $lookup: {
+          from: "orders",
+          localField: "order_id",
+          foreignField: "_id",
+          as: "order",
+        },
+      },
+      { $unwind: "$order" },
+      { $match: { "order.status": { $ne: "Cancelled" } } },
+      {
+        $group: {
+          _id: { $dayOfWeek: "$order.order_date" }, // 1 (Sun) - 7 (Sat)
+          revenue: { $sum: { $multiply: ["$price", "$quantity"] } },
+        },
+      },
+      { $sort: { revenue: -1 } },
+      { $limit: 1 },
+    ]);
+
+    const days = [
+      "Unknown",
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const bestDayText =
+      bestDayAgg.length > 0
+        ? days[bestDayAgg[0]._id] + " has highest sales"
+        : "No data available";
+
+    // 3. Customer Growth (This Month vs Last Month unique customers)
+    const getUniqueCustomersCount = async (startDate, endDate) => {
+      const agg = await OrderItem.aggregate([
+        { $match: { vendor_id: vendorObjectId } },
+        {
+          $lookup: {
+            from: "orders",
+            localField: "order_id",
+            foreignField: "_id",
+            as: "order",
+          },
+        },
+        { $unwind: "$order" },
+        {
+          $match: {
+            "order.status": { $ne: "Cancelled" },
+            "order.order_date": { $gte: startDate, $lt: endDate },
+          },
+        },
+        { $group: { _id: "$order.customer_id" } },
+        { $count: "count" },
+      ]);
+      return agg[0]?.count || 0;
+    };
+
+    const currentMonthCustomers = await getUniqueCustomersCount(
+      currentMonthStart,
+      now,
+    );
+    const lastMonthCustomers = await getUniqueCustomersCount(
+      lastMonthStart,
+      lastMonthEnd,
+    );
+
+    let customerGrowthText = "No change";
+    if (lastMonthCustomers === 0) {
+      customerGrowthText =
+        currentMonthCustomers > 0
+          ? "+100% new customers this month"
+          : "No new customers";
+    } else {
+      const growth =
+        ((currentMonthCustomers - lastMonthCustomers) / lastMonthCustomers) *
+        100;
+      customerGrowthText = `${growth > 0 ? "+" : ""}${growth.toFixed(0)}% new customers this month`;
+    }
+
     const stats = {
+      insights: {
+        peakHours: peakHourText,
+        bestDay: bestDayText,
+        customerGrowth: customerGrowthText,
+      },
       totalRevenue: (totalStats[0]?.totalRevenue || 0).toFixed(2),
-      productsSold: totalStats[0]?.productsSold || 0,
+      productsSold: {
+        total: totalStats[0]?.productsSold || 0,
+        month: currentMonth.sold || 0,
+        week: weekStats.sold || 0,
+        today: todayStatsAgg[0]?.sold || 0,
+      },
+      revenueOrderCount: {
+        total: revenueOrdersAgg[0]?.count || 0,
+        month: monthRevenueOrdersAgg[0]?.count || 0,
+        week: weekRevenueOrdersAgg[0]?.count || 0,
+        today: todayStatsAgg[0]?.orderCount || 0,
+      },
+      totalCustomers: totalCustomersAgg[0]?.count || 0,
       newOrders: newOrdersStats[0]?.count || 0,
+      activeOrders: activeOrdersStats[0]?.count || 0,
       totalOrders: totalOrdersAgg[0]?.count || 0,
-      revenueOrderCount: revenueOrdersAgg[0]?.count || 0,
+      monthRevenue: (currentMonth.revenue || 0).toFixed(2),
+      weekRevenue: (weekStats.revenue || 0).toFixed(2),
+      todayRevenue: todayRevenue.toFixed
+        ? todayRevenue.toFixed(2)
+        : (Number(todayRevenue) || 0).toFixed(2),
+      todayOrderCount: todayOrderCount || 0,
+      topProducts: topProductsAgg.map((p) => ({
+        product_id: p._id,
+        product_name: p.product_name,
+        revenue: p.revenue,
+        quantity: p.quantity,
+      })),
       revenueChange: calculateChange(
         currentMonth.revenue,
-        lastMonth.revenue
+        lastMonth.revenue,
       ).toFixed(1),
       productsSoldChange: calculateChange(
         currentMonth.sold,
-        lastMonth.sold
+        lastMonth.sold,
       ).toFixed(1),
       recentOrders: recentOrders.slice(0, 5).map((o) => ({
         ...o,
@@ -1334,7 +1752,233 @@ const getVendorDashboard = async (req, res) => {
     sendJson(res, { stats });
   } catch (error) {
     console.error("Dashboard Error:", error);
-    sendError(res, "Server error");
+    next(error);
+  }
+};
+
+const changePassword = async (req, res, next) => {
+  try {
+    const vendorObjectId = new mongoose.Types.ObjectId(req.user.vendorId);
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return sendError(res, "Please provide both current and new passwords.");
+    }
+
+    const vendor = await Vendor.findById(vendorObjectId);
+    if (!vendor) {
+      return sendError(res, "Vendor not found.");
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, vendor.password);
+    if (!isMatch) {
+      return sendError(res, "Incorrect current password.");
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    vendor.password = hashedPassword;
+    await vendor.save();
+
+    sendJson(res, { message: "Password updated successfully." });
+  } catch (error) {
+    console.error("Change Password Error:", error);
+    next(error);
+  }
+};
+
+// Get all vendor products sorted by sales (most to least) with category filter
+const getVendorProductsSorted = async (req, res) => {
+  if (!req.user || req.user.role !== "vendor") {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const vendorId = new mongoose.Types.ObjectId(req.user.vendorId);
+  const { category } = req.query;
+
+  try {
+    // First, get all products with their order quantities
+    const matchStage = {
+      vendor_id: vendorId,
+      is_deleted: { $ne: true },
+    };
+    if (category && category !== "all") {
+      matchStage.product_category = category;
+    }
+
+    const products = await Product.aggregate([
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: "orderitems",
+          let: { productId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$product_id", "$$productId"] } } },
+            {
+              $lookup: {
+                from: "orders",
+                localField: "order_id",
+                foreignField: "_id",
+                as: "order",
+              },
+            },
+            { $unwind: "$order" },
+            {
+              $match: {
+                "order.status": {
+                  $in: ["Delivered", "Confirmed", "Completed", "Shipped"],
+                },
+              },
+            },
+          ],
+          as: "orderItems",
+        },
+      },
+      {
+        $addFields: {
+          totalSold: { $sum: "$orderItems.quantity" },
+        },
+      },
+      {
+        $lookup: {
+          from: "productvariants",
+          localField: "_id",
+          foreignField: "product_id",
+          as: "variants",
+        },
+      },
+      {
+        $addFields: {
+          firstVariant: { $arrayElemAt: ["$variants", 0] },
+        },
+      },
+      {
+        $lookup: {
+          from: "productimages",
+          let: { pid: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$product_id", "$$pid"] },
+                is_primary: true,
+              },
+            },
+          ],
+          as: "primary_image",
+        },
+      },
+      { $unwind: { path: "$primary_image", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          product_name: 1,
+          product_category: 1,
+          regular_price: "$firstVariant.regular_price",
+          sale_price: "$firstVariant.sale_price",
+          stock_quantity: "$firstVariant.stock_quantity",
+          added_date: "$created_at",
+          totalSold: 1,
+          image: "$primary_image.image_data",
+        },
+      },
+      { $sort: { totalSold: -1 } },
+    ]);
+
+    // Get all unique categories for the filter
+    const categories = await Product.distinct("product_category", {
+      vendor_id: vendorId,
+      is_deleted: { $ne: true },
+    });
+
+    console.log("Products sorted - returning:", products.length, "products");
+    console.log("Sample product:", products[0]);
+
+    res.json({
+      success: true,
+      products: products.map((p) => ({
+        id: p._id,
+        product_name: p.product_name,
+        category: p.product_category,
+        regular_price: p.regular_price,
+        sale_price: p.sale_price,
+        price: p.sale_price || p.regular_price,
+        stock: p.stock_quantity,
+        added_date: p.added_date,
+        totalSold: p.totalSold || 0,
+        image: p.image || null,
+      })),
+      categories: categories.filter((c) => c),
+    });
+  } catch (err) {
+    console.error("Error in getVendorProductsSorted:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Get all vendor customers sorted by spending (most to least)
+const getVendorCustomersSorted = async (req, res) => {
+  if (!req.user || req.user.role !== "vendor") {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const vendorId = new mongoose.Types.ObjectId(req.user.vendorId);
+
+  try {
+    // Get spending from orders
+    const customerSpending = await Order.aggregate([
+      {
+        $lookup: {
+          from: "orderitems",
+          localField: "_id",
+          foreignField: "order_id",
+          as: "items",
+        },
+      },
+      { $unwind: "$items" },
+      { $match: { "items.vendor_id": vendorId } },
+      {
+        $match: {
+          status: { $in: ["Delivered", "Confirmed", "Completed", "Shipped"] },
+        },
+      },
+      {
+        $group: {
+          _id: "$customer_id",
+          totalSpent: {
+            $sum: { $multiply: ["$items.price", "$items.quantity"] },
+          },
+          orderCount: { $sum: 1 },
+        },
+      },
+      {
+        $lookup: {
+          from: "customers",
+          localField: "_id",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      { $unwind: { path: "$customer", preserveNullAndEmptyArrays: false } },
+      {
+        $project: {
+          _id: 0,
+          id: "$_id",
+          name: "$customer.userName",
+          email: "$customer.email",
+          joined_date: "$customer.createdAt",
+          totalSpent: 1,
+          orderCount: 1,
+        },
+      },
+      { $sort: { totalSpent: -1 } },
+    ]);
+
+    res.json({
+      success: true,
+      customers: customerSpending,
+    });
+  } catch (err) {
+    console.error("Error in getVendorCustomersSorted:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -1353,11 +1997,15 @@ const vendorController = {
   updateOrderStatus,
   getVendorCustomers,
   getVendorCustomerDetails,
+  changePassword,
   updateVendorProfile,
   deleteProduct,
   deleteOrder,
   deleteSelectedOrders,
   getVendorDashboard,
+  getVendorTop3Products,
+  getVendorProductsSorted,
+  getVendorCustomersSorted,
 };
 
 export default vendorController;

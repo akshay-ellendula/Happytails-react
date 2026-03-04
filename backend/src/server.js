@@ -6,6 +6,7 @@ import path from "path";
 import fs from "fs";
 import morgan from "morgan";
 import { createStream } from "rotating-file-stream";
+import helmet from "helmet";         
 
 import connect_Db from "./config/config_db.js";
 
@@ -27,7 +28,9 @@ const app = express();
 
 connect_Db();
 
-// --- 1. ACCESS LOGGING SETUP (Morgan) ---
+
+// 1. ACCESS LOGGING SETUP (Morgan)
+
 const logDir = path.join(process.cwd(), "logs");
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir);
@@ -35,21 +38,26 @@ if (!fs.existsSync(logDir)) {
 
 // Rotate access logs daily
 const accessLogStream = createStream("access.log", {
-  interval: "1d", 
+  interval: "1d",
   path: logDir,
-  compress: "gzip" 
+  compress: "gzip"
 });
 
-// Use morgan to log every request
+// Log every request
 app.use(
   morgan(":method :url :status :response-time ms", {
     stream: accessLogStream
   })
 );
-// ----------------------------------------
 
+// 2. SECURITY HEADERS (helmet)
+app.use(helmet());
+
+// 3. Body parsing + cookies
 app.use(express.json());
 app.use(cookieParser());
+
+// 4. CORS
 
 app.use(
   cors({
@@ -58,7 +66,7 @@ app.use(
   })
 );
 
-// Routes
+// 5. Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/public", customerRoutes);
 app.use("/api/eventManagers", eventManagerRoutes);
@@ -69,8 +77,7 @@ app.use("/api/eventAnalytics", eventAnalyticsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/vendors", vendorRoutes);
 
-// --- 2. ERROR LOGGING SETUP (Winston) ---
-// This must be the last app.use()
+// 6. Error handling (must be last middleware)
 app.use(errorHandler);
 
 const port = process.env.PORT || 5001;

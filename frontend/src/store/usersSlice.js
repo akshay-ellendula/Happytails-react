@@ -30,7 +30,12 @@ export const fetchUserDetails = createAsyncThunk(
     "users/fetchUserDetails",
     async (id) => {
         const res = await axiosInstance.get(`/admin/customers/${id}`);
-        return res.data.Customer;
+        // Return everything including history
+        return {
+            ...res.data.Customer,
+            orders: res.data.purchaseHistory || [],
+            events: res.data.eventHistory || [],
+        };
     }
 );
 
