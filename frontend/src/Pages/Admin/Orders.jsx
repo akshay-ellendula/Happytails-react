@@ -11,6 +11,8 @@ export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({});
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
   const [loading, setLoading] = useState(true);
 
   // Fetch order stats
@@ -41,11 +43,27 @@ export default function Orders() {
     init();
   }, []);
 
+  // Filter by search + status, then sort
   const filtered = orders.filter((order) => {
     const id = order.orderId?.toString().toLowerCase() || "";
     const name = order.customerName?.toLowerCase() || "";
     const s = search.toLowerCase();
-    return id.includes(s) || name.includes(s);
+    const matchesSearch = id.includes(s) || name.includes(s);
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const sortedOrders = [...filtered].sort((a, b) => {
+    if (sortBy === "newest") {
+      return new Date(b.orderDate) - new Date(a.orderDate);
+    }
+    if (sortBy === "revenue-desc") {
+      return (b.totalAmount || 0) - (a.totalAmount || 0);
+    }
+    if (sortBy === "revenue-asc") {
+      return (a.totalAmount || 0) - (b.totalAmount || 0);
+    }
+    return 0;
   });
 
   const columns = [
@@ -82,7 +100,7 @@ export default function Orders() {
             {val ? new Date(val).toLocaleDateString() : "N/A"}
           </div>
           <div className="text-xs text-gray-500">
-            {val ? new Date(val).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
+            {val ? new Date(val).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
           </div>
         </div>
       ),
@@ -258,55 +276,70 @@ export default function Orders() {
             </div>
           </div>
 
-          {/* Search Bar */}
+          {/* Search Bar + Filters */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">Order List</h2>
-                <p className="text-gray-600">Manage all platform orders</p>
+                <p className="text-gray-600 mt-1">Manage all platform orders</p>
               </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search by Order ID or customer name..."
-                  className="w-96 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all duration-300"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <svg 
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
+
+              <div className="flex items-center gap-4">
+                <div className="relative w-80 md:w-96">
+                  <input
+                    type="text"
+                    placeholder="Search by Order ID or customer name..."
+                    className="w-full px-5 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all duration-300"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <svg
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-white text-gray-700 font-medium transition-all duration-300 min-w-[180px] cursor-pointer hover:border-yellow-400 shadow-sm"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                  <option value="all">All Status</option>
+                  <option value="Pending">⏳ Pending</option>
+                  <option value="Confirmed">✅ Confirmed</option>
+                  <option value="Shipped">🚚 Shipped</option>
+                  <option value="Delivered">📦 Delivered</option>
+                  <option value="Cancelled">❌ Cancelled</option>
+                </select>
+
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 bg-white text-gray-700 font-medium transition-all duration-300 min-w-[220px] cursor-pointer hover:border-yellow-400 shadow-sm"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="revenue-desc">Amount: High to Low</option>
+                  <option value="revenue-asc">Amount: Low to High</option>
+                </select>
               </div>
             </div>
-            
-            <div className="flex items-center justify-between text-sm text-gray-500">
-              <div>
-                Showing {filtered.length} of {orders.length} orders
-                {search && (
-                  <span className="ml-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
-                    Searching for: "{search}"
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                  <span className="text-gray-600">Delivered</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-                  <span className="text-gray-600">Pending</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-                  <span className="text-gray-600">Cancelled</span>
-                </div>
-              </div>
+
+            <div className="text-sm text-gray-500 mb-4 flex items-center gap-3">
+              Showing {sortedOrders.length} of {orders.length} orders
+              {search && (
+                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs">
+                  Searching: "{search}"
+                </span>
+              )}
+              {statusFilter !== "all" && (
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">
+                  Status: {statusFilter}
+                </span>
+              )}
             </div>
           </div>
 
@@ -317,11 +350,11 @@ export default function Orders() {
           ) : (
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="p-6">
-                <Table columns={columns} data={filtered} />
+                <Table columns={columns} data={sortedOrders} />
               </div>
-              
+
               {/* No results message */}
-              {filtered.length === 0 && search && (
+              {sortedOrders.length === 0 && search && (
                 <div className="p-8 text-center">
                   <div className="h-16 w-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -338,8 +371,8 @@ export default function Orders() {
                   </button>
                 </div>
               )}
-              
-              {filtered.length === 0 && !search && (
+
+              {sortedOrders.length === 0 && !search && (
                 <div className="p-8 text-center">
                   <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -352,29 +385,29 @@ export default function Orders() {
               )}
 
               {/* Order Summary Footer */}
-              {filtered.length > 0 && (
+              {sortedOrders.length > 0 && (
                 <div className="border-t border-gray-200 bg-gray-50 p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-bold text-gray-800">Order Summary</h4>
-                      <p className="text-sm text-gray-600">Showing all {filtered.length} orders</p>
+                      <p className="text-sm text-gray-600">Showing all {sortedOrders.length} orders</p>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-800">
-                          ₹{filtered.reduce((sum, order) => sum + (order.totalAmount || 0), 0).toLocaleString()}
+                          ₹{sortedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0).toLocaleString()}
                         </div>
                         <div className="text-sm text-gray-500">Total Revenue</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-800">
-                          {filtered.filter(o => o.status === 'Delivered').length}
+                          {sortedOrders.filter(o => o.status === 'Delivered').length}
                         </div>
                         <div className="text-sm text-gray-500">Completed</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-gray-800">
-                          {filtered.filter(o => o.status === 'Pending').length}
+                          {sortedOrders.filter(o => o.status === 'Pending').length}
                         </div>
                         <div className="text-sm text-gray-500">Pending</div>
                       </div>
