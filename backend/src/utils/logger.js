@@ -10,7 +10,7 @@ const logFormat = printf(({ level, message, timestamp, stack }) => {
 
 // Configure rotation for errors
 const fileRotateTransport = new winston.transports.DailyRotateFile({
-  filename: 'logs/errors-%DATE%.log',
+  filename: 'log/errors-%DATE%.log',
   datePattern: 'YYYY-MM-DD',
   level: 'error',
   maxSize: '20m',

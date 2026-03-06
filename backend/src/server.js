@@ -31,7 +31,7 @@ connect_Db();
 
 // 1. ACCESS LOGGING SETUP (Morgan)
 
-const logDir = path.join(process.cwd(), "logs");
+const logDir = path.join(process.cwd(), "log");
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir);
 }
