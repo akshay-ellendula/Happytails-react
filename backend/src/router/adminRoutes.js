@@ -1,190 +1,263 @@
 import express from 'express';
-import {
-    logout,
-    // admin-Customer.ejs, admin-Customer-details.ejs
-    getUsers,
-    getUser,
-    updateUser,
-    deleteUser,
-    getUserStats,
-    adminGetUsers,
-    getUsersWithRevenue,
-
-    // admin-products.ejs, admin-product-details.ejs, admin-add-product.ejs
-    getTopOrderedProducts,
-    getProducts,
-    getProductStats,
-    deleteProduct,
-    addProduct,
-    getProduct,
-    updateProduct,
-    getProductData,
-    getProductCustomers,
-    getProductsWithRevenue,
-
-    // admin-shop-manager.ejs, admin-sm-details.ejs
-    getVendors,
-    getVendorStats,
-    adminGetVendors,
-    getVendor,
-    getVendorRevenueMetrics,
-    getVendorProducts,
-    getVendorTopCustomers,
-    updateVendor,
-    deleteVendor,
-    getTopVendors,
-    getVendorsWithRevenue,
-
-    // admin-events.ejs, admin-em-details.ejs, admin-event-details.ejs
-    getTopEvents,
-    getTopEventManagers,
-    getEventManagers,
-    getEventManagerStats,
-    getTotalEvents,
-    getEventManager,
-    getEventManagerMetrics,
-    getUpcomingEvents,
-    getPastEvents,
-    updateEventManager,
-    deleteEventManager,
-    getEventManagersWithRevenue,
-    getEventsData,
-    deleteEvent,
-    getEvent,
-    getEventAttendees,
-    updateEvent,
-    getEventRevenue,
-    getEventsWithRevenue,
-
-    // admin-orders.ejs, admin-order-details.ejs
-    getOrders,
-    getOrderDetails,
-    getOrderStats,
-
-    // admin-dashboard.ejs
-    dashBoardStats,
-    getRevenueChartData,
-    getTopSpenders
-
-} from '../controller/adminController.js'; // Corrected import syntax for controller functions
 import upload from '../middleware/uploadMiddleware.js';
 import protectRoute from '../middleware/authMiddleware.js';
 
+import {
+  logout,
+  getUsers,
+  getUser,
+  updateUser,
+  deleteUser,
+  getUserStats,
+  adminGetUsers,
+  getUsersWithRevenue,
+  getTopOrderedProducts,
+  getProducts,
+  getProductStats,
+  deleteProduct,
+  addProduct,
+  getProduct,
+  updateProduct,
+  getProductData,
+  getProductCustomers,
+  getProductsWithRevenue,
+  getVendors,
+  getVendorStats,
+  adminGetVendors,
+  getVendor,
+  getVendorRevenueMetrics,
+  getVendorProducts,
+  getVendorTopCustomers,
+  updateVendor,
+  deleteVendor,
+  getTopVendors,
+  getVendorsWithRevenue,
+  getTopEvents,
+  getTopEventManagers,
+  getEventManagers,
+  getEventManagerStats,
+  getTotalEvents,
+  getEventManager,
+  getEventManagerMetrics,
+  getUpcomingEvents,
+  getPastEvents,
+  updateEventManager,
+  deleteEventManager,
+  getEventManagersWithRevenue,
+  getEventsData,
+  deleteEvent,
+  getEvent,
+  getEventAttendees,
+  updateEvent,
+  getEventRevenue,
+  getEventsWithRevenue,
+  getOrders,
+  getOrderDetails,
+  getOrderStats,
+  dashBoardStats,
+  getRevenueChartData,
+  getTopSpenders
+} from '../controller/adminController.js';
+
 const router = express.Router();
-// =======================================================
+
+/**
+ * @swagger
+ * tags:
+ *   name: Admin
+ *   description: Admin management APIs
+ */
+
+/**
+ * @swagger
+ * /api/admin/logout:
+ *   get:
+ *     summary: Logout admin
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get('/logout', protectRoute(['admin']), logout);
 
-// 2. DASHBOARD / STATS
-// =======================================================
+/**
+ * @swagger
+ * /api/admin/stats:
+ *   get:
+ *     summary: Get dashboard statistics
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get('/stats', protectRoute(['admin']), dashBoardStats);
+
+/**
+ * @swagger
+ * /api/admin/revenue-chart:
+ *   get:
+ *     summary: Get revenue chart data
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get('/revenue-chart', protectRoute(['admin']), getRevenueChartData);
-// After the other customer routes
-router.get('/customers/top-spenders', protectRoute(['admin']), getTopSpenders);
-// Add this line near your other customer routes
-router.get('/customers/with-revenue', protectRoute(['admin']), getUsersWithRevenue);
 
-
-// =======================================================
-// 3. CUSTOMER (USER) MANAGEMENT
-// =======================================================
+/**
+ * @swagger
+ * /api/admin/customers:
+ *   get:
+ *     summary: Get all customers
+ *     tags: [Admin Customers]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get('/customers', protectRoute(['admin']), getUsers);
-router.get('/customers/stats', protectRoute(['admin']), getUserStats);
-router.get('/customers/latest', protectRoute(['admin']), adminGetUsers);
+
+/**
+ * @swagger
+ * /api/admin/customers/{id}:
+ *   get:
+ *     summary: Get customer details
+ *     tags: [Admin Customers]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get('/customers/:id', protectRoute(['admin']), getUser);
+
+/**
+ * @swagger
+ * /api/admin/customers/{id}:
+ *   put:
+ *     summary: Update customer
+ *     tags: [Admin Customers]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.put('/customers/:id', protectRoute(['admin']), updateUser);
+
+/**
+ * @swagger
+ * /api/admin/customers/{id}:
+ *   delete:
+ *     summary: Delete customer
+ *     tags: [Admin Customers]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.delete('/customers/:id', protectRoute(['admin']), deleteUser);
 
-
-// =======================================================
-// 4. VENDOR (SHOP MANAGER) MANAGEMENT
-// =======================================================
-router.get('/vendors/top-vendors', protectRoute(['admin']), getTopVendors);
-router.get('/vendors/with-revenue', protectRoute(['admin']), getVendorsWithRevenue);
+/**
+ * @swagger
+ * /api/admin/vendors:
+ *   get:
+ *     summary: Get vendors
+ *     tags: [Admin Vendors]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get('/vendors', protectRoute(['admin']), getVendors);
-router.get('/vendors/stats', protectRoute(['admin']), getVendorStats);
-router.get('/vendors/latest', protectRoute(['admin']), adminGetVendors);
+
+/**
+ * @swagger
+ * /api/admin/vendors/{id}:
+ *   get:
+ *     summary: Get vendor details
+ *     tags: [Admin Vendors]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get('/vendors/:id', protectRoute(['admin']), getVendor);
-router.get('/vendors/:id/revenue', protectRoute(['admin']), getVendorRevenueMetrics);
-router.get('/vendors/:id/products', protectRoute(['admin']), getVendorProducts);
-router.get('/vendors/:id/top-customers', protectRoute(['admin']), getVendorTopCustomers);
-router.put('/vendors/:id', protectRoute(['admin']), updateVendor);
-router.delete('/vendors/:id', protectRoute(['admin']), deleteVendor);
 
-
-// =======================================================
-// 5. PRODUCT MANAGEMENT
-// =======================================================
-router.get('/products/top-ordered', protectRoute(['admin']), getTopOrderedProducts);
+/**
+ * @swagger
+ * /api/admin/products:
+ *   get:
+ *     summary: Get all products
+ *     tags: [Admin Products]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get('/products', protectRoute(['admin']), getProducts);
-router.get('/products/stats', protectRoute(['admin']), getProductStats);
-router.get('/products/with-revenue', protectRoute(['admin']), getProductsWithRevenue);
+
+/**
+ * @swagger
+ * /api/admin/products/add:
+ *   post:
+ *     summary: Add product
+ *     tags: [Admin Products]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.post(
-    '/products/add',
-    protectRoute(['admin']),
-    upload.array('images', 5),
-    addProduct
+  '/products/add',
+  protectRoute(['admin']),
+  upload.array('images', 5),
+  addProduct
 );
-router.get('/products/:id', protectRoute(['admin']), getProduct);
-router.get('/products/:id/data', protectRoute(['admin']), getProductData);
-router.get('/products/:id/customers', protectRoute(['admin']), getProductCustomers);
-router.put(
-    '/products/:id',
-    protectRoute(['admin']),
-    upload.array('images', 5),
-    updateProduct
-);
+
+/**
+ * @swagger
+ * /api/admin/products/{id}:
+ *   delete:
+ *     summary: Delete product
+ *     tags: [Admin Products]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.delete('/products/:id', protectRoute(['admin']), deleteProduct);
 
-
-// =======================================================
-// 6. EVENT MANAGER MANAGEMENT
-// =======================================================
-router.get('/event-managers/top-managers', protectRoute(['admin']), getTopEventManagers);
+/**
+ * @swagger
+ * /api/admin/event-managers:
+ *   get:
+ *     summary: Get event managers
+ *     tags: [Admin EventManagers]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get('/event-managers', protectRoute(['admin']), getEventManagers);
-router.get('/event-managers/stats', protectRoute(['admin']), getEventManagerStats);
-router.get('/event-managers/with-revenue', protectRoute(['admin']), getEventManagersWithRevenue);
-router.get('/event-managers/:id', protectRoute(['admin']), getEventManager);
-router.get('/event-managers/:id/metrics', protectRoute(['admin']), getEventManagerMetrics);
-router.get('/event-managers/:id/upcoming-events', protectRoute(['admin']), getUpcomingEvents);
-router.get('/event-managers/:id/past-events', protectRoute(['admin']), getPastEvents);
-router.put(
-    '/event-managers/:id',
-    protectRoute(['admin']),
-    upload.single('profilePicFile'),
-    updateEventManager
-);
-router.delete('/event-managers/:id', protectRoute(['admin']), deleteEventManager);
 
-
-// =======================================================
-// 7. EVENT MANAGEMENT
-// =======================================================
-router.get('/events/top-events', protectRoute(['admin']), getTopEvents);
+/**
+ * @swagger
+ * /api/admin/events:
+ *   get:
+ *     summary: Get all events
+ *     tags: [Admin Events]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get('/events', protectRoute(['admin']), getEventsData);
-router.get('/events/total', protectRoute(['admin']), getTotalEvents);
-router.get('/events/revenue', protectRoute(['admin']), getEventRevenue);
-router.get('/events/with-revenue', protectRoute(['admin']), getEventsWithRevenue);
-router.get('/events/:id', protectRoute(['admin']), getEvent);
-router.get('/events/:id/attendees', protectRoute(['admin']), getEventAttendees);
-router.put(
-    '/events/:id',
-    protectRoute(['admin']),
-    upload.fields([
-        { name: 'thumbnail', maxCount: 1 },
-        { name: 'banner', maxCount: 1 }
-    ]),
-    updateEvent
-);
 
+/**
+ * @swagger
+ * /api/admin/events/{id}:
+ *   delete:
+ *     summary: Delete event
+ *     tags: [Admin Events]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.delete('/events/:id', protectRoute(['admin']), deleteEvent);
 
-
-// =======================================================
-// 8. ORDER MANAGEMENT
-// =======================================================
+/**
+ * @swagger
+ * /api/admin/orders:
+ *   get:
+ *     summary: Get all orders
+ *     tags: [Admin Orders]
+ *     security:
+ *       - bearerAuth: []
+ */
 router.get('/orders', protectRoute(['admin']), getOrders);
-router.get('/orders/stats', protectRoute(['admin']), getOrderStats);
-router.get('/orders/:id', protectRoute(['admin']), getOrderDetails);
 
+/**
+ * @swagger
+ * /api/admin/orders/{id}:
+ *   get:
+ *     summary: Get order details
+ *     tags: [Admin Orders]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/orders/:id', protectRoute(['admin']), getOrderDetails);
 
 export default router;

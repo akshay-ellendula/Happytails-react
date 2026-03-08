@@ -7,7 +7,8 @@ import fs from "fs";
 import morgan from "morgan";
 import { createStream } from "rotating-file-stream";
 import helmet from "helmet";         
-
+import swaggerJsdoc from "swagger-jsdoc"; // Add this
+import swaggerUi from "swagger-ui-express"; // Add this
 import connect_Db from "./config/config_db.js";
 
 // Routes
@@ -65,6 +66,43 @@ app.use(
     credentials: true,
   })
 );
+// --- SWAGGER SETUP ---
+const swaggerOptions = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "HappyTails API",
+      version: "1.0.0",
+      description: "API documentation for the HappyTails Backend",
+    },
+    servers: [
+      {
+        url: "http://localhost:5001",
+        description: "Development Server",
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
+  },
+  // Tell swagger-jsdoc where to look for your schemas and endpoint documentation
+  apis: ["./src/router/*.js", "./src/models/*.js"], 
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+// Serve the Swagger UI at /api-docs
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 5. Routes
 app.use("/api/auth", authRoutes);
@@ -84,4 +122,5 @@ const port = process.env.PORT || 5001;
 
 app.listen(port, () => {
   console.log(`http://localhost:${port}`);
+  console.log(`Swagger Docs available at http://localhost:${port}/api-docs`);
 });
