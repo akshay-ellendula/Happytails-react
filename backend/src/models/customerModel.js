@@ -1,0 +1,66 @@
+import mongoose from "mongoose";
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+
+const customerSchema = new mongoose.Schema({
+    userName: {
+        type: String,
+        required: true,
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+    },
+    profilePic: {
+        type: String,
+    },
+    password: {
+        type: String,
+        required: true,
+    },
+    addresses: [{
+        name: { type: String, default: "" },
+        houseNumber: { type: String },
+        streetNo: { type: String },
+        city: { type: String },
+        pincode: { type: String },
+        isDefault: { type: Boolean, default: false }
+    }],
+    phoneNumber: {
+        type: String,
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+    resetPasswordToken: String,
+    resetPasswordExpire: Date
+}, {
+    timestamps: true,
+});
+
+customerSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next();
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        next(error);
+    }
+})
+
+customerSchema.methods.matchPassword = async function (enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+}
+
+customerSchema.methods.getResetPasswordToken = function () {
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+    return resetToken;
+};
+
+const Customer = mongoose.model("Customer", customerSchema);
+export default Customer;
