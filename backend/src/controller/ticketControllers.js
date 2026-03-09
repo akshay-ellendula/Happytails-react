@@ -1,5 +1,6 @@
 import Ticket from '../models/ticketModel.js';
 import Event from '../models/eventModel.js';
+import sendEmail from '../utils/sendEmail.js';
 
 //@dec get all tickets
 //@routes get/api/tickets/
@@ -62,7 +63,7 @@ export const postTicket = async (req, res) => {
     const { id: eventId } = req.params
     const customerId = req.user.customerId;
     
-    // UPDATED: Destructure contact fields from req.body
+    // Destructure contact fields from req.body
     const { numberOfTickets, name, phone, email, petName, petBreed, petAge } = req.body; 
 
     try {
@@ -84,11 +85,9 @@ export const postTicket = async (req, res) => {
             customerId,
             numberOfTickets,
             price: totalPrice,
-            // UPDATED: Map request fields to schema fields
             contactName: name,
             contactPhone: phone,
             contactEmail: email,
-            // Optional pet fields
             petName: petName || '', 
             petBreed: petBreed || '',
             petAge: petAge || null,
@@ -96,6 +95,60 @@ export const postTicket = async (req, res) => {
 
         event.tickets_sold = event.tickets_sold + numberOfTickets;
         await event.save();
+
+        // --- NEW BEAUTIFUL EMAIL CODE ---
+        const emailMessage = `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                
+                <div style="background-color: #FF8A00; padding: 30px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; letter-spacing: 1px;">🐾 HappyTails</h1>
+                    <p style="color: #fff3e0; margin-top: 5px; font-size: 16px;">Ticket Booking Confirmation</p>
+                </div>
+
+                <div style="padding: 40px 30px; color: #333333; line-height: 1.6;">
+                    <h2 style="color: #2c3e50; margin-top: 0;">You're going to ${event.title}! 🎉</h2>
+                    <p style="font-size: 16px;">Hi <strong>${name}</strong>,</p>
+                    <p style="font-size: 16px;">We are thrilled to let you know that your ticket booking was successful. Get ready for a pawsome time!</p>
+                    
+                    <div style="background-color: #fff8f0; border-left: 4px solid #FF8A00; padding: 20px; border-radius: 0 8px 8px 0; margin: 25px 0;">
+                        <h3 style="margin-top: 0; color: #FF8A00; font-size: 18px;">🎟️ Booking Details</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr><td style="padding: 6px 0; color: #555;"><strong>Number of Tickets:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">${numberOfTickets}</td></tr>
+                            <tr><td style="padding: 6px 0; color: #555;"><strong>Total Price:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">₹${totalPrice}</td></tr>
+                            <tr><td style="padding: 6px 0; color: #555;"><strong>Phone Number:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">${phone}</td></tr>
+                            ${petName ? `<tr><td style="padding: 6px 0; color: #555;"><strong>Pet Guest:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">${petName} (${petBreed || 'N/A'})</td></tr>` : ''}
+                        </table>
+                    </div>
+
+                    <div style="background-color: #f1f8ff; border: 1px solid #cce5ff; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 25px;">
+                        <p style="margin: 0; font-size: 15px; color: #004085;">
+                            <strong>📥 Want your official ticket?</strong><br>
+                            You can easily view and download your official Ticket PDF at any time by logging into your account on the HappyTails website.
+                        </p>
+                    </div>
+
+                    <p style="font-size: 16px;">We look forward to seeing you there!</p>
+                </div>
+
+                <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
+                    <p style="margin: 0; font-size: 14px; color: #777;">With love & wags,<br><strong>The HappyTails Team</strong></p>
+                </div>
+            </div>
+        `;
+
+        try {
+            await sendEmail({
+                email: email, // Email address coming from the request body
+                subject: `🎟️ HappyTails - Your Tickets for ${event.title}`,
+                message: emailMessage
+            });
+            console.log("Confirmation email sent successfully");
+        } catch (emailError) {
+            console.error("Error sending confirmation email:", emailError);
+            // We catch the error but don't fail the request, 
+            // since the ticket was already successfully booked.
+        }
+        // --- END OF EMAIL CODE ---
 
         res.status(201).json({ 
             success: true, 
@@ -190,3 +243,4 @@ export const getTicketDetails = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
