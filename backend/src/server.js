@@ -97,7 +97,7 @@ const swaggerOptions = {
     ],
   },
   // Tell swagger-jsdoc where to look for your schemas and endpoint documentation
-  apis: ["./src/router/*.js", "./src/models/*.js"], 
+  apis: ["./doc/*.js" ], 
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
