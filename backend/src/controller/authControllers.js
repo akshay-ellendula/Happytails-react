@@ -6,6 +6,8 @@ import Vendor from '../models/vendorModel.js'; //
 import bcrypt from 'bcryptjs'; 
 import crypto from 'crypto';
 import sendEmail from '../utils/sendEmail.js';
+import passport from 'passport';
+
 
 
 // @desc    Signup for customer
@@ -681,4 +683,99 @@ export const resetPassword = async (req, res) => {
         console.error(error);
         res.status(500).json({ message: error.message });
     }
+};
+
+// @desc    Google Login - Initiate
+// @route   GET /api/auth/google
+// @access  Public
+export const googleAuth = (req, res, next) => {
+    const { role } = req.query;
+    console.log('Google auth initiated for role:', role);
+    
+    // Pass role as state parameter to retrieve in callback
+    const authenticator = passport.authenticate('google', {
+        scope: ['profile', 'email'],
+        state: role || 'customer'  // This is important - passes role through the OAuth flow
+    });
+    
+    authenticator(req, res, next);
+};
+
+// @desc    Google Login Callback
+// @route   GET /api/auth/google/callback
+// @access  Public
+export const googleAuthCallback = (req, res, next) => {
+    console.log('=== Google Callback Received ===');
+    console.log('Query params:', req.query);
+    console.log('State param:', req.query.state); // The role should be in the state parameter
+    
+    // The role is passed in the state parameter from the initial request
+    // We need to add it to the query so it's available in the passport strategy
+    if (req.query.state) {
+        req.query.role = req.query.state;
+        console.log('Role extracted from state:', req.query.role);
+    }
+    
+    passport.authenticate('google', { session: false }, async (err, data, info) => {
+        console.log('Passport authentication result:');
+        console.log('- Error:', err?.message || err);
+        console.log('- Has data:', !!data);
+        
+        if (err || !data) {
+            console.error('Google auth error details:', { err, info });
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            const errorMessage = err?.message || 'Unknown error';
+            return res.redirect(`${frontendUrl}/service-login?error=google_auth_failed&details=${encodeURIComponent(errorMessage)}`);
+        }
+        
+        try {
+            const { user, token, role } = data;
+            console.log('Google auth successful!');
+            console.log('- Role:', role);
+            console.log('- User email:', user.email);
+            console.log('- User ID:', user._id);
+            
+            // Set JWT cookie
+            res.cookie('jwt', token, {
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+                httpOnly: true,
+                sameSite: 'lax',
+                secure: false,
+            });
+            
+            // Redirect based on role
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            let redirectUrl = frontendUrl;
+            
+            if (role === 'customer') {
+                redirectUrl = `${frontendUrl}/`;
+            } else if (role === 'eventManager') {
+                redirectUrl = `${frontendUrl}/eventManager`;
+            } else if (role === 'vendor') {
+                redirectUrl = `${frontendUrl}/shop`;
+            } else {
+                redirectUrl = `${frontendUrl}/`;
+            }
+            
+            redirectUrl += `?google_login_success=true`;
+            console.log('Redirecting to frontend:', redirectUrl);
+            
+            return res.redirect(redirectUrl);
+        } catch (error) {
+            console.error('Error processing Google callback:', error);
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            return res.redirect(`${frontendUrl}/service-login?error=processing_failed&details=${encodeURIComponent(error.message)}`);
+        }
+    })(req, res, next);
+};
+
+// @desc    Get Google Auth URL (for frontend)
+// @route   GET /api/auth/google/url
+// @access  Public
+export const getGoogleAuthUrl = (req, res) => {
+    const { role } = req.query;
+    const baseUrl = `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google`;
+    const url = `${baseUrl}?role=${role || 'customer'}`;
+    
+    res.json({ url });
 };

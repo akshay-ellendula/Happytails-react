@@ -1,17 +1,47 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../hooks/useAuth";
+import GoogleLoginButton from "../../components/GoogleLoginButton";
 
 const ServiceProviderLogin = () => {
   const navigate = useNavigate();
-  const { signin } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { signin, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     role: "",
   });
+
+  // Handle Google login success/error from URL params
+  useEffect(() => {
+    const googleSuccess = searchParams.get('google_login_success');
+    const googleError = searchParams.get('error');
+    
+    if (googleSuccess === 'true') {
+      toast.success('Google login successful!');
+      // Remove the query param from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    if (googleError === 'google_auth_failed') {
+      toast.error('Google login failed. Please try again.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [searchParams]);
+
+  // Redirect if user is already authenticated
+  useEffect(() => {
+    if (user) {
+      if (user.role === "eventManager") {
+        navigate("/eventManager");
+      } else if (user.role === "vendor") {
+        navigate("/shop");
+      }
+    }
+  }, [user, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -25,7 +55,7 @@ const ServiceProviderLogin = () => {
     setLoading(true);
 
     const roleKey =
-      formData.role === "event-manager" ? "eventManager" : "storePartner";
+      formData.role === "event-manager" ? "eventManager" : "vendor";
 
     const result = await signin(
       {
@@ -40,15 +70,21 @@ const ServiceProviderLogin = () => {
     if (result.success) {
       toast.success("Login successful!");
       if (roleKey === "eventManager") navigate("/eventManager");
-      else if (roleKey === "storePartner") navigate("/shop");
+      else if (roleKey === "vendor") navigate("/shop");
     } else {
       toast.error(result.error || "Login failed");
     }
   };
 
-  // Fixed the function to use formData and navigate correctly
   const handleForgotPassword = () => {
     navigate("/forgot-password");
+  };
+
+  // Determine role for Google login
+  const getGoogleRole = () => {
+    if (formData.role === "event-manager") return "eventManager";
+    if (formData.role === "storePartner") return "vendor";
+    return "";
   };
 
   return (
@@ -127,6 +163,7 @@ const ServiceProviderLogin = () => {
                 </select>
               </div>
             </div>
+            
             <button
               type="submit"
               disabled={loading}
@@ -137,6 +174,30 @@ const ServiceProviderLogin = () => {
               {loading ? "Logging in..." : "Login"}
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Google Login Button - Only show if role is selected */}
+          {formData.role && (
+            <GoogleLoginButton 
+              role={getGoogleRole()}
+              buttonText={`Continue with Google as ${formData.role === "event-manager" ? "Event Manager" : "Store Partner"}`}
+            />
+          )}
+          
+          {!formData.role && (
+            <div className="text-center text-sm text-gray-400 mt-4">
+              Select a role to continue with Google
+            </div>
+          )}
         </div>
       </div>
       <footer className="p-6 text-center text-[#1a1a1a] font-medium bg-[#effe8b]">

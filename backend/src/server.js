@@ -22,11 +22,15 @@ import eventAnalyticsRoutes from "./router/eventAnalyticsRoutes.js";
 import adminRoutes from "./router/adminRoutes.js";
 import vendorRoutes from "./router/vendorRoutes.js";
 
+import passport from 'passport';
+import { configureGoogleStrategy } from './config/passport.js';
+
 // Import Error Middleware
 import { errorHandler } from './middleware/errorMiddleware.js';
 
 const app = express();
-
+configureGoogleStrategy();
+app.use(passport.initialize());
 connect_Db();
 
 

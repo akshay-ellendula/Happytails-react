@@ -17,7 +17,10 @@ const customerSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true,
+        required: function() {
+            // Password is required only if not using Google login
+            return !this.googleId;
+        },
     },
     addresses: [{
         name: { type: String, default: "" },
@@ -35,23 +38,40 @@ const customerSchema = new mongoose.Schema({
         default: true
     },
     resetPasswordToken: String,
-    resetPasswordExpire: Date
+    resetPasswordExpire: Date,
+    // Google Login Fields
+    googleId: {
+        type: String,
+        sparse: true,
+        unique: true,
+        index: true
+    },
+    isGoogleLogin: {
+        type: Boolean,
+        default: false
+    }
 }, {
     timestamps: true,
 });
 
 customerSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
+    // Only hash password if it's modified and password exists
+    if (this.isModified("password") && this.password) {
+        try {
+            const salt = await bcrypt.genSalt(10);
+            this.password = await bcrypt.hash(this.password, salt);
+            next();
+        } catch (error) {
+            next(error);
+        }
+    } else {
         next();
-    } catch (error) {
-        next(error);
     }
 })
 
 customerSchema.methods.matchPassword = async function (enteredPassword) {
+    // If user is Google login only and doesn't have password, return false
+    if (!this.password) return false;
     return await bcrypt.compare(enteredPassword, this.password);
 }
 
