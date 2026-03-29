@@ -1756,33 +1756,47 @@ const getVendorDashboard = async (req, res, next) => {
   }
 };
 
-const changePassword = async (req, res, next) => {
+const changePassword = async (req, res) => {
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!newPassword || newPassword.length < 6) {
+    return sendError(res, "New password must be at least 6 characters", 400);
+  }
+
   try {
-    const vendorObjectId = new mongoose.Types.ObjectId(req.user.vendorId);
-    const { currentPassword, newPassword } = req.body;
+    const vendor = await Vendor.findById(vendorId);
+    if (!vendor) return sendError(res, "Vendor not found", 404);
 
-    if (!currentPassword || !newPassword) {
-      return sendError(res, "Please provide both current and new passwords.");
+    // Google-login vendor with no password set yet — allow setting one directly
+    if (!vendor.password) {
+      const salt = await bcrypt.genSalt(10);
+      vendor.password = await bcrypt.hash(newPassword, salt);
+      await vendor.save({ validateBeforeSave: false });
+      return res.status(200).json({
+        success: true,
+        message: "Password set successfully! You can now log in with email & password too.",
+      });
     }
 
-    const vendor = await Vendor.findById(vendorObjectId);
-    if (!vendor) {
-      return sendError(res, "Vendor not found.");
+    // Normal vendor — verify current password first
+    if (!currentPassword) {
+      return sendError(res, "Current password is required", 400);
     }
-
     const isMatch = await bcrypt.compare(currentPassword, vendor.password);
     if (!isMatch) {
-      return sendError(res, "Incorrect current password.");
+      return sendError(res, "Current password is incorrect", 401);
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    vendor.password = hashedPassword;
-    await vendor.save();
+    const salt = await bcrypt.genSalt(10);
+    vendor.password = await bcrypt.hash(newPassword, salt);
+    await vendor.save({ validateBeforeSave: false });
 
-    sendJson(res, { message: "Password updated successfully." });
+    res.status(200).json({ success: true, message: "Password updated successfully" });
   } catch (error) {
-    console.error("Change Password Error:", error);
-    next(error);
+    console.error("changePassword error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 

@@ -91,17 +91,19 @@ export const configureGoogleStrategy = () => {
                         if (role === 'eventManager') {
                             userData.companyName = '';
                             userData.phoneNumber = '';
-                        } else if (role === 'vendor') {
+                        } else if (role === 'vendor' || role === 'storePartner') {
                             userData.name = userName;
                             userData.store_name = '';
                             userData.contact_number = '';
                             userData.store_location = '';
                         }
                         
-                        // For customer, we don't need password since it's Google login
-                        // The password field will be empty
-                        
-                        user = await Model.create(userData);
+                        // Use new Model() + save({ validateBeforeSave: false }) so that
+                        // Mongoose's conditional "required" validators (which check this.googleId)
+                        // are not triggered — Model.create() validates before googleId is fully
+                        // attached to the document context, causing spurious validation errors.
+                        user = new Model(userData);
+                        await user.save({ validateBeforeSave: false });
                         console.log('User created successfully');
                     } else {
                         console.log('Existing user found');
@@ -109,7 +111,7 @@ export const configureGoogleStrategy = () => {
                         if (!user.googleId) {
                             user.googleId = googleId;
                             user.isGoogleLogin = true;
-                            await user.save();
+                            await user.save({ validateBeforeSave: false });
                             console.log('Updated user with Google ID');
                         }
                     }

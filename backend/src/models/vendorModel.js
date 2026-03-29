@@ -5,11 +5,18 @@ import crypto from "crypto";
 const vendorSchema = new mongoose.Schema({
     name: { 
         type: String, 
-        required: true 
+        required: function() {
+            // Only required for manual signup, not Google login
+            return !this.googleId;
+        },
+        default: ''
     },
     contact_number: { 
         type: String, 
-        required: true 
+        required: function() {
+            return !this.googleId;
+        },
+        default: ''
     },
     email: { 
         type: String, 
@@ -25,12 +32,20 @@ const vendorSchema = new mongoose.Schema({
     },
     store_name: { 
         type: String, 
-        required: true, 
-        unique: true 
+        // NOT unique — Google users start with empty store_name, which would
+        // cause E11000 duplicate key errors if multiple Google vendors are created.
+        // Store names are enforced to be unique at the application level instead.
+        required: function() {
+            return !this.googleId;
+        },
+        default: ''
     },
     store_location: { 
         type: String, 
-        required: true 
+        required: function() {
+            return !this.googleId;
+        },
+        default: ''
     },
     description: { 
         type: String, 
@@ -55,26 +70,11 @@ const vendorSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-// Add pre-save middleware for password hashing (was missing)
-vendorSchema.pre('save', async function(next) {
-    // Clean store name
-    if (this.store_name) {
-        this.store_name = this.store_name.trim().replace(/[^a-zA-Z0-9\s]/g, '');
-    }
-    
-    // Hash password if modified and password exists
-    if (this.isModified('password') && this.password) {
-        try {
-            const salt = await bcrypt.genSalt(10);
-            this.password = await bcrypt.hash(this.password, salt);
-        } catch (error) {
-            return next(error);
-        }
-    }
-    next();
-});
+// NOTE: Password hashing is handled EXPLICITLY in the controllers (authControllers.js
+// and vendorController.js) using bcrypt.hash(). There is NO pre-save hook here to
+// prevent double-hashing.
 
-// Add matchPassword method for vendor (was missing)
+// matchPassword method
 vendorSchema.methods.matchPassword = async function(enteredPassword) {
     // If user is Google login only and doesn't have password, return false
     if (!this.password) return false;

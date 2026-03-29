@@ -21,7 +21,9 @@ const RoleBasedRoute = ({ children, allowedRoles }) => {
   if (!user) {
     const isServiceRoute =
       location.pathname.includes("eventManager") ||
-      location.pathname.includes("store");
+      location.pathname.includes("store") ||
+      location.pathname.includes("shop") ||
+      location.pathname.includes("vendor");
     return (
       <Navigate
         to={isServiceRoute ? "/service-login" : "/login"}

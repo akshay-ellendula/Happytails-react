@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../../hooks/useAuth";
 import { axiosInstance } from "../../../utils/axios";
 import {
   LayoutDashboard,
@@ -22,10 +23,11 @@ const ShopManagerLayout = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const { signout } = useAuth();
 
   const handleLogout = async () => {
-    await axiosInstance.post("/vendors/logout");
-    navigate("/service-login");
+    await signout();     // ← clears AuthContext user + calls backend logout
+    navigate("/service-login", { replace: true });
   };
 
   const isActive = (path) => location.pathname.includes(path);
@@ -87,7 +89,7 @@ const ShopManagerLayout = () => {
     };
 
     loadStats();
-  }, [navigate, location.pathname]);
+  }, [navigate]); // ← removed location.pathname — re-fetching on every nav change caused flicker
 
   return (
     <div className="font-sans bg-gray-50 min-h-screen transition-colors duration-200">

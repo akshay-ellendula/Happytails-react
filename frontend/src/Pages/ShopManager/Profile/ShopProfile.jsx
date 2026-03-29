@@ -154,8 +154,8 @@ const ShopProfile = () => {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });
-      if (res.data.message) {
-        toast.success(res.data.message);
+      if (res.data.success) {
+        toast.success(res.data.message || "Password updated successfully");
         setShowPasswordModal(false);
         setPasswordData({
           currentPassword: "",
@@ -164,7 +164,11 @@ const ShopProfile = () => {
         });
       }
     } catch (err) {
-      toast.error(err.response?.data?.error || "Failed to update password");
+      toast.error(
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Failed to update password"
+      );
     }
   };
 

@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
     customer: { signin: "/auth/signin", signup: "/auth/signup" },
     eventManager: { signin: "/auth/eventManagerSignin", signup: "/auth/eventManagerSignup" },
     storePartner: { signin: "/auth/storeSignin", signup: "/auth/storeSignup" },
+    vendor: { signin: "/auth/storeSignin", signup: "/auth/storeSignup" },
     admin: { signin: "/auth/adminSignin", signup: "/auth/adminSignup" },
   }), []);
 
