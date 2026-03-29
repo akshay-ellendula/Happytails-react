@@ -1,5 +1,3 @@
-
-
 /**
  * @swagger
  * tags:
@@ -20,10 +18,22 @@
  *         description: A list of customers
  *         content:
  *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Customer'
+ *             example:
+ *               - _id: "67f11c8ab8f4472fdd5bc001"
+ *                 userName: "Jane Doe"
+ *                 email: "jane.doe@gmail.com"
+ *                 profilePic: "https://avatar-api-theta.vercel.app/17.png"
+ *                 phoneNumber: "9876543210"
+ *                 addresses:
+ *                   - name: "Home"
+ *                     houseNumber: "22"
+ *                     streetNo: "Lake View Road"
+ *                     city: "Chennai"
+ *                     pincode: "600001"
+ *                     isDefault: true
+ *                 isActive: true
+ *                 createdAt: "2026-03-15T09:00:00.000Z"
+ *                 updatedAt: "2026-03-30T10:30:00.000Z"
  *       401:
  *         description: Unauthorized
  */
@@ -48,11 +58,24 @@
  *         description: Customer details
  *         content:
  *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Customer'
+ *             example:
+ *               _id: "67f11c8ab8f4472fdd5bc001"
+ *               userName: "Jane Doe"
+ *               email: "jane.doe@gmail.com"
+ *               profilePic: "https://avatar-api-theta.vercel.app/17.png"
+ *               phoneNumber: "9876543210"
+ *               addresses:
+ *                 - name: "Home"
+ *                   houseNumber: "22"
+ *                   streetNo: "Lake View Road"
+ *                   city: "Chennai"
+ *                   pincode: "600001"
+ *                   isDefault: true
+ *               isActive: true
+ *               createdAt: "2026-03-15T09:00:00.000Z"
+ *               updatedAt: "2026-03-30T10:30:00.000Z"
  *       404:
  *         description: Customer not found
- *
  *   put:
  *     summary: Update a customer
  *     tags: [Customers]
@@ -71,11 +94,13 @@
  *         multipart/form-data:
  *           schema:
  *             type: object
+ *             required: [userName, email]
  *             properties:
  *               userName:
  *                 type: string
  *               email:
  *                 type: string
+ *                 format: email
  *               phoneNumber:
  *                 type: string
  *               addresses:
@@ -88,13 +113,31 @@
  *     responses:
  *       200:
  *         description: Customer updated successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "Customer updated successfully"
+ *               user:
+ *                 customerId: "67f11c8ab8f4472fdd5bc001"
+ *                 userName: "Jane Doe"
+ *                 email: "jane.doe@gmail.com"
+ *                 profilePic: "https://avatar-api-theta.vercel.app/17.png"
+ *                 phoneNumber: "9876543210"
+ *                 addresses:
+ *                   - name: "Home"
+ *                     houseNumber: "22"
+ *                     streetNo: "Lake View Road"
+ *                     city: "Chennai"
+ *                     pincode: "600001"
+ *                     isDefault: true
+ *                 role: "customer"
  *       400:
- *         description: Bad request
+ *         description: Invalid request body, email, or address format
  *       403:
  *         description: Forbidden
  *       404:
  *         description: Customer not found
- *
  *   delete:
  *     summary: Delete a customer
  *     tags: [Customers]
@@ -110,6 +153,11 @@
  *     responses:
  *       200:
  *         description: Customer deleted successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "Customer deleted successfully"
  *       404:
  *         description: Customer not found
  */
@@ -132,6 +180,11 @@
  *     responses:
  *       200:
  *         description: Customer status updated
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "Customer status updated"
  *       404:
  *         description: Customer not found
  */

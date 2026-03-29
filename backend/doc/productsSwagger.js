@@ -1,45 +1,87 @@
-
 /**
  * @swagger
  * tags:
  *   name: Products
- *   description: Product and order APIs
+ *   description: Product catalog, checkout, and order APIs
  */
 
 /**
  * @swagger
  * /api/products/getProducts:
  *   get:
- *     summary: Get all pet accessories
+ *     summary: Get the public product catalog
  *     tags: [Products]
+ *     security: []
  *     responses:
  *       200:
- *         description: List of products
+ *         description: Product catalog returned successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               products:
+ *                 - id: "67f11c8ab8f4472fdd5be201"
+ *                   product_name: "Premium Dog Food"
+ *                   product_type: "food"
+ *                   product_category: "Nutrition"
+ *                   variants:
+ *                     - variant_id: "67f11c8ab8f4472fdd5be202"
+ *                       size: "5kg"
+ *                       color: null
+ *                       regular_price: 1200
+ *                       sale_price: 999
+ *                       stock_quantity: 18
+ *                   image_data: "https://res.cloudinary.com/demo/image/upload/product-main.jpg"
+ *               filters:
+ *                 productTypes: ["food", "toy"]
+ *                 colors: ["blue", "red"]
+ *                 sizes: ["5kg", "large"]
+ *                 maxPrice: 1200
  */
 
 /**
  * @swagger
  * /api/products/getProduct/{id}:
  *   get:
- *     summary: Get single product details
+ *     summary: Get public product details
  *     tags: [Products]
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         description: Product ID
  *         schema:
  *           type: string
  *     responses:
  *       200:
- *         description: Product details
+ *         description: Product returned successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               product:
+ *                 id: "67f11c8ab8f4472fdd5be201"
+ *                 product_name: "Premium Dog Food"
+ *                 product_type: "Food"
+ *                 product_category: "Nutrition"
+ *                 product_description: "Balanced daily nutrition for adult dogs."
+ *                 variants:
+ *                   - variant_id: "67f11c8ab8f4472fdd5be202"
+ *                     size: "5kg"
+ *                     color: null
+ *                     regular_price: 1200
+ *                     sale_price: 999
+ *                     stock_quantity: 18
+ *                 image_data: "https://res.cloudinary.com/demo/image/upload/product-main.jpg"
+ *       404:
+ *         description: Product not found
  */
 
 /**
  * @swagger
  * /api/products/checkout:
  *   post:
- *     summary: Checkout products
+ *     summary: Start checkout for the current customer
  *     tags: [Products]
  *     security:
  *       - bearerAuth: []
@@ -49,47 +91,107 @@
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [cart, selectedAddress]
  *             properties:
- *               items:
+ *               cart:
  *                 type: array
  *                 items:
  *                   type: object
  *                   properties:
- *                     productId:
+ *                     product_id:
+ *                       type: string
+ *                     variant_id:
+ *                       type: string
+ *                     product_name:
  *                       type: string
  *                     quantity:
  *                       type: number
- *               totalAmount:
- *                 type: number
+ *                     price:
+ *                       type: number
+ *                     size:
+ *                       type: string
+ *                     color:
+ *                       type: string
+ *               selectedAddress:
+ *                 type: object
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                   houseNumber:
+ *                     type: string
+ *                   streetNo:
+ *                     type: string
+ *                   city:
+ *                     type: string
+ *                   pincode:
+ *                     type: string
  *     responses:
  *       200:
- *         description: Checkout successful
+ *         description: Checkout session created successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               redirectUrl: "/payment"
+ *       400:
+ *         description: Invalid cart or shipping address
  */
 
 /**
  * @swagger
  * /api/products/process-payment:
  *   post:
- *     summary: Process payment for order
+ *     summary: Complete payment for the active checkout session
  *     tags: [Products]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [cardNumber, expiryDate, cvv]
+ *             properties:
+ *               cardNumber:
+ *                 type: string
+ *               expiryDate:
+ *                 type: string
+ *               cvv:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Payment processed successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "Payment processed successfully"
+ *               orderId: "67f11c8ab8f4472fdd5be301"
+ *       400:
+ *         description: Missing or invalid payment details
  */
 
 /**
  * @swagger
  * /api/products/getUserOrders:
  *   get:
- *     summary: Get logged-in user's orders
+ *     summary: Get orders for the current customer
  *     tags: [Products]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: List of user orders
+ *         description: User orders returned successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               orders:
+ *                 - _id: "67f11c8ab8f4472fdd5be301"
+ *                   status: "Pending"
+ *                   total_amount: 1038.96
+ *                   order_date: "2026-03-30T10:30:00.000Z"
  */
 
 /**
@@ -108,7 +210,13 @@
  *           type: string
  *     responses:
  *       200:
- *         description: Order placed again successfully
+ *         description: Reorder completed successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               message: "Order placed successfully"
+ *               orderId: "67f11c8ab8f4472fdd5be401"
+ *       404:
+ *         description: Order not found
  */
-
-
