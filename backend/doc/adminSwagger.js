@@ -1,20 +1,15 @@
 /**
  * @swagger
- * tags:
- *   name: Admin
- *   description: Admin management APIs
- */
-
-/**
- * @swagger
  * /api/admin/logout:
  *   get:
  *     summary: Logout admin
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
  */
-
 
 /**
  * @swagger
@@ -24,8 +19,10 @@
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dashboard stats fetched
  */
-
 
 /**
  * @swagger
@@ -35,8 +32,10 @@
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Revenue data fetched
  */
-
 
 /**
  * @swagger
@@ -46,8 +45,10 @@
  *     tags: [Admin Customers]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Customers list fetched
  */
-
 
 /**
  * @swagger
@@ -57,8 +58,16 @@
  *     tags: [Admin Customers]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer fetched successfully
  */
-
 
 /**
  * @swagger
@@ -68,8 +77,25 @@
  *     tags: [Admin Customers]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             example:
+ *               name: John Doe
+ *               email: john@example.com
+ *     responses:
+ *       200:
+ *         description: Customer updated successfully
  */
-
 
 /**
  * @swagger
@@ -79,8 +105,16 @@
  *     tags: [Admin Customers]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Customer deleted successfully
  */
-
 
 /**
  * @swagger
@@ -90,8 +124,10 @@
  *     tags: [Admin Vendors]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Vendors fetched
  */
-
 
 /**
  * @swagger
@@ -101,8 +137,16 @@
  *     tags: [Admin Vendors]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Vendor fetched successfully
  */
-
 
 /**
  * @swagger
@@ -112,7 +156,11 @@
  *     tags: [Admin Products]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Products fetched
  */
+
 /**
  * @swagger
  * /api/admin/products/add:
@@ -121,6 +169,25 @@
  *     tags: [Admin Products]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       200:
+ *         description: Product added successfully
  */
 
 
@@ -132,8 +199,16 @@
  *     tags: [Admin Products]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Product deleted successfully
  */
-
 
 /**
  * @swagger
@@ -143,6 +218,9 @@
  *     tags: [Admin EventManagers]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Event managers fetched
  */
 
 
@@ -154,6 +232,9 @@
  *     tags: [Admin Events]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Events fetched
  */
 
 
@@ -165,6 +246,15 @@
  *     tags: [Admin Events]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Event deleted successfully
  */
 
 /**
@@ -175,8 +265,10 @@
  *     tags: [Admin Orders]
  *     security:
  *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Orders fetched
  */
-
 
 /**
  * @swagger
@@ -186,5 +278,14 @@
  *     tags: [Admin Orders]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Order details fetched
  */
 
