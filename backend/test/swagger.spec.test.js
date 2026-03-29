@@ -36,7 +36,7 @@ test("swagger spec includes key examples and corrected request fields", () => {
   const ticketRequestSchema =
     swaggerSpec.paths["/api/tickets/{id}"]?.post?.requestBody?.content?.["application/json"]?.schema;
   assert.ok(ticketRequestSchema, "Missing /api/tickets/{id} POST request schema");
-  assert.deepEqual(ticketRequestSchema.required, ["numberOfTickets", "name", "phone", "email"]);
+  assert.deepEqual(ticketRequestSchema.required, ["numberOfTickets", "name", "phone", "email", "paymentIntentId"]);
   assert.deepEqual(Object.keys(ticketRequestSchema.properties), [
     "numberOfTickets",
     "name",
@@ -45,7 +45,11 @@ test("swagger spec includes key examples and corrected request fields", () => {
     "petName",
     "petBreed",
     "petAge",
+    "paymentIntentId",
   ]);
+
+  const ticketPaymentIntentOperation = swaggerSpec.paths["/api/tickets/create-payment-intent/{id}"]?.post;
+  assert.ok(ticketPaymentIntentOperation, "Missing /api/tickets/create-payment-intent/{id} POST operation");
 
   const customerUpdateExample =
     swaggerSpec.paths["/api/public/{id}"]?.put?.responses?.["200"]?.content?.["application/json"]?.example;

@@ -110,17 +110,16 @@ const BookingPage = () => {
     setShowModal(true); // Open payment modal
   };
 
-  // UPDATED FUNCTION
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (paymentIntentId) => {
     try {
-      // Make API call to create ticket with ALL details
       await axiosInstance.post(`/tickets/${event.id}`, {
         numberOfTickets: ticketCount,
         name: formData.name,
         phone: formData.phone,
         email: formData.email,
-        // We intentionally exclude formData.state here
+        paymentIntentId,
       });
+      toast.success("Booking confirmed!");
       setTimeout(() => {
         navigate("/");
       }, 3000);
@@ -183,6 +182,8 @@ const BookingPage = () => {
         onClose={() => setShowModal(false)}
         onPaymentSuccess={handlePaymentSuccess}
         grandTotal={grandTotal}
+        eventId={event?.id}
+        numberOfTickets={ticketCount}
       />
     </div>
   );

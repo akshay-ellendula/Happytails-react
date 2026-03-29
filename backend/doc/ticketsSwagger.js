@@ -131,6 +131,44 @@
 
 /**
  * @swagger
+ * /api/tickets/create-payment-intent/{id}:
+ *   post:
+ *     summary: Create a Stripe payment intent for an event ticket purchase
+ *     tags: [Tickets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Event id
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [numberOfTickets]
+ *             properties:
+ *               numberOfTickets:
+ *                 type: number
+ *     responses:
+ *       200:
+ *         description: Stripe payment intent created successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               success: true
+ *               clientSecret: "pi_3N..._secret_..."
+ *               totalPrice: 500
+ *       404:
+ *         description: Event not found
+ */
+
+/**
+ * @swagger
  * /api/tickets/{id}:
  *   post:
  *     summary: Purchase tickets for an event
@@ -150,7 +188,7 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [numberOfTickets, name, phone, email]
+ *             required: [numberOfTickets, name, phone, email, paymentIntentId]
  *             properties:
  *               numberOfTickets:
  *                 type: number
@@ -167,6 +205,8 @@
  *                 type: string
  *               petAge:
  *                 type: number
+ *               paymentIntentId:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Ticket purchased successfully

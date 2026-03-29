@@ -4,6 +4,126 @@ import { Order, OrderItem } from '../models/orderModel.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import uploadToCloudinary from '../utils/cloudinaryUploader.js';
+import Stripe from 'stripe';
+import { randomUUID } from 'crypto';
+
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? new Stripe(process.env.STRIPE_SECRET_KEY)
+    : null;
+const CHECKOUT_COOKIE_NAME = 'checkout_session';
+
+const getCheckoutCookieOptions = () => ({
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 10 * 60 * 1000,
+});
+
+const clearCheckoutSessionCookie = (res) => {
+    res.clearCookie(CHECKOUT_COOKIE_NAME, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+    });
+};
+
+const parseCheckoutSession = (req) => {
+    const sessionCookie = req.cookies[CHECKOUT_COOKIE_NAME];
+    if (!sessionCookie) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(sessionCookie);
+    } catch (_) {
+        return null;
+    }
+};
+
+const buildValidatedCart = async (cart) => {
+    if (!Array.isArray(cart) || cart.length === 0) {
+        throw new Error('Cart is empty or invalid');
+    }
+
+    const normalizedCart = cart.map((item, index) => {
+        const quantity = Number(item?.quantity);
+
+        if (
+            !item?.product_id ||
+            !mongoose.Types.ObjectId.isValid(item.product_id) ||
+            !item?.variant_id ||
+            !mongoose.Types.ObjectId.isValid(item.variant_id)
+        ) {
+            throw new Error(`Cart item ${index + 1} is invalid`);
+        }
+
+        if (!Number.isInteger(quantity) || quantity < 1) {
+            throw new Error(`Quantity for cart item ${index + 1} must be at least 1`);
+        }
+
+        return {
+            product_id: item.product_id,
+            variant_id: item.variant_id,
+            quantity,
+        };
+    });
+
+    const productIds = [...new Set(normalizedCart.map(item => item.product_id))];
+    const variantIds = [...new Set(normalizedCart.map(item => item.variant_id))];
+
+    const [products, variants] = await Promise.all([
+        Product.find({ _id: { $in: productIds } })
+            .select('_id product_name vendor_id')
+            .lean(),
+        ProductVariant.find({ _id: { $in: variantIds } })
+            .select('_id product_id size color regular_price sale_price stock_quantity')
+            .lean()
+    ]);
+
+    const productMap = new Map(products.map(product => [product._id.toString(), product]));
+    const variantMap = new Map(variants.map(variant => [variant._id.toString(), variant]));
+
+    let subtotal = 0;
+
+    const cleanCart = normalizedCart.map((item) => {
+        const product = productMap.get(item.product_id);
+        const variant = variantMap.get(item.variant_id);
+
+        if (!product || !variant || variant.product_id.toString() !== item.product_id) {
+            throw new Error('One or more cart items are no longer available');
+        }
+
+        if (variant.stock_quantity < item.quantity) {
+            throw new Error(`Only ${variant.stock_quantity} item(s) left for ${product.product_name}`);
+        }
+
+        const unitPrice = Number(variant.sale_price ?? variant.regular_price);
+        if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+            throw new Error(`Pricing is unavailable for ${product.product_name}`);
+        }
+
+        subtotal += unitPrice * item.quantity;
+
+        return {
+            product_id: product._id.toString(),
+            variant_id: variant._id.toString(),
+            product_name: product.product_name,
+            quantity: item.quantity,
+            price: unitPrice,
+            size: variant.size || null,
+            color: variant.color || null,
+        };
+    });
+
+    const roundedSubtotal = Number(subtotal.toFixed(2));
+    const charge = Number((roundedSubtotal * 0.04).toFixed(2));
+    const total = Number((roundedSubtotal + charge).toFixed(2));
+
+    return {
+        cleanCart,
+        orderTotals: { subtotal: roundedSubtotal, charge, total }
+    };
+};
 
 const getPetAccessories = async (req, res, next) => {
     try {
@@ -180,50 +300,42 @@ const checkout = async (req, res, next) => {
         }
         
         const { cart, selectedAddress } = req.body;
+        const normalizedAddress = {
+            name: selectedAddress?.name?.trim?.() || '',
+            houseNumber: selectedAddress?.houseNumber?.trim?.() || '',
+            streetNo: selectedAddress?.streetNo?.trim?.() || '',
+            city: selectedAddress?.city?.trim?.() || '',
+            pincode: selectedAddress?.pincode?.toString?.().trim?.() || '',
+        };
 
-        if (!selectedAddress || !selectedAddress.city || !selectedAddress.pincode) {
+        if (!normalizedAddress.city || !normalizedAddress.pincode) {
             return res.status(400).json({
                 success: false,
                 message: 'Please provide a valid shipping address.'
             });
         }
 
-        // Basic cart validation (adjust according to your needs)
-        if (!Array.isArray(cart) || cart.length === 0) {
-            return res.status(400).json({ success: false, message: 'Cart is empty or invalid' });
+        let cleanCart;
+        let orderTotals;
+        try {
+            ({ cleanCart, orderTotals } = await buildValidatedCart(cart));
+        } catch (validationError) {
+            return res.status(400).json({
+                success: false,
+                message: validationError.message,
+            });
         }
 
-        let subtotal = 0;
-        const cleanCart = cart.map(item => {
-            subtotal += item.price * item.quantity;
-            return {
-                product_id: item.product_id,
-                variant_id: item.variant_id,
-                product_name: item.product_name,
-                quantity: Number(item.quantity),
-                price: Number(item.price),
-                size: item.size || null,
-                color: item.color || null
-            };
-        });
-
-        const charge = subtotal * 0.04;
-        const total = subtotal + charge;
-
-        const orderTotals = { subtotal, charge, total };
-
         const sessionData = {
+            checkoutSessionId: randomUUID(),
+            customerId: customerID.toString(),
             cart: cleanCart,
             orderTotals,
-            selectedAddress,
+            selectedAddress: normalizedAddress,
+            paymentIntentId: null,
         };
 
-        res.cookie('checkout_session', JSON.stringify(sessionData), {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 10 * 60 * 1000 // 10 minutes
-        });
+        res.cookie(CHECKOUT_COOKIE_NAME, JSON.stringify(sessionData), getCheckoutCookieOptions());
 
         return res.json({
             success: true,
@@ -236,23 +348,145 @@ const checkout = async (req, res, next) => {
     }
 };
 
-const processPayment = async (req, res, next) => {
+const createProductPaymentIntent = async (req, res, next) => {
     try {
-        const sessionCookie = req.cookies.checkout_session;
-        if (!sessionCookie) {
+        if (!stripe) {
+            return res.status(500).json({
+                success: false,
+                message: 'Stripe test mode is not configured on the server'
+            });
+        }
+
+        const sessionData = parseCheckoutSession(req);
+        if (!sessionData) {
             return res.status(400).json({ success: false, message: 'Session expired or invalid' });
         }
 
-        const sessionData = JSON.parse(sessionCookie);
-        const { cart, orderTotals, selectedAddress } = sessionData;
-
-        const { cardNumber, expiryDate, cvv } = req.body;
-
-        const cleanCardNumber = cardNumber.replace(/\s/g, '');
-        if (cleanCardNumber.length !== 16 || isNaN(cleanCardNumber)) {
-            return res.status(400).json({ success: false, message: 'Invalid card number' });
+        if (sessionData.customerId !== req.user.customerId.toString()) {
+            clearCheckoutSessionCookie(res);
+            return res.status(403).json({ success: false, message: 'Checkout session does not belong to this user' });
         }
-        const paymentLastFour = cleanCardNumber.slice(-4);
+
+        const { orderTotals, checkoutSessionId } = sessionData;
+        const amountInPaise = Math.round(orderTotals.total * 100);
+
+        let paymentIntent = null;
+
+        if (sessionData.paymentIntentId) {
+            try {
+                const existingPaymentIntent = await stripe.paymentIntents.retrieve(sessionData.paymentIntentId);
+                const metadataMatches = existingPaymentIntent.metadata?.checkoutType === 'product'
+                    && existingPaymentIntent.metadata?.customerId === req.user.customerId.toString()
+                    && existingPaymentIntent.metadata?.checkoutSessionId === checkoutSessionId;
+                const amountMatches = existingPaymentIntent.amount === amountInPaise
+                    && existingPaymentIntent.currency === 'inr';
+
+                if (metadataMatches && amountMatches) {
+                    if (existingPaymentIntent.status === 'succeeded') {
+                        return res.json({
+                            success: true,
+                            paymentCompleted: true,
+                            paymentIntentId: existingPaymentIntent.id,
+                        });
+                    }
+
+                    if (['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(existingPaymentIntent.status)) {
+                        paymentIntent = existingPaymentIntent;
+                    }
+                }
+            } catch (stripeError) {
+                console.warn('Unable to reuse existing payment intent:', stripeError.message);
+            }
+        }
+
+        if (!paymentIntent) {
+            paymentIntent = await stripe.paymentIntents.create({
+                amount: amountInPaise,
+                currency: 'inr',
+                payment_method_types: ['card'],
+                metadata: {
+                    checkoutType: 'product',
+                    checkoutSessionId,
+                    customerId: req.user.customerId.toString(),
+                },
+            });
+
+            sessionData.paymentIntentId = paymentIntent.id;
+            res.cookie(CHECKOUT_COOKIE_NAME, JSON.stringify(sessionData), getCheckoutCookieOptions());
+        }
+
+        return res.json({
+            success: true,
+            clientSecret: paymentIntent.client_secret,
+        });
+    } catch (err) {
+        console.error('Create payment intent error:', err);
+        next(err);
+    }
+};
+
+const processPayment = async (req, res, next) => {
+    try {
+        if (!stripe) {
+            return res.status(500).json({
+                success: false,
+                message: 'Stripe test mode is not configured on the server'
+            });
+        }
+
+        const sessionData = parseCheckoutSession(req);
+        if (!sessionData) {
+            return res.status(400).json({ success: false, message: 'Session expired or invalid' });
+        }
+
+        if (sessionData.customerId !== req.user.customerId.toString()) {
+            clearCheckoutSessionCookie(res);
+            return res.status(403).json({ success: false, message: 'Checkout session does not belong to this user' });
+        }
+
+        const { cart, orderTotals, selectedAddress, paymentIntentId: sessionPaymentIntentId, checkoutSessionId } = sessionData;
+
+        const { paymentIntentId } = req.body;
+        if (!paymentIntentId) {
+            return res.status(400).json({ success: false, message: 'Payment intent ID is required' });
+        }
+
+        if (!sessionPaymentIntentId || sessionPaymentIntentId !== paymentIntentId) {
+            return res.status(400).json({ success: false, message: 'Payment intent does not match the active checkout session' });
+        }
+
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (paymentIntent.status !== 'succeeded') {
+            return res.status(400).json({ success: false, message: 'Payment not completed' });
+        }
+
+        const expectedAmountInPaise = Math.round(orderTotals.total * 100);
+        const paymentMatchesCheckout = paymentIntent.metadata?.checkoutType === 'product'
+            && paymentIntent.metadata?.customerId === req.user.customerId.toString()
+            && paymentIntent.metadata?.checkoutSessionId === checkoutSessionId
+            && paymentIntent.amount === expectedAmountInPaise
+            && paymentIntent.currency === 'inr';
+
+        if (!paymentMatchesCheckout) {
+            return res.status(400).json({ success: false, message: 'Payment verification failed for this checkout session' });
+        }
+
+        const existingOrder = await Order.findOne({ payment_intent_id: paymentIntent.id }).lean();
+        if (existingOrder) {
+            clearCheckoutSessionCookie(res);
+            return res.json({
+                success: true,
+                redirectUrl: '/my_orders'
+            });
+        }
+
+        let paymentLastFour = '0000';
+        if (paymentIntent.payment_method) {
+            try {
+                const pm = await stripe.paymentMethods.retrieve(paymentIntent.payment_method);
+                paymentLastFour = pm.card?.last4 || '0000';
+            } catch (_) { /* non-critical */ }
+        }
 
         const session = await mongoose.startSession();
         session.startTransaction();
@@ -264,6 +498,7 @@ const processPayment = async (req, res, next) => {
                 status: 'Pending',
                 subtotal: orderTotals.subtotal,
                 total_amount: orderTotals.total,
+                payment_intent_id: paymentIntent.id,
                 payment_last_four: paymentLastFour,
                 shippingAddress: selectedAddress
             }], { session });
@@ -300,10 +535,8 @@ const processPayment = async (req, res, next) => {
             }
 
             await OrderItem.insertMany(orderItems, { session });
-
             await session.commitTransaction();
-
-            res.clearCookie('checkout_session');
+            clearCheckoutSessionCookie(res);
 
             return res.json({
                 success: true,
@@ -410,6 +643,7 @@ export {
     getPetAccessories,
     getProduct,
     checkout,
+    createProductPaymentIntent,
     processPayment,
     getUserOrders,
     reorder,

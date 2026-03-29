@@ -116,13 +116,14 @@ Create a `.env` file in the `backend/` root directory and add the following:
 ```env
 PORT=5001
 MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
+JWT_SECRET_KEY=your_jwt_secret_key
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 EMAIL_USER=your_email_for_nodemailer
 EMAIL_PASS=your_email_app_password
-CLIENT_URL=http://localhost:5173
+FRONTEND_URL=http://localhost:5173
+STRIPE_SECRET_KEY=sk_test_your_stripe_test_secret_key
 
 ```
 
@@ -156,7 +157,30 @@ npm run dev
 
 ```
 
+Create a `.env` file in `frontend/` with:
+
+```env
+VITE_BACKEND_URL=http://localhost:5001/api
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_test_publishable_key
+```
+
 *The frontend runs on http://localhost:5173 by default.*
+
+### 4. Stripe Test Mode
+
+This project uses Stripe Payment Intents in **test mode** for both event tickets and product checkout.
+
+Use Stripe test API keys:
+
+* `STRIPE_SECRET_KEY` in `backend/.env`
+* `VITE_STRIPE_PUBLISHABLE_KEY` in `frontend/.env`
+
+For demo payments, use Stripe's common test card:
+
+* Card Number: `4242 4242 4242 4242`
+* Expiry: any future date
+* CVV: any 3 digits
+* OTP/3DS: use the Stripe test prompt when shown
 
 ---
 

@@ -139,6 +139,37 @@
 
 /**
  * @swagger
+ * /api/products/create-payment-intent:
+ *   post:
+ *     summary: Create or reuse a Stripe payment intent for the active product checkout session
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Stripe payment intent is ready
+ *         content:
+ *           application/json:
+ *             examples:
+ *               freshIntent:
+ *                 value:
+ *                   success: true
+ *                   clientSecret: "pi_3N..._secret_..."
+ *               alreadyPaid:
+ *                 value:
+ *                   success: true
+ *                   paymentCompleted: true
+ *                   paymentIntentId: "pi_3N..."
+ *       400:
+ *         description: Checkout session is missing or invalid
+ *       403:
+ *         description: Checkout session does not belong to the signed-in user
+ *       500:
+ *         description: Stripe is not configured
+ */
+
+/**
+ * @swagger
  * /api/products/process-payment:
  *   post:
  *     summary: Complete payment for the active checkout session
@@ -151,13 +182,9 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [cardNumber, expiryDate, cvv]
+ *             required: [paymentIntentId]
  *             properties:
- *               cardNumber:
- *                 type: string
- *               expiryDate:
- *                 type: string
- *               cvv:
+ *               paymentIntentId:
  *                 type: string
  *     responses:
  *       200:
@@ -166,10 +193,11 @@
  *           application/json:
  *             example:
  *               success: true
- *               message: "Payment processed successfully"
- *               orderId: "67f11c8ab8f4472fdd5be301"
+ *               redirectUrl: "/my_orders"
  *       400:
- *         description: Missing or invalid payment details
+ *         description: Missing payment intent or payment verification failed
+ *       403:
+ *         description: Checkout session does not belong to the signed-in user
  */
 
 /**

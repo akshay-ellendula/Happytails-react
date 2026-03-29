@@ -96,16 +96,8 @@ const GoogleLoginHandler = () => {
     const googleSuccess = searchParams.get('google_login_success');
     const googleError = searchParams.get('error');
     const errorDetails = searchParams.get('details');
-    
-    console.log('Google login params received:', { 
-      googleSuccess, 
-      googleError, 
-      errorDetails,
-      allParams: Object.fromEntries(searchParams)
-    });
-    
+
     if (googleSuccess === 'true') {
-      console.log('Google login successful!');
       // Show success message
       import('react-hot-toast').then(({ toast }) => {
         toast.success('Google login successful! Welcome to Happy Tails!');
@@ -138,7 +130,6 @@ const GoogleLoginHandler = () => {
     
     // Check if there's any error from Google
     if (searchParams.get('error') === 'access_denied') {
-      console.log('User denied access');
       import('react-hot-toast').then(({ toast }) => {
         toast.error('You denied access. Please try again or use email login.');
       });
@@ -195,9 +186,9 @@ function AppRoutes() {
         <Route
           path="/payment"
           element={
-            <ProtectedRoute>
+            <RoleBasedRoute allowedRoles={["customer"]}>
               <PaymentPage />
-            </ProtectedRoute>
+            </RoleBasedRoute>
           }
         />
         <Route
@@ -362,7 +353,14 @@ function AppRoutes() {
         {/* --- 404 --- */}
         <Route path="/404" element={<NotFound />} />
         <Route path="*" element={<Navigate to="/404" replace />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route
+          path="/checkout"
+          element={
+            <RoleBasedRoute allowedRoles={["customer"]}>
+              <CheckoutPage />
+            </RoleBasedRoute>
+          }
+        />
       </Routes>
     </>
   );

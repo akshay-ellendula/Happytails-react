@@ -10,6 +10,7 @@ const orderSchema = new mongoose.Schema({
     shipped_at: { type: Date, default: null },
     delivered_at: { type: Date, default: null },
     cancelled_at: { type: Date, default: null },
+    payment_intent_id: { type: String, default: null, index: true },
     payment_last_four: { type: String, default: null },
     is_deleted: { type: Boolean, default: false },
     shippingAddress: {

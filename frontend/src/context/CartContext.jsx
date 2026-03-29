@@ -37,6 +37,10 @@ export const CartProvider = ({ children }) => {
         setCart(prevCart => prevCart.filter((_, i) => i !== index));
     }, []);
 
+    const clearCart = useCallback(() => {
+        setCart([]);
+    }, []);
+
     const calculateTotals = useCallback(() => {
         const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const charge = subtotal * 0.04;
@@ -100,6 +104,7 @@ export const CartProvider = ({ children }) => {
         closeCart,
         updateQuantity,
         removeItem,
+        clearCart,
         calculateTotals,
         addToCart,
         handleCheckout,

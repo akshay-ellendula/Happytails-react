@@ -54,6 +54,11 @@ const ticketSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    paymentIntentId: {
+        type: String,
+        default: null,
+        index: true,
+    },
     petName: {
         type: String,
     },

@@ -1,6 +1,11 @@
 import Ticket from '../models/ticketModel.js';
 import Event from '../models/eventModel.js';
 import sendEmail from '../utils/sendEmail.js';
+import Stripe from 'stripe';
+
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? new Stripe(process.env.STRIPE_SECRET_KEY)
+    : null;
 
 //@dec get all tickets
 //@routes get/api/tickets/
@@ -56,35 +61,121 @@ export const deleteTicket = async (req, res) => {
     }
 }
 
-//@dec post ticket 
+//@dec create payment intent for ticket
+//@routes post /api/tickets/create-payment-intent/:id
+//@access customer
+export const createTicketPaymentIntent = async (req, res) => {
+    const { id: eventId } = req.params;
+    const ticketCount = Number(req.body.numberOfTickets);
+
+    try {
+        if (!stripe) {
+            return res.status(500).json({ message: "Stripe test mode is not configured on the server" });
+        }
+
+        if (!Number.isInteger(ticketCount) || ticketCount < 1) {
+            return res.status(400).json({ message: "Please select at least one ticket" });
+        }
+
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ message: "Event not found" });
+        }
+
+        const totalPrice = event.ticketPrice * ticketCount;
+        const amountInPaise = Math.round(totalPrice * 100);
+
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: amountInPaise,
+            currency: 'inr',
+            payment_method_types: ['card'],
+            metadata: {
+                checkoutType: 'ticket',
+                customerId: req.user.customerId.toString(),
+                eventId: eventId,
+                numberOfTickets: ticketCount.toString(),
+            },
+        });
+
+        return res.json({
+            success: true,
+            clientSecret: paymentIntent.client_secret,
+            totalPrice,
+        });
+    } catch (error) {
+        console.log("Error in createTicketPaymentIntent:", error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+//@dec post ticket
 //@routes post /api/tickets/:id
 //@access customer
 export const postTicket = async (req, res) => {
     const { id: eventId } = req.params
     const customerId = req.user.customerId;
-    
+
     // Destructure contact fields from req.body
-    const { numberOfTickets, name, phone, email, petName, petBreed, petAge } = req.body; 
+    const { numberOfTickets, name, phone, email, petName, petBreed, petAge, paymentIntentId } = req.body;
+    const ticketCount = Number(numberOfTickets);
 
     try {
+        if (!stripe) {
+            return res.status(500).json({ message: "Stripe test mode is not configured on the server" });
+        }
+
+        if (!Number.isInteger(ticketCount) || ticketCount < 1) {
+            return res.status(400).json({ message: "Please select at least one ticket" });
+        }
+
+        if (!paymentIntentId) {
+            return res.status(400).json({ message: "Payment intent ID is required" });
+        }
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (paymentIntent.status !== 'succeeded') {
+            return res.status(400).json({ message: "Payment not completed" });
+        }
+
         const event = await Event.findById(eventId);
         if (!event) {
             return res.status(404).json({ message: "Event not found" });
         }
 
         const leftTickets = event.total_tickets - event.tickets_sold;
-        if (leftTickets < numberOfTickets) {
+        if (leftTickets < ticketCount) {
             return res.status(400).json({ message: `Only ${leftTickets} tickets are left` });
         }
-        
+
         // Calculate total price
-        const totalPrice = event.ticketPrice * numberOfTickets;
+        const totalPrice = event.ticketPrice * ticketCount;
+        const expectedAmountInPaise = Math.round(totalPrice * 100);
+
+        const paymentMatchesTicket = paymentIntent.metadata?.checkoutType === 'ticket'
+            && paymentIntent.metadata?.customerId === customerId.toString()
+            && paymentIntent.metadata?.eventId === eventId
+            && paymentIntent.metadata?.numberOfTickets === ticketCount.toString()
+            && paymentIntent.amount === expectedAmountInPaise
+            && paymentIntent.currency === 'inr';
+
+        if (!paymentMatchesTicket) {
+            return res.status(400).json({ message: "Payment verification failed for this booking" });
+        }
+
+        const existingTicket = await Ticket.findOne({ paymentIntentId: paymentIntent.id });
+        if (existingTicket) {
+            return res.status(200).json({
+                success: true,
+                ticket: existingTicket,
+                message: `Tickets booked successfully! Total: â‚¹${totalPrice}`
+            });
+        }
         
         const newTicket = await Ticket.create({
             eventId,
             customerId,
-            numberOfTickets,
+            numberOfTickets: ticketCount,
             price: totalPrice,
+            paymentIntentId: paymentIntent.id,
             contactName: name,
             contactPhone: phone,
             contactEmail: email,
@@ -93,7 +184,7 @@ export const postTicket = async (req, res) => {
             petAge: petAge || null,
         });
 
-        event.tickets_sold = event.tickets_sold + numberOfTickets;
+        event.tickets_sold = event.tickets_sold + ticketCount;
         await event.save();
 
         // --- NEW BEAUTIFUL EMAIL CODE ---
@@ -113,7 +204,7 @@ export const postTicket = async (req, res) => {
                     <div style="background-color: #fff8f0; border-left: 4px solid #FF8A00; padding: 20px; border-radius: 0 8px 8px 0; margin: 25px 0;">
                         <h3 style="margin-top: 0; color: #FF8A00; font-size: 18px;">🎟️ Booking Details</h3>
                         <table style="width: 100%; border-collapse: collapse;">
-                            <tr><td style="padding: 6px 0; color: #555;"><strong>Number of Tickets:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">${numberOfTickets}</td></tr>
+                            <tr><td style="padding: 6px 0; color: #555;"><strong>Number of Tickets:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">${ticketCount}</td></tr>
                             <tr><td style="padding: 6px 0; color: #555;"><strong>Total Price:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">₹${totalPrice}</td></tr>
                             <tr><td style="padding: 6px 0; color: #555;"><strong>Phone Number:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">${phone}</td></tr>
                             ${petName ? `<tr><td style="padding: 6px 0; color: #555;"><strong>Pet Guest:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">${petName} (${petBreed || 'N/A'})</td></tr>` : ''}

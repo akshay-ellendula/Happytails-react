@@ -1,25 +1,22 @@
 import express from 'express';
 
 const router = express.Router();
-import { 
-    getPetAccessories, 
-    getProduct, 
-    checkout,           
+import {
+    getPetAccessories,
+    getProduct,
+    checkout,
+    createProductPaymentIntent,
     getUserOrders,
-    processPayment,   
-    reorder,         
-} from '../controller/productController.js'; // Corrected folder path to '../controllers' and added .js
+    processPayment,
+    reorder,
+} from '../controller/productController.js';
 
 import protectRoute from '../middleware/authMiddleware.js';
 router.get('/getProducts', getPetAccessories);
-// Endpoint: GET /api/products/getProduct/:id
 router.get('/getProduct/:id', getProduct);
-// Endpoint: POST /api/products/checkout 
 router.post('/checkout', protectRoute(['customer']), checkout);
-// Endpoint: POST /api/products/process-payment
-router.post('/process-payment', protectRoute(['customer']), processPayment); 
-// Endpoint: GET /api/products/my_orders
+router.post('/create-payment-intent', protectRoute(['customer']), createProductPaymentIntent);
+router.post('/process-payment', protectRoute(['customer']), processPayment);
 router.get('/getUserOrders', protectRoute(['customer']), getUserOrders);
-// Endpoint: POST /api/products/orders/:orderId/reorder
 router.post('/orders/:orderId/reorder', protectRoute(['customer']), reorder);
 export default router;

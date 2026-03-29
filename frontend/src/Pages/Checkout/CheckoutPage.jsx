@@ -65,8 +65,6 @@ const CheckoutPage = () => {
       selectedAddress = user.addresses[selectedAddressIndex];
     }
 
-    console.log("Selected address for checkout:", selectedAddress);
-
     const cartPayload = cart.map(item => ({
       product_id: item.product_id,
       variant_id: item.variant_id,
