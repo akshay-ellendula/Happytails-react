@@ -142,9 +142,11 @@ export const AuthProvider = ({ children }) => {
   const signout = async () => {
     setLoading(true);
     try {
-      await axiosInstance.get("/auth/logout");
+      await axiosInstance.post("/auth/logout");   // ← change .get() → .post()
+      // Optional: you can add toast.success("Logged out successfully") here
     } catch (error) {
       console.error("Logout error:", error);
+      // Optional: toast.error("Logout failed") — but still clear state
     } finally {
       // Always clear state regardless of network failure
       setIsAuthenticated(false);
@@ -152,6 +154,24 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
+  const googleLogin = useCallback(async (token) => {
+    try {
+        // Set the token cookie (already set by backend redirect)
+        const response = await axiosInstance.get('/auth/verify');
+        
+        if (response.data?.authenticated && response.data?.user) {
+            const fullUser = await fetchFullUserProfile(response.data.user);
+            setUser(fullUser);
+            setIsAuthenticated(true);
+            return { success: true };
+        }
+        return { success: false, error: 'Verification failed' };
+    } catch (error) {
+        console.error('Google login verification error:', error);
+        return { success: false, error: error.message };
+    }
+  }, [fetchFullUserProfile]);
 
   // 7. Memoize context value to prevent unnecessary re-renders of consuming components
   const value = useMemo(() => ({
@@ -162,7 +182,8 @@ export const AuthProvider = ({ children }) => {
     signup,
     signout,
     updateUser,
-  }), [isAuthenticated, loading, user, updateUser]);
+    googleLogin
+  }), [isAuthenticated, loading, user, updateUser, googleLogin]);
 
   return (
     <AuthContext.Provider value={value}>
@@ -170,3 +191,4 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+

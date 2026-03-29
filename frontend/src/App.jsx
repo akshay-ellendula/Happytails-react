@@ -1,12 +1,12 @@
-import React from "react";
-import { Routes, Route, Navigate } from "react-router";
+import React, { useEffect } from "react";
+import { Routes, Route, Navigate, useSearchParams, useNavigate } from "react-router";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import { CartProvider, useCart } from "./context/CartContext";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
-import { Provider } from "react-redux"; // Move Provider import
+import { Provider } from "react-redux";
 import { store } from "./store/store";
 
 // --- Pages: Public & General ---
@@ -37,7 +37,7 @@ import MyEventsPage from "./pages/MyEventsPage/MyEventsPage";
 import TrackOrderPage from "./pages/TrackOrderPage/TrackOrderPage";
 
 // --- Pages: Admin ---
-import AdminLoginPage from "./Pages/AdminLogin/AdminLoginPage"; // Check capitalization here (pages vs Pages)
+import AdminLoginPage from "./Pages/AdminLogin/AdminLoginPage";
 import Dashboard from "./Pages/Admin/Dashboard";
 import Users from "./Pages/Admin/Users";
 import UserDetails from "./Pages/Admin/UserDetails";
@@ -86,211 +86,285 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
+// Component to handle Google login success messages
+const GoogleLoginHandler = () => {
+  const [searchParams] = useSearchParams();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const googleSuccess = searchParams.get('google_login_success');
+    const googleError = searchParams.get('error');
+    const errorDetails = searchParams.get('details');
+    
+    console.log('Google login params received:', { 
+      googleSuccess, 
+      googleError, 
+      errorDetails,
+      allParams: Object.fromEntries(searchParams)
+    });
+    
+    if (googleSuccess === 'true') {
+      console.log('Google login successful!');
+      // Show success message
+      import('react-hot-toast').then(({ toast }) => {
+        toast.success('Google login successful! Welcome to Happy Tails!');
+      });
+      
+      // Wait a moment to ensure user state is updated, then redirect
+      setTimeout(() => {
+        if (user) {
+          if (user.role === 'customer') navigate('/');
+          else if (user.role === 'eventManager') navigate('/eventManager');
+          else if (user.role === 'vendor') navigate('/shop');
+        } else {
+          navigate('/');
+        }
+      }, 1000);
+      
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    if (googleError === 'google_auth_failed') {
+      console.error('Google login failed:', errorDetails);
+      import('react-hot-toast').then(({ toast }) => {
+        toast.error(`Google login failed: ${errorDetails || 'Please try again'}`);
+      });
+      
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    // Check if there's any error from Google
+    if (searchParams.get('error') === 'access_denied') {
+      console.log('User denied access');
+      import('react-hot-toast').then(({ toast }) => {
+        toast.error('You denied access. Please try again or use email login.');
+      });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    
+    // Check for other error types
+    if (searchParams.get('error') && searchParams.get('error') !== 'google_auth_failed') {
+      console.error('OAuth error:', searchParams.get('error'));
+      import('react-hot-toast').then(({ toast }) => {
+        toast.error(`Authentication error: ${searchParams.get('error')}`);
+      });
+    }
+  }, [searchParams, user, navigate]);
+  
+  return null;
+};
+
 function AppRoutes() {
   return (
-    <Routes>
-      {/* --- Public Routes --- */}
-      <Route path="/" element={<HomePage />} />
-      <Route path="/pet_accessory" element={<ProductAccessoryPageWrapper />} />
-      <Route path="/product/:id" element={<ProductDetailPage />} />
-      <Route path="/events" element={<EventsPage />} />
-      <Route path="/event/:id" element={<EventDetailPage />} />
-      <Route path="/partnerRegistrataion" element={<PartnerRegistration />} />
+    <>
+      <GoogleLoginHandler />
+      <Routes>
+        {/* --- Public Routes --- */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/pet_accessory" element={<ProductAccessoryPageWrapper />} />
+        <Route path="/product/:id" element={<ProductDetailPage />} />
+        <Route path="/events" element={<EventsPage />} />
+        <Route path="/event/:id" element={<EventDetailPage />} />
+        <Route path="/partnerRegistrataion" element={<PartnerRegistration />} />
 
-      {/* --- Auth Routes --- */}
-      <Route path="/login" element={<AuthPage />} />
-      <Route path="/signup" element={<AuthPage />} />
-      <Route path="/service-login" element={<ServiceProviderLogin />} />
+        {/* --- Auth Routes --- */}
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="/signup" element={<AuthPage />} />
+        <Route path="/service-login" element={<ServiceProviderLogin />} />
 
-      {/* --- Protected: Customer --- */}
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/my_orders"
-        element={
-          <ProtectedRoute>
-            <MyOrdersPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/payment"
-        element={
-          <ProtectedRoute>
-            <PaymentPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/my_events"
-        element={
-          <ProtectedRoute>
-            {" "}
-            <MyEventsPage />{" "}
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/track-order/:orderId"
-        element={
-          <ProtectedRoute>
-            {" "}
-            <TrackOrderPage />{" "}
-          </ProtectedRoute>
-        }
-      />
-      {/* --- Protected: Booking --- */}
-      <Route
-        path="/booking"
-        element={
-          <RoleBasedRoute allowedRoles={["customer", "admin"]}>
-            <BookingPage />
-          </RoleBasedRoute>
-        }
-      />
+        {/* --- Protected: Customer --- */}
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my_orders"
+          element={
+            <ProtectedRoute>
+              <MyOrdersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payment"
+          element={
+            <ProtectedRoute>
+              <PaymentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my_events"
+          element={
+            <ProtectedRoute>
+              {" "}
+              <MyEventsPage />{" "}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/track-order/:orderId"
+          element={
+            <ProtectedRoute>
+              {" "}
+              <TrackOrderPage />{" "}
+            </ProtectedRoute>
+          }
+        />
+        {/* --- Protected: Booking --- */}
+        <Route
+          path="/booking"
+          element={
+            <RoleBasedRoute allowedRoles={["customer", "admin"]}>
+              <BookingPage />
+            </RoleBasedRoute>
+          }
+        />
 
-      {/* --- Protected: Event Manager --- */}
-      <Route
-        path="/eventManager/*"
-        element={
-          <RoleBasedRoute allowedRoles={["eventManager", "admin"]}>
-            <EventManagerPage />
-          </RoleBasedRoute>
-        }
-      />
+        {/* --- Protected: Event Manager --- */}
+        <Route
+          path="/eventManager/*"
+          element={
+            <RoleBasedRoute allowedRoles={["eventManager", "admin"]}>
+              <EventManagerPage />
+            </RoleBasedRoute>
+          }
+        />
 
-      <Route
-        path="/event-manager/events/:eventId"
-        element={
-          <RoleBasedRoute allowedRoles={["eventManager"]}>
-            <EventDetails />
-          </RoleBasedRoute>
-        }
-      />
+        <Route
+          path="/event-manager/events/:eventId"
+          element={
+            <RoleBasedRoute allowedRoles={["eventManager"]}>
+              <EventDetails />
+            </RoleBasedRoute>
+          }
+        />
 
-      {/* --- Connected Shop Manager Routes --- */}
-      <Route
-        path="/shop"
-        element={
-          <RoleBasedRoute allowedRoles={["vendor", "admin"]}>
-            <ShopManagerLayout />
-          </RoleBasedRoute>
-        }
-      >
-        <Route path="dashboard" element={<ShopDashboard />} />
-        <Route path="products" element={<ProductList />} />
-        <Route path="products/add" element={<AddProduct />} />
-        <Route path="products/edit/:productId" element={<EditProduct />} />
-        <Route path="products/view-all" element={<ViewAllProducts />} />
-        <Route path="orders" element={<OrderList />} />
-        <Route path="orders/:orderId" element={<ManagerOrderDetails />} />
-        <Route path="customers" element={<CustomerList />} />
-        <Route path="customers/:customerId" element={<CustomerDetails />} />
-        <Route path="customers/view-all" element={<ViewAllCustomers />} />
-        <Route path="analytics" element={<ShopAnalytics />} />
-        <Route path="profile" element={<ShopProfile />} />
-        <Route index element={<Navigate to="dashboard" replace />} />
-      </Route>
+        {/* --- Connected Shop Manager Routes --- */}
+        <Route
+          path="/shop"
+          element={
+            <RoleBasedRoute allowedRoles={["vendor", "admin"]}>
+              <ShopManagerLayout />
+            </RoleBasedRoute>
+          }
+        >
+          <Route path="dashboard" element={<ShopDashboard />} />
+          <Route path="products" element={<ProductList />} />
+          <Route path="products/add" element={<AddProduct />} />
+          <Route path="products/edit/:productId" element={<EditProduct />} />
+          <Route path="products/view-all" element={<ViewAllProducts />} />
+          <Route path="orders" element={<OrderList />} />
+          <Route path="orders/:orderId" element={<ManagerOrderDetails />} />
+          <Route path="customers" element={<CustomerList />} />
+          <Route path="customers/:customerId" element={<CustomerDetails />} />
+          <Route path="customers/view-all" element={<ViewAllCustomers />} />
+          <Route path="analytics" element={<ShopAnalytics />} />
+          <Route path="profile" element={<ShopProfile />} />
+          <Route index element={<Navigate to="dashboard" replace />} />
+        </Route>
 
-      {/* --- Protected: Admin --- */}
-      <Route path="/admin/login" element={<AdminLoginPage />} />
+        {/* --- Protected: Admin --- */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
 
-      <Route
-        path="/admin/dashboard"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Dashboard />{" "}
-          </RoleBasedRoute>
-        }
-      />
-      <Route
-        path="/admin/users"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Users />{" "}
-          </RoleBasedRoute>
-        }
-      />
-      <Route
-        path="/admin/event-managers"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <EventManagers />{" "}
-          </RoleBasedRoute>
-        }
-      />
-      <Route
-        path="/admin/events"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Events />{" "}
-          </RoleBasedRoute>
-        }
-      />
-      <Route
-        path="/admin/products"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Products />{" "}
-          </RoleBasedRoute>
-        }
-      />
-      <Route
-        path="/admin/orders"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Orders />{" "}
-          </RoleBasedRoute>
-        }
-      />
-      <Route
-        path="/admin/vendors"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            {" "}
-            <Vendors />{" "}
-          </RoleBasedRoute>
-        }
-      />
-      <Route path="/admin/users/:id" element={<UserDetails />} />
-      <Route path="/admin/vendors/:id" element={<VendorDetails />} />
-      <Route
-        path="/admin/event-managers/:id"
-        element={<EventManagerDetails />}
-      />
-      <Route path="/admin/events/:id" element={<EventDetails />} />
-      <Route path="/admin/products/:id" element={<ProductDetails />} />
-      <Route path="/admin/orders/:id" element={<OrderDetails />} />
-      <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              {" "}
+              <Dashboard />{" "}
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              {" "}
+              <Users />{" "}
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/event-managers"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              {" "}
+              <EventManagers />{" "}
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/events"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              {" "}
+              <Events />{" "}
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/products"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              {" "}
+              <Products />{" "}
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/orders"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              {" "}
+              <Orders />{" "}
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/vendors"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              {" "}
+              <Vendors />{" "}
+            </RoleBasedRoute>
+          }
+        />
+        <Route path="/admin/users/:id" element={<UserDetails />} />
+        <Route path="/admin/vendors/:id" element={<VendorDetails />} />
+        <Route
+          path="/admin/event-managers/:id"
+          element={<EventManagerDetails />}
+        />
+        <Route path="/admin/events/:id" element={<EventDetails />} />
+        <Route path="/admin/products/:id" element={<ProductDetails />} />
+        <Route path="/admin/orders/:id" element={<OrderDetails />} />
+        <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
-      {/* Catch-all for Admin Root if needed */}
-      <Route
-        path="/admin/*"
-        element={
-          <RoleBasedRoute allowedRoles={["admin"]}>
-            <Navigate to="/admin/dashboard" replace />
-          </RoleBasedRoute>
-        }
-      />
+        {/* Catch-all for Admin Root if needed */}
+        <Route
+          path="/admin/*"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <Navigate to="/admin/dashboard" replace />
+            </RoleBasedRoute>
+          }
+        />
 
-      {/* --- 404 --- */}
-      <Route path="/404" element={<NotFound />} />
-      <Route path="*" element={<Navigate to="/404" replace />} />
-      <Route path="/checkout" element={<CheckoutPage />} />
-    </Routes>
+        {/* --- 404 --- */}
+        <Route path="/404" element={<NotFound />} />
+        <Route path="*" element={<Navigate to="/404" replace />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+      </Routes>
+    </>
   );
 }
 
@@ -326,13 +400,11 @@ function AppContent() {
 
 function App() {
   return (
-    // Moved Provider to the top level
     <Provider store={store}>
       <AuthProvider>
         <CartProvider>
           <AppContent />
         </CartProvider>
-        {/* Removed duplicate Toaster, kept one here */}
         <Toaster position="top-center" />
       </AuthProvider>
     </Provider>
