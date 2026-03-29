@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { axiosInstance } from "../../utils/axios";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CreditCard, Calendar, Lock } from "lucide-react";
 import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
 import Footer from "../../components/Footer";
@@ -10,7 +10,9 @@ import { useCart } from "../../context/CartContext";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
-  CardElement,
+  CardNumberElement,
+  CardExpiryElement,
+  CardCvcElement,
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
@@ -18,15 +20,16 @@ import {
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
-const CARD_ELEMENT_OPTIONS = {
+const ELEMENT_STYLE = {
   style: {
     base: {
       fontSize: "16px",
       color: "#1a1a1a",
       fontFamily: "Outfit, sans-serif",
       "::placeholder": { color: "#9ca3af" },
+      lineHeight: "24px",
     },
-    invalid: { color: "#ef4444" },
+    invalid: { color: "#ef4444", iconColor: "#ef4444" },
   },
 };
 
@@ -91,7 +94,7 @@ const CheckoutForm = () => {
       const { error, paymentIntent } = await stripe.confirmCardPayment(
         clientSecret,
         {
-          payment_method: { card: elements.getElement(CardElement) },
+          payment_method: { card: elements.getElement(CardNumberElement) },
         }
       );
 
@@ -112,23 +115,51 @@ const CheckoutForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="border-2 border-gray-200 rounded-xl px-4 py-5 focus-within:border-[#effe8b] transition-all">
-        <CardElement options={CARD_ELEMENT_OPTIONS} />
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Card Number */}
+      <div>
+        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+          <CreditCard size={16} />
+          Card Number
+        </label>
+        <div className="border-2 border-gray-200 rounded-xl px-4 py-4 focus-within:border-[#c8cc70] transition-all bg-white">
+          <CardNumberElement options={{ ...ELEMENT_STYLE, showIcon: true }} />
+        </div>
       </div>
 
-      <p className="text-xs text-gray-400 text-center">
+      {/* Expiry & CVC Row */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+            <Calendar size={16} />
+            Expiry Date
+          </label>
+          <div className="border-2 border-gray-200 rounded-xl px-4 py-4 focus-within:border-[#c8cc70] transition-all bg-white">
+            <CardExpiryElement options={ELEMENT_STYLE} />
+          </div>
+        </div>
+        <div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+            <Lock size={16} />
+            CVC
+          </label>
+          <div className="border-2 border-gray-200 rounded-xl px-4 py-4 focus-within:border-[#c8cc70] transition-all bg-white">
+            <CardCvcElement options={ELEMENT_STYLE} />
+          </div>
+        </div>
+      </div>
+
+      <p className="text-xs text-gray-400 text-center pt-1">
         Test card: 4242 4242 4242 4242 · Any future date · Any 3-digit CVV
       </p>
 
       <button
         type="submit"
         disabled={isProcessing || !clientSecret}
-        className={`w-full cursor-pointer rounded-xl text-sm font-bold px-8 py-4 uppercase tracking-wider transition-all hover:shadow-xl hover:-translate-y-1 active:scale-95 focus:outline-none focus:ring-4 focus:ring-opacity-50 border-2 border-black ${
-          isProcessing || !clientSecret
+        className={`w-full cursor-pointer rounded-xl text-sm font-bold px-8 py-4 uppercase tracking-wider transition-all hover:shadow-xl hover:-translate-y-1 active:scale-95 focus:outline-none focus:ring-4 focus:ring-opacity-50 border-2 border-black ${isProcessing || !clientSecret
             ? "bg-gray-400 text-gray-800 cursor-not-allowed"
             : "bg-[#1a1a1a] text-white hover:bg-gray-800 focus:ring-[#1a1a1a]"
-        }`}
+          }`}
       >
         {isProcessing ? "Processing..." : "Pay Securely"}
       </button>

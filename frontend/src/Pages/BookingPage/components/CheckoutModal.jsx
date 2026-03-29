@@ -1,10 +1,12 @@
-import { X } from 'lucide-react';
+import { X, CreditCard, Calendar, Lock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
-  CardElement,
+  CardNumberElement,
+  CardExpiryElement,
+  CardCvcElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
@@ -12,14 +14,16 @@ import { axiosInstance } from '../../../utils/axios.js';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-const CARD_ELEMENT_OPTIONS = {
+const ELEMENT_STYLE = {
   style: {
     base: {
       fontSize: '16px',
       color: '#1a1a1a',
+      fontFamily: 'Outfit, sans-serif',
       '::placeholder': { color: '#9ca3af' },
+      lineHeight: '24px',
     },
-    invalid: { color: '#ef4444' },
+    invalid: { color: '#ef4444', iconColor: '#ef4444' },
   },
 };
 
@@ -46,7 +50,7 @@ const PaymentForm = ({ eventId, numberOfTickets, grandTotal, onPaymentSuccess, o
     setIsProcessing(true);
     try {
       const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card: elements.getElement(CardElement) },
+        payment_method: { card: elements.getElement(CardNumberElement) },
       });
 
       if (error) {
@@ -75,22 +79,50 @@ const PaymentForm = ({ eventId, numberOfTickets, grandTotal, onPaymentSuccess, o
         <span className="text-xs font-semibold text-gray-600">Amex</span>
       </div>
 
-      <div className="border-2 border-gray-200 rounded-xl px-4 py-4 focus-within:border-green-500 transition-all">
-        <CardElement options={CARD_ELEMENT_OPTIONS} />
+      {/* Card Number */}
+      <div>
+        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+          <CreditCard size={16} />
+          Card Number
+        </label>
+        <div className="border-2 border-gray-200 rounded-xl px-4 py-4 focus-within:border-green-500 transition-all bg-white">
+          <CardNumberElement options={{ ...ELEMENT_STYLE, showIcon: true }} />
+        </div>
       </div>
 
-      <p className="text-xs text-gray-400 text-center">
+      {/* Expiry & CVC Row */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+            <Calendar size={16} />
+            Expiry Date
+          </label>
+          <div className="border-2 border-gray-200 rounded-xl px-4 py-4 focus-within:border-green-500 transition-all bg-white">
+            <CardExpiryElement options={ELEMENT_STYLE} />
+          </div>
+        </div>
+        <div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+            <Lock size={16} />
+            CVC
+          </label>
+          <div className="border-2 border-gray-200 rounded-xl px-4 py-4 focus-within:border-green-500 transition-all bg-white">
+            <CardCvcElement options={ELEMENT_STYLE} />
+          </div>
+        </div>
+      </div>
+
+      <p className="text-xs text-gray-400 text-center pt-1">
         Test card: 4242 4242 4242 4242 · Any future date · Any 3-digit CVV
       </p>
 
       <button
         onClick={handlePayment}
         disabled={isProcessing || !clientSecret}
-        className={`w-full font-bold py-4 rounded-full transition uppercase ${
-          isProcessing || !clientSecret
+        className={`w-full font-bold py-4 rounded-full transition uppercase ${isProcessing || !clientSecret
             ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
             : 'bg-red-500 text-white hover:bg-red-600'
-        }`}
+          }`}
       >
         {isProcessing ? 'Processing...' : `Pay ₹${grandTotal}`}
       </button>
