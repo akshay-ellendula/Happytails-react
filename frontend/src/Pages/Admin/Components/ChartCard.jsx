@@ -33,7 +33,8 @@ export default function ChartCard({
   chartOptions,
   type = "line",
   className = "",
-  actionButton
+  actionButton,
+  onDownloadReport
 }) {
   const defaultOptions = {
     responsive: true,
@@ -95,30 +96,29 @@ export default function ChartCard({
           </div>
           {actionButton && <div>{actionButton}</div>}
         </div>
-        
+
         {/* Chart type selector */}
         <div className="flex space-x-2 mt-4 hidden">
           {['line', 'bar', 'doughnut'].map((chartType) => (
             <button
               key={chartType}
-              className={`px-3 py-1 rounded-lg text-sm font-medium capitalize ${
-                type === chartType 
-                  ? 'bg-yellow-500 text-white' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`px-3 py-1 rounded-lg text-sm font-medium capitalize ${type === chartType
+                ? 'bg-yellow-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
             >
               {chartType}
             </button>
           ))}
         </div>
       </div>
-      
+
       <div className="p-4">
         <div className="h-72 relative">
           {type === "line" && <Line data={chartData} options={mergedOptions} />}
           {type === "doughnut" && <Doughnut data={chartData} options={mergedOptions} />}
           {type === "bar" && <Bar data={chartData} options={mergedOptions} />}
-          
+
           {/* Chart overlay info */}
           {chartData && (
             <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-2 rounded-lg shadow-sm">
@@ -128,23 +128,25 @@ export default function ChartCard({
           )}
         </div>
       </div>
-      
+
       {/* Chart footer */}
       <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-4">
             {chartData?.datasets?.map((dataset, idx) => (
               <div key={idx} className="flex items-center">
-                <div 
-                  className="w-3 h-3 rounded-full mr-2" 
+                <div
+                  className="w-3 h-3 rounded-full mr-2"
                   style={{ backgroundColor: dataset.borderColor || dataset.backgroundColor }}
                 ></div>
                 <span className="text-gray-600">{dataset.label}</span>
               </div>
             ))}
           </div>
-          <button className="text-yellow-600 hover:text-yellow-700 text-sm font-medium flex items-center">
-            <span>Download Report</span>
+          <button
+            onClick={onDownloadReport}
+            className="text-yellow-600 hover:text-yellow-700 text-sm font-medium flex items-center"
+          >            <span>Download Report</span>
             <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
