@@ -507,6 +507,11 @@ const submitProduct = async (req, res, next) => {
   } = req.body;
 
   try {
+    // Validate required fields
+    if (!product_name || !product_category) {
+      return sendError(res, "Product name and category are required", 400);
+    }
+
     const newProduct = await Product.create({
       vendor_id: vendorId,
       product_name,
@@ -563,7 +568,23 @@ const submitProduct = async (req, res, next) => {
       }
     }
 
-    sendJson(res, { message: "Product added successfully" });
+    // Fetch created product with all relations for response
+    const createdVariants = await ProductVariant.find({
+      product_id: newProduct._id,
+    });
+    const createdImages = await ProductImage.find({
+      product_id: newProduct._id,
+    });
+
+    sendJson(res, {
+      message: "Product added successfully",
+      productId: newProduct._id,
+      product: {
+        ...newProduct.toObject(),
+        variants: createdVariants,
+        images: createdImages,
+      },
+    });
   } catch (error) {
     console.error("Submit Product Error:", error);
     next(error);
@@ -590,20 +611,34 @@ const updateProduct = async (req, res, next) => {
   } = req.body;
 
   try {
+    // Verify ownership before update
     const product = await Product.findOne({
       _id: productId,
       vendor_id: vendorId,
     });
     if (!product) return sendError(res, "Product not found", 404);
 
-    // 1. Update Product Details
-    await Product.findByIdAndUpdate(productId, {
-      product_name,
-      product_category,
-      product_type,
-      product_description,
-      stock_status,
-    });
+    // Validate required fields
+    if (!product_name || !product_category) {
+      return sendError(res, "Product name and category are required", 400);
+    }
+
+    // 1. Update Product Details with { new: true } to get updated document
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      {
+        product_name,
+        product_category,
+        product_type,
+        product_description,
+        stock_status,
+      },
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedProduct) {
+      return sendError(res, "Failed to update product", 500);
+    }
 
     // 2. Handle Variants
     if (variants) {
@@ -681,7 +716,21 @@ const updateProduct = async (req, res, next) => {
       }
     }
 
-    sendJson(res, { message: "Product updated successfully" });
+    // Fetch updated product with variants and images for response
+    const finalProduct = await Product.findById(productId);
+    const updatedVariants = await ProductVariant.find({
+      product_id: productId,
+    });
+    const updatedImages = await ProductImage.find({ product_id: productId });
+
+    sendJson(res, {
+      message: "Product updated successfully",
+      product: {
+        ...finalProduct.toObject(),
+        variants: updatedVariants,
+        images: updatedImages,
+      },
+    });
   } catch (error) {
     console.error("Update product error:", error);
     next(error);
@@ -1131,21 +1180,78 @@ const updateVendorProfile = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
-  // Mapping frontend fields to Vendor model fields
-  const { storeName, ownerName, email, phone, address, description } = req.body;
+  // Accept both snake_case and camelCase from frontend
+  const {
+    store_name,
+    owner_name,
+    email,
+    phone,
+    address,
+    description,
+    storeName,
+    ownerName,
+  } = req.body;
+
+  // Use snake_case if provided, otherwise use camelCase
+  const finalStoreName = store_name || storeName;
+  const finalOwnerName = owner_name || ownerName;
+  const finalPhone = phone;
+  const finalAddress = address;
+  const finalEmail = email;
+  const finalDescription = description || "";
 
   try {
-    // Note: Vendor model provided does not have profilePic, so we don't upload it here.
-    await Vendor.findByIdAndUpdate(vendorId, {
-      store_name: storeName,
-      name: ownerName,
-      email,
-      contact_number: phone,
-      store_location: address,
-      description,
+    // Validate required fields
+    if (
+      !finalStoreName ||
+      !finalOwnerName ||
+      !finalEmail ||
+      !finalPhone ||
+      !finalAddress
+    ) {
+      return sendError(res, "All fields are required", 400);
+    }
+
+    // Check if email is already used by another vendor
+    const existingVendor = await Vendor.findOne({
+      email: finalEmail,
+      _id: { $ne: vendorId },
     });
-    sendJson(res, { message: "Profile updated" });
+    if (existingVendor) {
+      return sendError(res, "Email is already in use", 409);
+    }
+
+    // Update vendor profile with { new: true } to get updated document
+    const updatedVendor = await Vendor.findByIdAndUpdate(
+      vendorId,
+      {
+        store_name: finalStoreName,
+        name: finalOwnerName,
+        email: finalEmail,
+        contact_number: finalPhone,
+        store_location: finalAddress,
+        description: finalDescription,
+      },
+      { new: true, runValidators: true }, // Returns updated doc and validates
+    );
+
+    if (!updatedVendor) {
+      return sendError(res, "Vendor not found", 404);
+    }
+
+    sendJson(res, {
+      message: "Profile updated successfully",
+      vendor: {
+        store_name: updatedVendor.store_name,
+        owner_name: updatedVendor.name,
+        email: updatedVendor.email,
+        phone: updatedVendor.contact_number,
+        address: updatedVendor.store_location,
+        description: updatedVendor.description,
+      },
+    });
   } catch (error) {
+    console.error("Profile update error:", error);
     next(error);
   }
 };
@@ -1776,7 +1882,8 @@ const changePassword = async (req, res) => {
       await vendor.save({ validateBeforeSave: false });
       return res.status(200).json({
         success: true,
-        message: "Password set successfully! You can now log in with email & password too.",
+        message:
+          "Password set successfully! You can now log in with email & password too.",
       });
     }
 
@@ -1793,7 +1900,9 @@ const changePassword = async (req, res) => {
     vendor.password = await bcrypt.hash(newPassword, salt);
     await vendor.save({ validateBeforeSave: false });
 
-    res.status(200).json({ success: true, message: "Password updated successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Password updated successfully" });
   } catch (error) {
     console.error("changePassword error:", error);
     res.status(500).json({ success: false, message: "Server error" });
