@@ -311,25 +311,33 @@
  *         multipart/form-data:
  *           schema:
  *             type: object
+ *             required: [product_name, product_category, variants, product_images]
  *             properties:
  *               product_name:
  *                 type: string
+ *                 description: Name of the product
  *               product_category:
  *                 type: string
+ *                 description: Category of the product (e.g., "Food", "Toys", "Accessories")
  *               product_type:
  *                 type: string
+ *                 description: Type of product
  *               product_description:
  *                 type: string
+ *                 description: Detailed description of the product
  *               stock_status:
  *                 type: string
+ *                 description: Stock status (e.g., "In Stock", "Out of Stock")
  *               variants:
  *                 type: string
- *                 description: JSON stringified variant array
+ *                 description: JSON stringified array of variants. Each variant should have size, color (optional), regular_price, sale_price (optional), stock_quantity, and sku (optional)
+ *                 example: '[{"size":"5kg","color":null,"regular_price":1200,"sale_price":999,"stock_quantity":18,"sku":"DOG-FOOD-001"},{"size":"10kg","color":null,"regular_price":2000,"sale_price":1699,"stock_quantity":12,"sku":"DOG-FOOD-002"}]'
  *               product_images:
  *                 type: array
  *                 items:
  *                   type: string
  *                   format: binary
+ *                 description: Upload up to 5 product images. First image will be set as primary/main image
  *             additionalProperties: true
  *     responses:
  *       200:
@@ -339,6 +347,24 @@
  *             example:
  *               success: true
  *               message: "Product added successfully"
+ *               productId: "67f11c8ab8f4472fdd5be201"
+ *               product:
+ *                 _id: "67f11c8ab8f4472fdd5be201"
+ *                 product_name: "Premium Dog Food"
+ *                 product_category: "Nutrition"
+ *                 variants:
+ *                   - _id: "67f11c8ab8f4472fdd5be202"
+ *                     size: "5kg"
+ *                     regular_price: 1200
+ *                     sale_price: 999
+ *                     stock_quantity: 18
+ *                 images:
+ *                   - _id: "67f11c8ab8f4472fdd5be203"
+ *                     image_data: "https://res.cloudinary.com/demo/image/upload/product-001.jpg"
+ *                     is_primary: true
+ *                   - _id: "67f11c8ab8f4472fdd5be204"
+ *                     image_data: "https://res.cloudinary.com/demo/image/upload/product-002.jpg"
+ *                     is_primary: false
  */
 
 /**
@@ -399,25 +425,31 @@
  *             properties:
  *               product_name:
  *                 type: string
+ *                 description: Name of the product
  *               product_category:
  *                 type: string
+ *                 description: Category of the product
  *               product_type:
  *                 type: string
+ *                 description: Type of product
  *               product_description:
  *                 type: string
+ *                 description: Detailed description of the product
  *               stock_status:
  *                 type: string
+ *                 description: Stock status
  *               variants:
  *                 type: string
  *                 description: JSON stringified variant array
  *               deletedImages:
  *                 type: string
- *                 description: Comma-separated or single image id to delete
+ *                 description: Comma-separated image IDs to delete from this product
  *               product_images:
  *                 type: array
  *                 items:
  *                   type: string
  *                   format: binary
+ *                 description: Upload up to 5 product images. You can add more images alongside existing ones. First new image will become primary if no primary exists
  *             additionalProperties: true
  *     responses:
  *       200:
@@ -427,6 +459,19 @@
  *             example:
  *               success: true
  *               message: "Product updated successfully"
+ *               productId: "67f11c8ab8f4472fdd5be201"
+ *               product:
+ *                 _id: "67f11c8ab8f4472fdd5be201"
+ *                 product_name: "Premium Dog Food"
+ *                 variants:
+ *                   - size: "5kg"
+ *                     regular_price: 1200
+ *                     sale_price: 999
+ *                 images:
+ *                   - image_data: "https://res.cloudinary.com/demo/image/upload/product-001.jpg"
+ *                     is_primary: true
+ *                   - image_data: "https://res.cloudinary.com/demo/image/upload/product-002.jpg"
+ *                     is_primary: false
  *       404:
  *         description: Product not found
  *   delete:
