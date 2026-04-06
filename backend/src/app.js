@@ -23,7 +23,7 @@ import vendorRoutes from "./router/vendorRoutes.js";
 import reviewRoutes from "./router/reviewRoutes.js";
 import { configureGoogleStrategy } from "./config/passport.js";
 import { errorHandler } from "./middleware/errorMiddleware.js";
-
+import "./utils/cronJobs.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const backendRoot = path.resolve(__dirname, "..");
