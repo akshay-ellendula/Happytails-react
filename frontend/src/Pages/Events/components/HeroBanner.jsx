@@ -59,7 +59,7 @@ const HeroBanner = ({ events }) => {
           <ChevronRight className="w-7 h-7" />
         </button>
 
-        <div className="flex flex-col lg:flex-row items-center justify-between">
+        <div className=" bg-[#ffffff] p-14 rounded-2xl flex flex-col lg:flex-row items-center justify-between">
           <div className="flex-1 w-full lg:w-auto text-center lg:text-left order-2 lg:order-1">
             <div className="flex items-center justify-center lg:justify-start text-[#1a1a1a] text-sm font-semibold mb-2">
               <Calendar className="w-4 h-4 mr-2" />
@@ -79,7 +79,7 @@ const HeroBanner = ({ events }) => {
               <span className="text-[#1a1a1a] font-bold text-lg">
                 {featuredEvent.price === 0
                   ? "Free Entry"
-                  : `${featuredEvent.price} onwards`}
+                  : `₹${featuredEvent.price} onwards`}
               </span>
               <button
                 onClick={handleEventClick}

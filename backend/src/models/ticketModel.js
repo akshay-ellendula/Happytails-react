@@ -68,6 +68,19 @@ const ticketSchema = new mongoose.Schema({
     petAge: {
         type: Number,
     },
+    // Add these fields inside your ticketSchema
+    isReviewed: {
+        type: Boolean,
+        default: false
+    },
+    reviewToken: {
+        type: String, // Store the hashed token
+        default: null
+    },
+    reviewTokenExpires: {
+        type: Date,
+        default: null
+    }
 }, {
     timestamps: true,
 })

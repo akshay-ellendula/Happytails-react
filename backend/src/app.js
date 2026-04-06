@@ -20,6 +20,7 @@ import productRoutes from "./router/productRoutes.js";
 import eventAnalyticsRoutes from "./router/eventAnalyticsRoutes.js";
 import adminRoutes from "./router/adminRoutes.js";
 import vendorRoutes from "./router/vendorRoutes.js";
+import reviewRoutes from "./router/reviewRoutes.js";
 import { configureGoogleStrategy } from "./config/passport.js";
 import { errorHandler } from "./middleware/errorMiddleware.js";
 
@@ -154,6 +155,7 @@ export function createApp({
   app.use("/api/eventAnalytics", eventAnalyticsRoutes);
   app.use("/api/admin", adminRoutes);
   app.use("/api/vendors", vendorRoutes);
+  app.use("/api/review", reviewRoutes);
 
   app.use(errorHandler);
 

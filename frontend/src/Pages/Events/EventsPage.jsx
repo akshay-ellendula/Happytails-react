@@ -9,13 +9,15 @@ import Footer from '../../components/Footer';
 
 const EventsPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all'); // NEW: State for filter
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
-  const [events, setEvents] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -23,8 +25,6 @@ const EventsPage = () => {
         setLoading(true);
         const response = await axiosInstance.get('/events/public');
         
-        console.log("API Response:", response.data);
-
         let eventsData = [];
         if (Array.isArray(response.data)) {
             eventsData = response.data;
@@ -41,8 +41,8 @@ const EventsPage = () => {
           date: formatDate(event.date_time),
           title: event.title,
           venue: event.venue,
-          price: event.ticketPrice === 0 || !event.ticketPrice ? 'Free Entry' : `${event.ticketPrice}`,
-          buttonText: event.ticketPrice === 0 ? 'Free Register' : 'Book tickets',
+          // FIX: Pass price as a clean number to handle the Rupee symbol properly in the card
+          price: event.ticketPrice || 0, 
           category: event.category || 'general',
           total_tickets: event.total_tickets,
           tickets_sold: event.tickets_sold
@@ -50,12 +50,16 @@ const EventsPage = () => {
         
         setEvents(transformedEvents);
 
+        // NEW: Create category list and prepend "ALL"
         const uniqueCategories = [...new Set(eventsData.map(event => event.category))].filter(Boolean);
-        const categoryData = uniqueCategories.map(category => ({
-          name: category.toUpperCase(),
-          type: category.toLowerCase(),
-          emoji: getEmojiForCategory(category)
-        }));
+        const categoryData = [
+          { name: 'ALL EVENTS', type: 'all', emoji: '🌟' }, // Default 'All' option
+          ...uniqueCategories.map(category => ({
+            name: category.toUpperCase(),
+            type: category.toLowerCase(),
+            emoji: getEmojiForCategory(category)
+          }))
+        ];
 
         setCategories(categoryData);
         setError(null);
@@ -74,15 +78,10 @@ const EventsPage = () => {
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return 'Date TBA';
-      }
+      if (isNaN(date.getTime())) return 'Date TBA';
       const options = { 
-        weekday: 'short', 
-        day: '2-digit', 
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
+        weekday: 'short', day: '2-digit', month: 'short',
+        hour: '2-digit', minute: '2-digit'
       };
       return date.toLocaleDateString('en-US', options);
     } catch (error) {
@@ -93,37 +92,26 @@ const EventsPage = () => {
   const getEmojiForCategory = (category) => {
     if (!category) return '🎉';
     const emojiMap = {
-      'festival': '🎃',
-      'carnival': '🎪',
-      'show': '⭐',
-      'meetup': '👥',
-      'health': '🏥',
-      'workshop': '📚',
-      'sports': '🏃',
-      'dog': '🐶',
-      'cat': '🐱',
-      'pets & animals': '🐾',
-      'pets': '🐾',
-      'music': '🎵',
-      'food': '🍕',
-      'art': '🎨',
-      'tech': '💻',
-      'business': '💼',
-      'education': '📖',
-      'general': '🎉'
+      'festival': '🎃', 'carnival': '🎪', 'show': '⭐', 'meetup': '👥',
+      'health': '🏥', 'workshop': '📚', 'sports': '🏃', 'dog': '🐶',
+      'cat': '🐱', 'pets & animals': '🐾', 'pets': '🐾', 'music': '🎵',
+      'food': '🍕', 'art': '🎨', 'tech': '💻', 'business': '💼',
+      'education': '📖', 'general': '🎉'
     };
     return emojiMap[category.toLowerCase()] || '🎉';
   };
 
+  // NEW: Filter events based on selected category
+  const filteredEvents = selectedCategory === 'all' 
+    ? events 
+    : events.filter(event => event.category.toLowerCase() === selectedCategory.toLowerCase());
+
   if (loading) {
     return (
-      <div className="bg-[#f2c737] min-h-screen">
+      <div className="bg-[#f2c737] min-h-screen flex flex-col">
         <Header onMenuToggle={toggleMobileMenu} />
-        {isMobileMenuOpen && (
-          <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
-        )}
-        <div className="flex justify-center items-center h-96">
-          <div className="text-xl font-medium text-gray-600">Loading events...</div>
+        <div className="flex-grow flex justify-center items-center">
+          <div className="text-xl font-bold text-[#1a1a1a]">Loading events...</div>
         </div>
         <Footer />
       </div>
@@ -132,13 +120,10 @@ const EventsPage = () => {
 
   if (error) {
     return (
-      <div className="bg-[#f2c737] min-h-screen">
+      <div className="bg-[#f2c737] min-h-screen flex flex-col">
         <Header onMenuToggle={toggleMobileMenu} />
-        {isMobileMenuOpen && (
-          <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
-        )}
-        <div className="flex justify-center items-center h-96">
-          <div className="text-xl text-red-500 font-semibold">{error}</div>
+        <div className="flex-grow flex justify-center items-center">
+          <div className="text-xl text-red-600 font-bold bg-white px-6 py-3 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl">{error}</div>
         </div>
         <Footer />
       </div>
@@ -155,13 +140,20 @@ const EventsPage = () => {
       {events.length > 0 ? (
         <>
           <HeroBanner events={events} />
-          {categories.length > 0 && <CategoriesSection categories={categories} />}
-          <EventsSection events={events} />
+          {categories.length > 0 && (
+            <CategoriesSection 
+              categories={categories} 
+              selectedCategory={selectedCategory} 
+              onSelectCategory={setSelectedCategory} 
+            />
+          )}
+          {/* Pass the filtered events to the section */}
+          <EventsSection events={filteredEvents} /> 
         </>
       ) : (
         <div className="flex flex-col justify-center items-center h-96 text-center p-4">
-          <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">No Upcoming Events</h2>
-          <p className="text-gray-600">Check back later for new events!</p>
+          <h2 className="text-3xl font-bold text-[#1a1a1a] mb-2">No Upcoming Events 🐾</h2>
+          <p className="text-[#1a1a1a] font-medium">Check back later for new events!</p>
         </div>
       )}
 

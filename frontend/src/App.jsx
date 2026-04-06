@@ -12,6 +12,7 @@ import { store } from "./store/store";
 // --- Pages: Public & General ---
 import HomePage from "./pages/Home/HomePage";
 import NotFound from "./Pages/NotFoundPage/NotFound";
+import ReviewPage from './Pages/ReviewPage/ReviewPage';
 
 // --- Pages: Auth ---
 import AuthPage from "./pages/Auth/Authpage";
@@ -160,6 +161,7 @@ function AppRoutes() {
         <Route path="/events" element={<EventsPage />} />
         <Route path="/event/:id" element={<EventDetailPage />} />
         <Route path="/partnerRegistrataion" element={<PartnerRegistration />} />
+        <Route path="/review/:ticketId/:token" element={<ReviewPage />} />
 
         {/* --- Auth Routes --- */}
         <Route path="/login" element={<AuthPage />} />
