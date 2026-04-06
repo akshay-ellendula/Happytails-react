@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import Ticket from '../models/ticketModel.js';
 import Review from '../models/reviewModel.js';
+import Event from '../models/eventModel.js';
 
 // GET /api/review/:ticketId/:token
 export const getReviewDetails = async (req, res, next) => {
@@ -90,6 +91,39 @@ export const submitReview = async (req, res, next) => {
 
     } catch (error) {
         console.error("Error submitting review:", error);
+        next(error);
+    }
+};
+
+// GET /api/review/manager
+// @access Event Manager
+export const getEventManagerReviews = async (req, res, next) => {
+    try {
+        const eventManagerId = req.user.eventManagerId;
+
+        // 1. Find all events created by this manager
+        const events = await Event.find({ eventManagerId });
+        const eventIds = events.map(event => event._id);
+
+        // 2. Find all reviews linked to those events
+        const reviews = await Review.find({ eventId: { $in: eventIds } })
+            .populate('customerId', 'userName email profilePic')
+            .populate('eventId', 'title')
+            .sort({ createdAt: -1 }); // Newest first
+
+        // 3. Calculate some quick stats
+        const totalReviews = reviews.length;
+        const averageRating = totalReviews > 0 
+            ? (reviews.reduce((sum, rev) => sum + rev.rating, 0) / totalReviews).toFixed(1)
+            : 0;
+
+        res.status(200).json({
+            stats: { totalReviews, averageRating },
+            reviews
+        });
+
+    } catch (error) {
+        console.error("Error fetching manager reviews:", error);
         next(error);
     }
 };

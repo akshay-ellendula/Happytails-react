@@ -1,10 +1,13 @@
 import express from 'express';
-import { submitReview, getReviewDetails } from '../controller/reviewController.js';
+import { submitReview, getReviewDetails, getEventManagerReviews } from '../controller/reviewController.js';
 import  protectRoute  from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Require user to be logged in as a customer
+// New route for Event Managers to see their reviews
+router.get('/manager', protectRoute(['eventManager']), getEventManagerReviews);
+
+// Existing routes for customers
 router.get('/:ticketId/:token', protectRoute(['customer']), getReviewDetails);
 router.post('/:ticketId/:token', protectRoute(['customer']), submitReview);
 

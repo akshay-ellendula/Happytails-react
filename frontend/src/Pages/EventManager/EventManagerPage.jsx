@@ -10,7 +10,8 @@ import Analytics from "./Analytics.jsx";
 import Settings from "./Settings";
 import CreateEvent from "./CreateEvent.jsx";
 import EditEvent from "./EditEvent.jsx";
-import EventDetailsView from "./EventDetailsView.jsx"; // Import the new details view
+import EventDetailsView from "./EventDetailsView.jsx";
+import Reviews from "./Reviews.jsx"; // <-- IMPORT REVIEWS
 
 // Icons
 import {
@@ -21,10 +22,10 @@ import {
   Settings as SettingsIcon,
   User,
   LogOut,
+  Star // <-- IMPORT STAR ICON FOR REVIEWS
 } from "lucide-react";
 
 // Lazy load components - MUST BE DEFINED OUTSIDE THE COMPONENT
-// If defined inside, they trigger unmount/remount on every parent render, causing infinite API loops.
 const Tickets = React.lazy(() => import("./Tickets"));
 const TicketDetails = React.lazy(() => import("./TicketDetails.jsx"));
 const EditTicket = React.lazy(() => import("./EditTicket"));
@@ -36,7 +37,6 @@ const EventManagerPages = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [currentEvent, setCurrentEvent] = useState(null);
   const [currentTicket, setCurrentTicket] = useState(null);
-  // Keeping track of history for back navigation
   const [pageHistory, setPageHistory] = useState([]);
 
   // Profile State for Sidebar
@@ -46,7 +46,7 @@ const EventManagerPages = () => {
     profilePic: null,
   });
 
-  // Fetch Profile Data for Sidebar - Runs once on mount
+  // Fetch Profile Data for Sidebar
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -64,10 +64,9 @@ const EventManagerPages = () => {
     fetchProfile();
   }, []);
 
-  // Handle Logout
   const handleLogout = async () => {
-    await signout(); // Calls auth context logout
-    navigate("/service-login"); // Redirect to the service provider login
+    await signout(); 
+    navigate("/service-login"); 
   };
 
   // Sidebar Configuration
@@ -81,15 +80,18 @@ const EventManagerPages = () => {
       id: "events",
       label: "Events",
       icon: Calendar,
-      // Highlight 'Events' tab when in create/edit modes
       activeMatches: ["events", "create-event", "edit-event"],
     },
     {
       id: "tickets",
       label: "Tickets",
       icon: Ticket,
-      // Highlight 'Tickets' tab when viewing details/editing
       activeMatches: ["tickets", "ticket-details", "edit-ticket"],
+    },
+    {
+      id: "reviews",
+      label: "Reviews",
+      icon: Star, // <-- NEW REVIEWS TAB
     },
     {
       id: "analytics",
@@ -103,9 +105,7 @@ const EventManagerPages = () => {
     },
   ];
 
-  // Enhanced navigation with history tracking
   const handlePageChange = (page, data = null, type = null) => {
-    // Push current state to history before moving
     setPageHistory((prev) => [
       ...prev,
       { page: currentPage, data: currentEvent || currentTicket },
@@ -125,14 +125,13 @@ const EventManagerPages = () => {
     setCurrentPage(page);
   };
 
-  // Render Page Logic
   const renderPage = () => {
     const pageConfig = {
       fallback: (
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
+            <div className="w-8 h-8 border-4 border-black border-t-[#f2c737] rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600 font-bold">Loading...</p>
           </div>
         </div>
       ),
@@ -167,6 +166,8 @@ const EventManagerPages = () => {
             />
           </Suspense>
         );
+      case "reviews": // <-- NEW CASE FOR REVIEWS
+        return <Reviews />;
       case "analytics":
         return <Analytics />;
       case "settings":
@@ -195,18 +196,17 @@ const EventManagerPages = () => {
   return (
     <div className="h-screen flex bg-gray-50">
       {/* Dynamic Sidebar */}
-      <div className="bg-[#1a1a1a] text-white w-64 p-4 flex flex-col transition-all duration-300">
+      <div className="bg-[#1a1a1a] text-white w-64 p-4 flex flex-col transition-all duration-300 shadow-[4px_0_15px_rgba(0,0,0,0.1)] z-10">
         <div className="flex items-center justify-between mb-8 px-2">
           <div className="flex items-center space-x-3">
-            <span className="text-2xl">🐾</span>
-            <h1 className="text-xl font-bold tracking-wide">Happy Tails</h1>
+            <span className="text-2xl drop-shadow-[1px_1px_0px_rgba(255,255,255,0.3)]">🐾</span>
+            <h1 className="text-xl font-bold tracking-wide text-[#f2c737]">Happy Tails</h1>
           </div>
         </div>
 
         <nav className="flex-1">
           <ul className="space-y-2">
             {sidebarItems.map((item) => {
-              // Check if the item should be active based on current page or sub-pages
               const isActive = item.activeMatches
                 ? item.activeMatches.includes(currentPage)
                 : currentPage === item.id;
@@ -217,8 +217,8 @@ const EventManagerPages = () => {
                     onClick={() => handlePageChange(item.id)}
                     className={`w-full text-left flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 group ${
                       isActive
-                        ? "bg-[#effe8b]/20 border-l-4 border-[#effe8b] text-white"
-                        : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                        ? "bg-[#effe8b]/20 border-l-4 border-[#effe8b] text-white font-bold"
+                        : "text-gray-400 hover:bg-gray-800 hover:text-white font-medium"
                     }`}
                   >
                     <item.icon
@@ -228,7 +228,7 @@ const EventManagerPages = () => {
                           : "text-gray-400 group-hover:text-white"
                       }`}
                     />
-                    <span className="font-medium">{item.label}</span>
+                    <span>{item.label}</span>
                   </button>
                 </li>
               );
@@ -239,7 +239,7 @@ const EventManagerPages = () => {
         {/* Dynamic User Profile Footer */}
         <div className="pt-4 border-t border-gray-800">
           <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-800 transition-colors">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg overflow-hidden">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-700 border-2 border-[#effe8b] overflow-hidden">
               {profile.profilePic ? (
                 <img
                   src={profile.profilePic}
@@ -247,17 +247,14 @@ const EventManagerPages = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User className="w-5 h-5 text-white" />
+                <User className="w-5 h-5 text-gray-300" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate" title={profile.name}>
+              <p className="font-bold text-sm text-white truncate" title={profile.name}>
                 {profile.name}
               </p>
-              <p
-                className="text-xs text-gray-500 truncate"
-                title={profile.email}
-              >
+              <p className="text-xs text-gray-400 truncate" title={profile.email}>
                 {profile.email}
               </p>
             </div>
