@@ -169,7 +169,7 @@ export const postTicket = async (req, res) => {
                 message: `Tickets booked successfully! Total: â‚¹${totalPrice}`
             });
         }
-        
+
         const newTicket = await Ticket.create({
             eventId,
             customerId,
@@ -179,7 +179,7 @@ export const postTicket = async (req, res) => {
             contactName: name,
             contactPhone: phone,
             contactEmail: email,
-            petName: petName || '', 
+            petName: petName || '',
             petBreed: petBreed || '',
             petAge: petAge || null,
         });
@@ -187,45 +187,77 @@ export const postTicket = async (req, res) => {
         event.tickets_sold = event.tickets_sold + ticketCount;
         await event.save();
 
-        // --- NEW BEAUTIFUL EMAIL CODE ---
         const emailMessage = `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                
-                <div style="background-color: #FF8A00; padding: 30px; text-align: center;">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; letter-spacing: 1px;">🐾 HappyTails</h1>
-                    <p style="color: #fff3e0; margin-top: 5px; font-size: 16px;">Ticket Booking Confirmation</p>
-                </div>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
+    </style>
 
-                <div style="padding: 40px 30px; color: #333333; line-height: 1.6;">
-                    <h2 style="color: #2c3e50; margin-top: 0;">You're going to ${event.title}! 🎉</h2>
-                    <p style="font-size: 16px;">Hi <strong>${name}</strong>,</p>
-                    <p style="font-size: 16px;">We are thrilled to let you know that your ticket booking was successful. Get ready for a pawsome time!</p>
-                    
-                    <div style="background-color: #fff8f0; border-left: 4px solid #FF8A00; padding: 20px; border-radius: 0 8px 8px 0; margin: 25px 0;">
-                        <h3 style="margin-top: 0; color: #FF8A00; font-size: 18px;">🎟️ Booking Details</h3>
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <tr><td style="padding: 6px 0; color: #555;"><strong>Number of Tickets:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">${ticketCount}</td></tr>
-                            <tr><td style="padding: 6px 0; color: #555;"><strong>Total Price:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">₹${totalPrice}</td></tr>
-                            <tr><td style="padding: 6px 0; color: #555;"><strong>Phone Number:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">${phone}</td></tr>
-                            ${petName ? `<tr><td style="padding: 6px 0; color: #555;"><strong>Pet Guest:</strong></td><td style="padding: 6px 0; text-align: right; color: #333;">${petName} (${petBreed || 'N/A'})</td></tr>` : ''}
-                        </table>
-                    </div>
+    <div style="font-family: 'DM Sans', 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 2px solid #000000;">
 
-                    <div style="background-color: #f1f8ff; border: 1px solid #cce5ff; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 25px;">
-                        <p style="margin: 0; font-size: 15px; color: #004085;">
-                            <strong>📥 Want your official ticket?</strong><br>
-                            You can easily view and download your official Ticket PDF at any time by logging into your account on the HappyTails website.
-                        </p>
-                    </div>
+        <!-- Header -->
+        <div style="background-color: #FFD700; padding: 36px 30px; text-align: center; border-bottom: 3px solid #000000;">
+            <h1 style="color: #000000; margin: 0; font-size: 38px; font-family: 'Playfair Display', Georgia, serif; font-weight: 900; letter-spacing: 2px;">🐾 HappyTails</h1>
+            <div style="width: 60px; height: 3px; background-color: #000000; margin: 12px auto;"></div>
+            <p style="color: #000000; margin: 0; font-size: 11px; letter-spacing: 5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif; font-weight: 600;">Ticket Booking Confirmation</p>
+        </div>
 
-                    <p style="font-size: 16px;">We look forward to seeing you there!</p>
-                </div>
+        <!-- Body -->
+        <div style="padding: 44px 36px; color: #111111; line-height: 1.75; background-color: #ffffff;">
 
-                <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e0e0e0;">
-                    <p style="margin: 0; font-size: 14px; color: #777;">With love & wags,<br><strong>The HappyTails Team</strong></p>
-                </div>
+            <h2 style="color: #000000; margin-top: 0; font-size: 24px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; border-bottom: 2px solid #FFD700; padding-bottom: 12px;">
+                You're going to ${event.title}! 🎉
+            </h2>
+
+            <p style="font-size: 16px; color: #222222; font-family: 'DM Sans', sans-serif;">Hi <strong>${name}</strong>,</p>
+            <p style="font-size: 15px; color: #444444; font-family: 'DM Sans', sans-serif;">
+                Your ticket booking is confirmed. Get ready for a <strong>pawsome</strong> time — we can't wait to see you there!
+            </p>
+
+            <!-- Booking Details Card -->
+            <div style="background-color: #000000; padding: 28px; margin: 28px 0;">
+                <h3 style="margin-top: 0; color: #FFD700; font-size: 11px; letter-spacing: 5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif; font-weight: 600;">🎟️ Booking Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="border-bottom: 1px solid #2a2a2a;">
+                        <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Number of Tickets</td>
+                        <td style="padding: 11px 0; text-align: right; color: #FFD700; font-size: 20px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700;">${ticketCount}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #2a2a2a;">
+                        <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Total Amount</td>
+                        <td style="padding: 11px 0; text-align: right; color: #FFD700; font-size: 20px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700;">₹${totalPrice}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #2a2a2a;">
+                        <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Contact Phone</td>
+                        <td style="padding: 11px 0; text-align: right; color: #ffffff; font-size: 15px; font-family: 'DM Sans', sans-serif;">${phone}</td>
+                    </tr>
+                    ${petName ? `
+                    <tr>
+                        <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Pet Guest</td>
+                        <td style="padding: 11px 0; text-align: right; color: #ffffff; font-size: 15px; font-family: 'DM Sans', sans-serif;">${petName} (${petBreed || 'N/A'})</td>
+                    </tr>` : ''}
+                </table>
             </div>
-        `;
+
+            <!-- Download Notice -->
+            <div style="border: 2px solid #000000; background-color: #FFFBEA; padding: 20px 22px; margin-bottom: 28px;">
+                <p style="margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: #000000; font-family: 'DM Sans', sans-serif;">📥 Your Official Ticket</p>
+                <p style="margin: 0; font-size: 14px; color: #444444; font-family: 'DM Sans', sans-serif;">
+                    Log into your <strong>HappyTails</strong> account to view and download your official Ticket PDF at any time.
+                </p>
+            </div>
+
+            <p style="font-size: 15px; color: #444444; font-family: 'DM Sans', sans-serif;">
+                See you at the event — it's going to be a <strong>tail-wagging</strong> good time! 🐶
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #000000; padding: 26px 30px; text-align: center; border-top: 3px solid #FFD700;">
+            <p style="margin: 0; font-size: 11px; color: #FFD700; letter-spacing: 4px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">With love & wags</p>
+            <p style="margin: 8px 0 0; font-size: 20px; color: #ffffff; font-family: 'Playfair Display', Georgia, serif; font-weight: 700;">The HappyTails Team 🐾</p>
+        </div>
+
+    </div>
+`;
 
         try {
             await sendEmail({
@@ -241,8 +273,8 @@ export const postTicket = async (req, res) => {
         }
         // --- END OF EMAIL CODE ---
 
-        res.status(201).json({ 
-            success: true, 
+        res.status(201).json({
+            success: true,
             ticket: newTicket,
             message: `Tickets booked successfully! Total: ₹${totalPrice}`
         });
@@ -259,8 +291,8 @@ export const getUserTicket = async (req, res) => {
     try {
         // Fixed: Use { customerId } instead of just customerId
         const tickets = await Ticket.find({ customerId }).populate("eventId").populate("customerId");
-        if(!tickets || tickets.length === 0){ // Fixed: spelling correction and proper check
-            return res.status(404).json({message : "No tickets found for this user"}) // Fixed: Added return
+        if (!tickets || tickets.length === 0) { // Fixed: spelling correction and proper check
+            return res.status(404).json({ message: "No tickets found for this user" }) // Fixed: Added return
         }
         res.status(200).json(tickets)
     } catch (error) {
@@ -274,11 +306,11 @@ export const getUserTicket = async (req, res) => {
 export const getEventManagerTickets = async (req, res) => {
     try {
         const eventManagerId = req.user.eventManagerId;
-        
+
         // Get events by this manager
         const events = await Event.find({ eventManagerId });
         const eventIds = events.map(event => event._id);
-        
+
         // Get tickets for these events
         const tickets = await Ticket.find({ eventId: { $in: eventIds } })
             .populate('eventId')
