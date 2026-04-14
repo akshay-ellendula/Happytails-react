@@ -38,7 +38,7 @@ const ratingSchema = new mongoose.Schema({
         maxlength: 100
     },
     images: [{
-        type: String  // Store image URLs from Cloudinary
+        type: String
     }],
     isVerifiedPurchase: {
         type: Boolean,
@@ -65,8 +65,9 @@ const ratingSchema = new mongoose.Schema({
     timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' }
 });
 
-// Compound index to ensure a customer can only rate a product once per order
-ratingSchema.index({ customer_id: 1, product_id: 1, order_id: 1 }, { unique: true });
+// IMPORTANT: Customer can only rate a product ONCE regardless of how many times they buy it
+// This prevents duplicate ratings for the same product
+ratingSchema.index({ customer_id: 1, product_id: 1 }, { unique: true });
 
 const Rating = mongoose.model('Rating', ratingSchema);
 export default Rating;

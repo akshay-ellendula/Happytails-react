@@ -33,34 +33,50 @@ export const createRating = async (req, res, next) => {
             });
         }
 
-        // Check if user has already rated this product for this order
+        // FIRST: Check if user has already rated this product EVER (regardless of order)
         const existingRating = await Rating.findOne({
             customer_id,
-            product_id,
-            order_id
+            product_id
         });
 
         if (existingRating) {
             return res.status(400).json({
                 success: false,
-                message: 'You have already rated this product for this order'
+                message: 'You have already rated this product. You can only rate a product once.'
             });
         }
 
-        // Verify user actually purchased this product
+        // SECOND: Verify user actually purchased this product (at least once)
+        // Check if user has any delivered order containing this product
         const orderItem = await OrderItem.findOne({
-            order_id,
-            product_id,
-            variant_id: variant_id || null
+            product_id
         }).populate({
             path: 'order_id',
-            match: { customer_id, status: 'Delivered' }
+            match: { 
+                customer_id, 
+                status: 'Delivered' 
+            }
         });
 
         if (!orderItem || !orderItem.order_id) {
             return res.status(403).json({
                 success: false,
                 message: 'You can only rate products you have purchased and received'
+            });
+        }
+
+        // Optional: If you want to track which order they're rating from (for reference)
+        // but doesn't affect the uniqueness constraint
+        const validOrder = await Order.findOne({
+            _id: order_id,
+            customer_id,
+            status: 'Delivered'
+        });
+
+        if (!validOrder) {
+            return res.status(403).json({
+                success: false,
+                message: 'Invalid order. You can only rate products from delivered orders.'
             });
         }
 
@@ -77,7 +93,7 @@ export const createRating = async (req, res, next) => {
             isVerifiedPurchase: true
         });
 
-        // Update product's average rating (you'll need to add this to Product model)
+        // Update product's average rating
         await updateProductAverageRating(product_id);
 
         res.status(201).json({
@@ -89,7 +105,7 @@ export const createRating = async (req, res, next) => {
         if (error.code === 11000) {
             return res.status(400).json({
                 success: false,
-                message: 'You have already rated this product for this order'
+                message: 'You have already rated this product. You can only rate a product once.'
             });
         }
         next(error);

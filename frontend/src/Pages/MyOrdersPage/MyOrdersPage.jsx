@@ -6,13 +6,12 @@ import Footer from "../../components/Footer";
 import { axiosInstance } from "../../utils/axios";
 import { useNavigate } from "react-router";
 import RatingModal from "../../components/RatingModal";
-import RatingStars from "../../components/RatingStars";
 import { toast } from "react-hot-toast";
 
 export default function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userRatings, setUserRatings] = useState({});
+  const [userRatings, setUserRatings] = useState({}); // Key: product_id, Value: rating object
   const navigate = useNavigate();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -28,15 +27,16 @@ export default function MyOrdersPage() {
     navigate(`/track-order/${order.id || order._id}`, { state: { order } });
   };
 
-  // Fetch user's existing ratings
+  // Fetch user's existing ratings (indexed by product_id)
   const fetchUserRatings = async () => {
     try {
       const response = await axiosInstance.get("/ratings/my-ratings");
       if (response.data.success) {
         const ratingsMap = {};
         response.data.ratings.forEach(rating => {
-          const key = `${rating.product_id._id || rating.product_id}_${rating.order_id}`;
-          ratingsMap[key] = rating;
+          // Key by product_id only - customer can only rate each product once
+          const productId = rating.product_id._id || rating.product_id;
+          ratingsMap[productId] = rating;
         });
         setUserRatings(ratingsMap);
       }
@@ -118,16 +118,17 @@ export default function MyOrdersPage() {
 
   const handleRatingSuccess = (rating) => {
     toast.success("Thank you for your rating!");
-    fetchUserRatings(); // Refresh the ratings
+    // Update the local state to mark this product as rated
+    setUserRatings(prev => ({
+      ...prev,
+      [rating.product_id]: rating
+    }));
   };
 
-  const canRateProduct = (order, productId, variantId) => {
-    // Only allow rating for delivered orders
+  // Check if product can be rated (order delivered AND product not rated before)
+  const canRateProduct = (order, productId) => {
     if (order.status !== "Delivered") return false;
-    
-    // Check if already rated
-    const key = `${productId}_${order.id || order._id}`;
-    return !userRatings[key];
+    return !userRatings[productId];
   };
 
   const renderOrderCard = (order) => {
@@ -180,8 +181,8 @@ export default function MyOrdersPage() {
       }
     };
 
-    // Check if the main item is already rated
-    const isMainItemRated = !canRateProduct(order, item?.product_id, item?.variant_id);
+    const isProductRated = userRatings[item?.product_id];
+    const canRate = canRateProduct(order, item?.product_id);
 
     return (
       <div
@@ -267,6 +268,11 @@ export default function MyOrdersPage() {
                     {order.status}
                   </span>
                 </p>
+                {isProductRated && (
+                  <p className="text-sm text-green-600 mt-2">
+                    ✓ You have rated this product
+                  </p>
+                )}
               </div>
             </div>
 
@@ -287,14 +293,15 @@ export default function MyOrdersPage() {
               {order.status === "Delivered" && item && (
                 <button
                   onClick={() => handleRateProduct(order, item)}
-                  disabled={isMainItemRated}
+                  disabled={!canRate}
                   className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 border border-black ${
-                    isMainItemRated
+                    !canRate
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                       : "bg-green-600 text-white hover:scale-105 hover:shadow-lg"
                   }`}
+                  title={isProductRated ? "You have already rated this product" : "Rate this product"}
                 >
-                  {isMainItemRated ? "Already Rated" : "Rate Product"}
+                  {isProductRated ? "Already Rated" : "Rate Product"}
                 </button>
               )}
               {order.status === "Delivered" && (
