@@ -5,13 +5,21 @@ import Sidebar from "../../components/Sidebar";
 import Footer from "../../components/Footer";
 import { axiosInstance } from "../../utils/axios";
 import { useNavigate } from "react-router";
+import RatingModal from "../../components/RatingModal";
+import RatingStars from "../../components/RatingStars";
+import { toast } from "react-hot-toast";
 
 export default function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userRatings, setUserRatings] = useState({});
   const navigate = useNavigate();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [selectedProductForRating, setSelectedProductForRating] = useState(null);
+  const [selectedOrderForRating, setSelectedOrderForRating] = useState(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
@@ -20,23 +28,48 @@ export default function MyOrdersPage() {
     navigate(`/track-order/${order.id || order._id}`, { state: { order } });
   };
 
+  // Fetch user's existing ratings
+  const fetchUserRatings = async () => {
+    try {
+      const response = await axiosInstance.get("/ratings/my-ratings");
+      if (response.data.success) {
+        const ratingsMap = {};
+        response.data.ratings.forEach(rating => {
+          const key = `${rating.product_id._id || rating.product_id}_${rating.order_id}`;
+          ratingsMap[key] = rating;
+        });
+        setUserRatings(ratingsMap);
+      }
+    } catch (error) {
+      console.error("Error fetching user ratings:", error);
+    }
+  };
+
   useEffect(() => {
-    axiosInstance
-      .get("/products/getUserOrders")
-      .then((res) => res.data)
-      .then((data) => {
-        if (data.success) setOrders(data.orders);
-        else alert("Error fetching orders: " + data.message);
-      })
-      .catch((err) => {
-        console.error("Error fetching orders:", err);
-        alert(
-          "Error fetching orders: " +
-            (err.response?.data?.message || err.message)
-        );
-      })
-      .finally(() => setLoading(false));
+    fetchOrders();
+    fetchUserRatings();
   }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const res = await axiosInstance.get("/products/getUserOrders");
+      const data = res.data;
+
+      if (data.success) {
+        setOrders(data.orders);
+      } else {
+        toast.error("Error fetching orders: " + data.message);
+      }
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+      toast.error(
+        "Error fetching orders: " +
+          (err.response?.data?.message || err.message)
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBuyAgain = async (orderId) => {
     try {
@@ -60,16 +93,41 @@ export default function MyOrdersPage() {
         });
 
         localStorage.setItem("cart", JSON.stringify(cart));
-        alert("Items added to cart successfully!");
+        toast.success("Items added to cart successfully!");
         window.location.href = "/pet_accessory";
-      } else alert("Error reordering: " + data.message);
+      } else toast.error("Error reordering: " + data.message);
     } catch (err) {
       console.error(err);
-      alert(
+      toast.error(
         "Error adding items to cart: " +
           (err.response?.data?.message || err.message)
       );
     }
+  };
+
+  const handleRateProduct = (order, product) => {
+    setSelectedOrderForRating(order);
+    setSelectedProductForRating({
+      id: product.product_id || product._id,
+      product_name: product.product_name,
+      image_data: product.image_data,
+      variant_id: product.variant_id
+    });
+    setShowRatingModal(true);
+  };
+
+  const handleRatingSuccess = (rating) => {
+    toast.success("Thank you for your rating!");
+    fetchUserRatings(); // Refresh the ratings
+  };
+
+  const canRateProduct = (order, productId, variantId) => {
+    // Only allow rating for delivered orders
+    if (order.status !== "Delivered") return false;
+    
+    // Check if already rated
+    const key = `${productId}_${order.id || order._id}`;
+    return !userRatings[key];
   };
 
   const renderOrderCard = (order) => {
@@ -121,6 +179,9 @@ export default function MyOrdersPage() {
         return "Est: N/A";
       }
     };
+
+    // Check if the main item is already rated
+    const isMainItemRated = !canRateProduct(order, item?.product_id, item?.variant_id);
 
     return (
       <div
@@ -209,10 +270,10 @@ export default function MyOrdersPage() {
               </div>
             </div>
 
-            {/* Action Buttons - UPDATED with new yellow */}
+            {/* Action Buttons */}
             <div className="flex flex-wrap gap-3">
               <button
-                onClick={() => handleBuyAgain(order.id)}
+                onClick={() => handleBuyAgain(order.id || order._id)}
                 className="bg-[#1a1a1a] text-[#f2c737] px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:bg-[#f2c737] hover:text-[#1a1a1a] border border-black"
               >
                 Buy Again
@@ -223,6 +284,19 @@ export default function MyOrdersPage() {
               >
                 Order Details
               </button>
+              {order.status === "Delivered" && item && (
+                <button
+                  onClick={() => handleRateProduct(order, item)}
+                  disabled={isMainItemRated}
+                  className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 border border-black ${
+                    isMainItemRated
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-green-600 text-white hover:scale-105 hover:shadow-lg"
+                  }`}
+                >
+                  {isMainItemRated ? "Already Rated" : "Rate Product"}
+                </button>
+              )}
               {order.status === "Delivered" && (
                 <button className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg border border-black">
                   Return Product
@@ -279,6 +353,22 @@ export default function MyOrdersPage() {
           </section>
         </main>
       </div>
+
+      {/* Rating Modal */}
+      {selectedProductForRating && selectedOrderForRating && (
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => {
+            setShowRatingModal(false);
+            setSelectedProductForRating(null);
+            setSelectedOrderForRating(null);
+          }}
+          product={selectedProductForRating}
+          orderId={selectedOrderForRating.id || selectedOrderForRating._id}
+          onSuccess={handleRatingSuccess}
+        />
+      )}
+
       <Footer />
     </div>
   );

@@ -639,10 +639,60 @@ const reorder = async (req, res, next) => {
     }
 };
 
+// Add to productController.js
+const getProductWithRatings = async (req, res, next) => {
+    try {
+        const productId = req.params.id;
+        
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return res.status(400).json({ success: false, message: 'Invalid product ID format' });
+        }
+
+        const product = await Product.findById(productId)
+            .select('id product_name product_type product_category product_description rating_average rating_count');
+        
+        if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+
+        const variants = await ProductVariant.find({ product_id: productId })
+            .select('id size color regular_price sale_price stock_quantity');
+        const image = await ProductImage.findOne({ product_id: productId, is_primary: true })
+            .select('image_data');
+
+        const productData = {
+            id: product._id.toString(),
+            product_name: product.product_name,
+            product_type: product.product_type,
+            product_category: product.product_category,
+            product_description: product.product_description,
+            rating_average: product.rating_average || 0,
+            rating_count: product.rating_count || 0,
+            variants: variants.map(v => ({
+                variant_id: v._id,
+                size: v.size,
+                color: v.color,
+                regular_price: v.regular_price,
+                sale_price: v.sale_price,
+                stock_quantity: v.stock_quantity
+            })),
+            image_data: image ? image.image_data : null
+        };
+
+        return res.json({
+            success: true,
+            product: productData,
+        });
+
+    } catch (err) {
+        console.error("Error fetching product:", err);
+        next(err);
+    }
+};
+
 export {
     getPetAccessories,
     getProduct,
     checkout,
+    getProductWithRatings,
     createProductPaymentIntent,
     processPayment,
     getUserOrders,

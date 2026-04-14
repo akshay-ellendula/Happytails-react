@@ -8,6 +8,7 @@ import {
     createProductPaymentIntent,
     getUserOrders,
     processPayment,
+    getProductWithRatings,
     reorder,
 } from '../controller/productController.js';
 
@@ -19,4 +20,5 @@ router.post('/create-payment-intent', protectRoute(['customer']), createProductP
 router.post('/process-payment', protectRoute(['customer']), processPayment);
 router.get('/getUserOrders', protectRoute(['customer']), getUserOrders);
 router.post('/orders/:orderId/reorder', protectRoute(['customer']), reorder);
+router.get('/getProductWithRatings/:id', getProductWithRatings);
 export default router;

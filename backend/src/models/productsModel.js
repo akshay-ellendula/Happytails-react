@@ -13,7 +13,18 @@ const productSchema = new mongoose.Schema({
     sku: { type: String, default: null },
     stock_status: { type: String, required: true },
     created_at: { type: Date, default: Date.now },
-    is_deleted: { type: Boolean, default: false }
+    is_deleted: { type: Boolean, default: false },
+    // Rating fields
+    rating_average: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 5
+    },
+    rating_count: {
+        type: Number,
+        default: 0
+    }
 });
 
 const productVariantSchema = new mongoose.Schema({
@@ -36,7 +47,6 @@ const productImageSchema = new mongoose.Schema({
 const Product = mongoose.model('Product', productSchema);
 const ProductVariant = mongoose.model('ProductVariant', productVariantSchema);
 const ProductImage = mongoose.model('ProductImage', productImageSchema);
-
 
 // Change module.exports to ES named export
 export {

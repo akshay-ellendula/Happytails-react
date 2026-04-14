@@ -7,6 +7,7 @@ import { axiosInstance } from "../../utils/axios";
 import { useCart } from "../../context/CartContext";
 import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
+import RatingStars from "../../components/RatingStars";
 import {
   Facebook,
   Instagram,
@@ -14,6 +15,11 @@ import {
   ArrowLeft,
   ShoppingCart,
   Package,
+  Star,
+  ThumbsUp,
+  User,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 const ProductDetailPage = () => {
@@ -30,12 +36,22 @@ const ProductDetailPage = () => {
   const [showCartMessage, setShowCartMessage] = useState(false);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Rating states
+  const [ratings, setRatings] = useState([]);
+  const [ratingSummary, setRatingSummary] = useState(null);
+  const [ratingsLoading, setRatingsLoading] = useState(false);
+  const [ratingsPage, setRatingsPage] = useState(1);
+  const [hasMoreRatings, setHasMoreRatings] = useState(true);
+  const [showAllRatings, setShowAllRatings] = useState(false);
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   const { openCart, addToCart } = useCart();
 
+  // Fetch product details
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -76,6 +92,72 @@ const ProductDetailPage = () => {
     };
     fetchProduct();
   }, [id]);
+
+  // Fetch ratings when product loads
+  useEffect(() => {
+    if (product?.id) {
+      fetchRatings();
+      fetchRatingSummary();
+    }
+  }, [product?.id]);
+
+  const fetchRatings = async (page = 1, append = false) => {
+    if (!product?.id) return;
+
+    setRatingsLoading(true);
+    try {
+      const response = await axiosInstance.get(`/ratings/product/${product.id}`, {
+        params: { page, limit: 5 }
+      });
+
+      if (response.data.success) {
+        if (append) {
+          setRatings(prev => [...prev, ...response.data.ratings]);
+        } else {
+          setRatings(response.data.ratings);
+        }
+        setHasMoreRatings(response.data.ratings.length === 5);
+        setRatingsPage(page);
+      }
+    } catch (error) {
+      console.error('Error fetching ratings:', error);
+    } finally {
+      setRatingsLoading(false);
+    }
+  };
+
+  const fetchRatingSummary = async () => {
+    if (!product?.id) return;
+
+    try {
+      const response = await axiosInstance.get(`/ratings/product/${product.id}/summary`);
+      if (response.data.success) {
+        setRatingSummary(response.data.summary);
+      }
+    } catch (error) {
+      console.error('Error fetching rating summary:', error);
+    }
+  };
+
+  const loadMoreRatings = () => {
+    const nextPage = ratingsPage + 1;
+    fetchRatings(nextPage, true);
+  };
+
+  const handleMarkHelpful = async (ratingId) => {
+    try {
+      const response = await axiosInstance.post(`/ratings/${ratingId}/helpful`);
+      if (response.data.success) {
+        setRatings(prev => prev.map(rating =>
+          rating._id === ratingId
+            ? { ...rating, helpful_count: response.data.helpful_count }
+            : rating
+        ));
+      }
+    } catch (error) {
+      console.error('Error marking helpful:', error);
+    }
+  };
 
   const availableSizes = useMemo(() => {
     if (!product) return [];
@@ -308,6 +390,18 @@ const ProductDetailPage = () => {
                 <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
                   {product.product_name}
                 </h1>
+                {/* Rating Display */}
+                {ratingSummary && ratingSummary.totalRatings > 0 && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <RatingStars rating={ratingSummary.averageRating} readonly size="sm" />
+                    <span className="text-sm text-gray-600">
+                      {ratingSummary.averageRating} out of 5
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      ({ratingSummary.totalRatings} reviews)
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="py-4 border-y border-gray-200">
@@ -458,6 +552,161 @@ const ProductDetailPage = () => {
                   <p className="text-gray-700 leading-relaxed">
                     {product.product_description}
                   </p>
+                </div>
+              )}
+
+              {/* Ratings Section */}
+              {ratingSummary && ratingSummary.totalRatings > 0 && (
+                <div className="pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-xl font-bold text-gray-900">
+                      Customer Reviews
+                    </h4>
+                    <button
+                      onClick={() => setShowAllRatings(!showAllRatings)}
+                      className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+                    >
+                      {showAllRatings ? (
+                        <>Show Less <ChevronUp className="w-4 h-4" /></>
+                      ) : (
+                        <>Show All Reviews <ChevronDown className="w-4 h-4" /></>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Rating Summary */}
+                  <div className="flex items-center gap-6 mb-6 p-4 bg-gray-50 rounded-lg">
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-gray-900">
+                        {ratingSummary.averageRating}
+                      </div>
+                      <RatingStars rating={ratingSummary.averageRating} readonly size="sm" />
+                      <div className="text-sm text-gray-500 mt-1">
+                        Based on {ratingSummary.totalRatings} reviews
+                      </div>
+                    </div>
+
+                    <div className="flex-1 space-y-1">
+                      {[5, 4, 3, 2, 1].map(star => {
+                        const count = ratingSummary.distribution[star] || 0;
+                        const percentage = ratingSummary.totalRatings > 0
+                          ? (count / ratingSummary.totalRatings) * 100
+                          : 0;
+                        return (
+                          <div key={star} className="flex items-center gap-2">
+                            <div className="w-12 text-sm text-gray-600">{star} ★</div>
+                            <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-yellow-400 rounded-full"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                            <div className="w-12 text-sm text-gray-500">{count}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Individual Ratings - Only show when expanded */}
+                  {(showAllRatings || ratings.length > 0) && showAllRatings && (
+                    <div className="space-y-6 mt-6">
+                      {ratings.length === 0 && !ratingsLoading && (
+                        <p className="text-gray-500 text-center py-4">
+                          No reviews yet. Be the first to review this product!
+                        </p>
+                      )}
+                      
+                      {ratings.map((rating) => (
+                        <div key={rating._id} className="border-b border-gray-200 pb-6">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                                  <User className="w-4 h-4 text-gray-500" />
+                                </div>
+                                <span className="font-semibold text-gray-900">
+                                  {rating.customer_id?.userName || 'Anonymous'}
+                                </span>
+                                {rating.isVerifiedPurchase && (
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                    Verified Purchase
+                                  </span>
+                                )}
+                              </div>
+                              <RatingStars rating={rating.rating} readonly size="sm" />
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {new Date(rating.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+
+                          {rating.title && (
+                            <h5 className="font-semibold text-gray-900 mt-2">
+                              {rating.title}
+                            </h5>
+                          )}
+
+                          {rating.review && (
+                            <p className="text-gray-700 mt-2">
+                              {rating.review}
+                            </p>
+                          )}
+
+                          <button
+                            onClick={() => handleMarkHelpful(rating._id)}
+                            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mt-3 transition-colors"
+                          >
+                            <ThumbsUp className="w-4 h-4" />
+                            <span>Helpful ({rating.helpful_count})</span>
+                          </button>
+                        </div>
+                      ))}
+
+                      {hasMoreRatings && (
+                        <button
+                          onClick={loadMoreRatings}
+                          disabled={ratingsLoading}
+                          className="w-full py-2 text-center text-[#1a1a1a] font-semibold hover:underline transition-all"
+                        >
+                          {ratingsLoading ? 'Loading...' : 'Load More Reviews'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Show preview when collapsed */}
+                  {!showAllRatings && ratings.length > 0 && (
+                    <div className="space-y-4 mt-4">
+                      {ratings.slice(0, 2).map((rating) => (
+                        <div key={rating._id} className="border-b border-gray-200 pb-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
+                                  <User className="w-3 h-3 text-gray-500" />
+                                </div>
+                                <span className="font-semibold text-gray-900 text-sm">
+                                  {rating.customer_id?.userName || 'Anonymous'}
+                                </span>
+                                {rating.isVerifiedPurchase && (
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                    Verified
+                                  </span>
+                                )}
+                              </div>
+                              <RatingStars rating={rating.rating} readonly size="sm" />
+                            </div>
+                          </div>
+                          {rating.title && (
+                            <p className="font-medium text-gray-900 text-sm mt-1">
+                              {rating.title}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
