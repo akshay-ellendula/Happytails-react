@@ -1,17 +1,15 @@
 import React, { useState } from "react";
-import { ArrowLeft, Save, Trash2, Loader2 } from "lucide-react";
-import { axiosInstance } from '../../utils/axios.js'; // Adjust path
+import { ArrowLeft, Save, Trash2, Loader2, XCircle } from "lucide-react"; // <-- Added XCircle icon
+import { axiosInstance } from '../../utils/axios.js';
 
 const EditEvent = ({ setCurrentPage, eventData }) => {
   const [isLoading, setIsLoading] = useState(false);
   
-  // Initialize state with existing data
   const [formData, setFormData] = useState({
     title: eventData?.title || "",
     description: eventData?.description || "",
     category: eventData?.category || "",
     language: eventData?.language || "English",
-    // Format date for datetime-local input (YYYY-MM-DDTHH:MM)
     date_time: eventData?.date_time ? new Date(eventData.date_time).toISOString().slice(0, 16) : "",
     duration: eventData?.duration || "",
     venue: eventData?.venue || "",
@@ -19,8 +17,8 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
     total_tickets: eventData?.total_tickets || "",
     ticketPrice: eventData?.ticketPrice || "",
     ageLimit: eventData?.ageLimit || "",
-    thumbnail: null, // New file upload state
-    banner: null     // New file upload state
+    thumbnail: null, 
+    banner: null     
   });
 
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
@@ -50,14 +48,12 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
 
     const data = new FormData();
     
-    // Append all text fields
     Object.keys(formData).forEach(key => {
       if (key !== 'thumbnail' && key !== 'banner') {
         data.append(key, formData[key]);
       }
     });
 
-    // Only append images if new ones were selected
     if (formData.thumbnail) data.append('thumbnail', formData.thumbnail);
     if (formData.banner) data.append('banner', formData.banner);
 
@@ -79,6 +75,7 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
     setCurrentPage("events");
   };
 
+  // Standard Delete (Not ideal if tickets exist, based on your backend logic)
   const confirmDelete = async () => {
     if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
         try {
@@ -87,8 +84,33 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
             setCurrentPage("events");
         } catch (error) {
             console.error("Delete error:", error);
-            alert(error.response?.data?.message || "Failed to delete event");
+            alert(error.response?.data?.message || "Failed to delete event. If tickets exist, try cancelling instead.");
         }
+    }
+  };
+
+  // --- NEW: Cancel Event & Refund Logic ---
+  const handleCancelEvent = async () => {
+    const reason = window.prompt(
+      "Are you sure you want to cancel this event?\n\nPlease enter a reason (this will be emailed to all ticket holders):"
+    );
+
+    if (reason === null) return; // User clicked cancel
+    if (reason.trim() === "") {
+      alert("A reason is required to cancel the event.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await axiosInstance.put(`/events/${eventData._id}/cancel`, { reason });
+      alert("Event cancelled successfully. Emails have been sent to ticket holders and partial refunds initiated.");
+      setCurrentPage("events");
+    } catch (err) {
+      console.error("Error cancelling event:", err);
+      alert(err.response?.data?.message || "Failed to cancel event");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -113,7 +135,6 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
       <div className="mx-auto py-4 px-4">
         <div className="bg-white rounded-lg shadow-sm p-4">
           
-          {/* Event Status Stats */}
           <div className="bg-blue-50 rounded-lg p-3 mb-4">
              <div className="flex items-center gap-4 text-sm">
                 <span className="font-bold">Tickets Sold:</span> {eventData.tickets_sold || 0} / {eventData.total_tickets}
@@ -214,11 +235,9 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Thumbnail</label>
-                    {/* Show Existing Image if no new preview */}
                     {!thumbnailPreview && eventData.images?.thumbnail && (
                         <img src={eventData.images.thumbnail} alt="Current" className="h-20 mb-2 rounded object-cover"/>
                     )}
-                    {/* Show New Preview */}
                     {thumbnailPreview && <img src={thumbnailPreview} alt="New" className="h-20 mb-2 rounded object-cover border-2 border-green-500"/>}
                     
                     <input 
@@ -231,11 +250,9 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Banner</label>
-                    {/* Show Existing Image if no new preview */}
                     {!bannerPreview && eventData.images?.banner && (
                         <img src={eventData.images.banner} alt="Current" className="h-20 mb-2 rounded object-cover"/>
                     )}
-                    {/* Show New Preview */}
                     {bannerPreview && <img src={bannerPreview} alt="New" className="h-20 mb-2 rounded object-cover border-2 border-green-500"/>}
                     
                     <input 
@@ -250,16 +267,32 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
             </div>
 
             {/* Actions */}
-            <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-              <button 
-                type="button" onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded text-sm font-medium hover:bg-red-700 flex items-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" /> Delete
-              </button>
-              <div className="flex space-x-2">
+            <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-gray-200 gap-4">
+              
+              {/* Destructive Actions (Left) */}
+              <div className="flex space-x-2 w-full sm:w-auto">
+                <button 
+                  type="button" 
+                  onClick={confirmDelete}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-50 flex items-center gap-2"
+                  title="Only works if no tickets are sold"
+                >
+                  <Trash2 className="w-4 h-4" /> Delete
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleCancelEvent}
+                  className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded text-sm font-medium hover:bg-red-100 flex items-center gap-2"
+                  title="Cancels event, refunds tickets, and notifies attendees"
+                >
+                  <XCircle className="w-4 h-4" /> Cancel & Refund
+                </button>
+              </div>
+
+              {/* Save/Cancel Actions (Right) */}
+              <div className="flex space-x-2 w-full sm:w-auto justify-end">
                 <button type="button" onClick={handleCancel} className="px-4 py-2 border border-gray-300 rounded text-sm font-medium hover:bg-gray-50">
-                  Cancel
+                  Back
                 </button>
                 <button 
                     type="submit" 
@@ -271,6 +304,7 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
                 </button>
               </div>
             </div>
+            
           </form>
         </div>
       </div>

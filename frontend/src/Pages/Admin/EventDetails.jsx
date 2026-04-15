@@ -39,7 +39,9 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
         venue: event.venue || "",
         location: event.location || "",
         phoneNumber: event.contact_number || "",
-        date_time: event.date_time ? new Date(event.date_time).toISOString().slice(0, 16) : "",
+        date_time: event.date_time
+          ? new Date(event.date_time).toISOString().slice(0, 16)
+          : "",
         ticketPrice: event.ticketPrice || 0,
         total_tickets: event.total_tickets || 0,
         description: event.description || "",
@@ -67,17 +69,34 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-800">Edit Event Details</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <h2 className="text-xl font-bold text-gray-800">
+            Edit Event Details
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Manager</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Manager
+            </label>
             <input
               type="text"
               value={event?.eventManagerId?.userName || "N/A"}
@@ -88,7 +107,9 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category
+              </label>
               <input
                 type="text"
                 name="category"
@@ -99,7 +120,9 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Venue</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Venue
+              </label>
               <input
                 type="text"
                 name="venue"
@@ -110,7 +133,9 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                City
+              </label>
               <input
                 type="text"
                 name="location"
@@ -121,7 +146,9 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Contact
+              </label>
               <input
                 type="text"
                 name="phoneNumber"
@@ -133,11 +160,15 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
           </div>
 
           <hr className="my-4 border-gray-200" />
-          
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">Other Details</h3>
+
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">
+            Other Details
+          </h3>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Event Title
+            </label>
             <input
               type="text"
               name="title"
@@ -150,7 +181,9 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date & Time
+              </label>
               <input
                 type="datetime-local"
                 name="date_time"
@@ -162,7 +195,9 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ticket Price (₹)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Ticket Price (₹)
+              </label>
               <input
                 type="number"
                 name="ticketPrice"
@@ -174,7 +209,9 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Total Tickets</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Total Tickets
+              </label>
               <input
                 type="number"
                 name="total_tickets"
@@ -184,9 +221,11 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
                 min="0"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Language
+              </label>
               <input
                 type="text"
                 name="language"
@@ -198,7 +237,9 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
             <textarea
               name="description"
               value={formData.description}
@@ -255,7 +296,8 @@ const EventDetails = () => {
   const ticketsSold = Number(event?.tickets_sold) || 0;
   const ticketPrice = Number(event?.ticketPrice) || 0;
   const totalTickets = Number(event?.total_tickets) || 0;
-  const revenue = ticketPrice > 0 ? (ticketsSold * ticketPrice * 0.94).toFixed(2) : "0.00";
+  const revenue =
+    ticketPrice > 0 ? (ticketsSold * ticketPrice * 0.94).toFixed(2) : "0.00";
 
   const handleUpdate = async (formData) => {
     const data = new FormData();
@@ -283,14 +325,30 @@ const EventDetails = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Delete this event and all tickets? This cannot be undone!")) return;
-    const result = await dispatch(deleteEvent(id));
-    if (deleteEvent.fulfilled.match(result)) {
-      alert("Event deleted!");
-      navigate("/admin/events");
-    } else {
-      alert(result.payload || "Delete failed");
+  // Replace handleDelete with this:
+  const handleCancelEvent = async (eventId) => {
+    const reason = window.prompt(
+      "Are you sure you want to cancel this event?\n\nPlease enter a reason (this will be emailed to all ticket holders):",
+    );
+
+    if (reason === null) return; // User clicked cancel on the prompt box
+    if (reason.trim() === "") {
+      alert("A reason is required to cancel the event.");
+      return;
+    }
+
+    try {
+      // Assuming your backend route is PUT /api/events/:id/cancel
+      await axiosInstance.put(`/events/${eventId}/cancel`, { reason });
+
+      // Remove the event from the UI since it is cancelled/deleted
+      setEvents(events.filter((event) => event._id !== eventId));
+      alert(
+        "Event cancelled successfully. Emails have been sent to ticket holders.",
+      );
+    } catch (err) {
+      console.error("Error cancelling event:", err);
+      alert(err.response?.data?.message || "Failed to cancel event");
     }
   };
 
@@ -319,11 +377,23 @@ const EventDetails = () => {
           <div className="p-6">
             <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
               <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-8 h-8 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Error Loading Event</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-2">
+                Error Loading Event
+              </h2>
               <p className="text-gray-600 mb-6">Error: {error}</p>
               <button
                 onClick={() => navigate("/admin/events")}
@@ -347,12 +417,26 @@ const EventDetails = () => {
           <div className="p-6">
             <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
               <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-8 h-8 text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Event Not Found</h2>
-              <p className="text-gray-600 mb-6">The event could not be found.</p>
+              <h2 className="text-xl font-bold text-gray-800 mb-2">
+                Event Not Found
+              </h2>
+              <p className="text-gray-600 mb-6">
+                The event could not be found.
+              </p>
               <button
                 onClick={() => navigate("/admin/events")}
                 className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-5 py-2.5 rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all duration-300 shadow-lg hover:shadow-xl"
@@ -371,10 +455,10 @@ const EventDetails = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
       <Sidebar />
-      
+
       <div className="flex-1 ml-64">
         <Header title="Event Details" />
-        
+
         <main className="p-6">
           {/* Header with Back Button */}
           <div className="mb-8">
@@ -382,8 +466,18 @@ const EventDetails = () => {
               onClick={() => navigate("/admin/events")}
               className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-5 py-2.5 rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all duration-300 shadow-lg hover:shadow-xl"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
               </svg>
               Back to Events
             </button>
@@ -394,14 +488,20 @@ const EventDetails = () => {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-6">
                 <img
-                  src={event.images?.thumbnail || "https://via.placeholder.com/150"}
+                  src={
+                    event.images?.thumbnail || "https://via.placeholder.com/150"
+                  }
                   alt={event.title}
                   className="h-24 w-24 rounded-xl object-cover shadow-lg"
                 />
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800 mb-2">{event.title}</h1>
+                  <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                    {event.title}
+                  </h1>
                   <p className="text-gray-600">
-                    {event.date_time ? new Date(event.date_time).toLocaleString() : "No date"}
+                    {event.date_time
+                      ? new Date(event.date_time).toLocaleString()
+                      : "No date"}
                   </p>
                 </div>
               </div>
@@ -412,11 +512,13 @@ const EventDetails = () => {
                 >
                   Edit Event
                 </button>
+                {/* Replace the old delete button with this Cancel Event button */}
                 <button
-                  onClick={handleDelete}
-                  className="bg-gradient-to-r from-red-500 to-red-600 text-white px-5 py-2.5 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  onClick={() => handleCancelEvent(event._id)}
+                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Cancel Event & Refund Tickets"
                 >
-                  Delete Event
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -427,8 +529,12 @@ const EventDetails = () => {
             <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border-l-4 border-yellow-500">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-sm text-gray-600 uppercase tracking-wider">Tickets Sold</h3>
-                  <p className="text-3xl font-bold text-gray-800 mt-2">{ticketsSold}</p>
+                  <h3 className="text-sm text-gray-600 uppercase tracking-wider">
+                    Tickets Sold
+                  </h3>
+                  <p className="text-3xl font-bold text-gray-800 mt-2">
+                    {ticketsSold}
+                  </p>
                 </div>
                 <div className="h-12 w-12 rounded-lg bg-yellow-100 flex items-center justify-center text-yellow-600 text-xl">
                   🎫
@@ -439,8 +545,12 @@ const EventDetails = () => {
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-l-4 border-blue-500">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-sm text-gray-600 uppercase tracking-wider">Available Tickets</h3>
-                  <p className="text-3xl font-bold text-gray-800 mt-2">{totalTickets - ticketsSold}</p>
+                  <h3 className="text-sm text-gray-600 uppercase tracking-wider">
+                    Available Tickets
+                  </h3>
+                  <p className="text-3xl font-bold text-gray-800 mt-2">
+                    {totalTickets - ticketsSold}
+                  </p>
                 </div>
                 <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 text-xl">
                   📊
@@ -451,8 +561,12 @@ const EventDetails = () => {
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border-l-4 border-green-500">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-sm text-gray-600 uppercase tracking-wider">Total Revenue</h3>
-                  <p className="text-3xl font-bold text-gray-800 mt-2">₹{revenue}</p>
+                  <h3 className="text-sm text-gray-600 uppercase tracking-wider">
+                    Total Revenue
+                  </h3>
+                  <p className="text-3xl font-bold text-gray-800 mt-2">
+                    ₹{revenue}
+                  </p>
                 </div>
                 <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center text-green-600 text-xl">
                   💰
@@ -463,8 +577,12 @@ const EventDetails = () => {
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border-l-4 border-purple-500">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-sm text-gray-600 uppercase tracking-wider">Ticket Price</h3>
-                  <p className="text-3xl font-bold text-gray-800 mt-2">₹{ticketPrice.toFixed(2)}</p>
+                  <h3 className="text-sm text-gray-600 uppercase tracking-wider">
+                    Ticket Price
+                  </h3>
+                  <p className="text-3xl font-bold text-gray-800 mt-2">
+                    ₹{ticketPrice.toFixed(2)}
+                  </p>
                 </div>
                 <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600 text-xl">
                   📈
@@ -475,42 +593,60 @@ const EventDetails = () => {
 
           {/* Basic Information */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-200">Basic Information</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-200">
+              Basic Information
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 mb-1">Event ID</p>
-                  <p className="text-lg font-semibold text-gray-800">{eventCode}</p>
+                  <p className="text-lg font-semibold text-gray-800">
+                    {eventCode}
+                  </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 mb-1">Manager</p>
-                  <p className="text-lg font-semibold text-gray-800">{event.eventManagerId?.userName || "N/A"}</p>
+                  <p className="text-lg font-semibold text-gray-800">
+                    {event.eventManagerId?.userName || "N/A"}
+                  </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 mb-1">Category</p>
-                  <p className="text-lg font-semibold text-gray-800">{event.category || "N/A"}</p>
+                  <p className="text-lg font-semibold text-gray-800">
+                    {event.category || "N/A"}
+                  </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 mb-1">Venue</p>
-                  <p className="text-lg font-semibold text-gray-800">{event.venue || "N/A"}</p>
+                  <p className="text-lg font-semibold text-gray-800">
+                    {event.venue || "N/A"}
+                  </p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 mb-1">City</p>
-                  <p className="text-lg font-semibold text-gray-800">{event.location || "N/A"}</p>
+                  <p className="text-lg font-semibold text-gray-800">
+                    {event.location || "N/A"}
+                  </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 mb-1">Contact</p>
-                  <p className="text-lg font-semibold text-gray-800">{event.contact_number || "N/A"}</p>
+                  <p className="text-lg font-semibold text-gray-800">
+                    {event.contact_number || "N/A"}
+                  </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 mb-1">Language</p>
-                  <p className="text-lg font-semibold text-gray-800">{event.language || "N/A"}</p>
+                  <p className="text-lg font-semibold text-gray-800">
+                    {event.language || "N/A"}
+                  </p>
                 </div>
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-sm text-gray-500 mb-1">Age Limit</p>
-                  <p className="text-lg font-semibold text-gray-800">{event.ageLimit || "N/A"}</p>
+                  <p className="text-lg font-semibold text-gray-800">
+                    {event.ageLimit || "N/A"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -518,7 +654,9 @@ const EventDetails = () => {
 
           {/* Event Details */}
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-200">Event Details</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-200">
+              Event Details
+            </h3>
             <div className="space-y-6">
               <div>
                 <p className="text-sm text-gray-500 mb-2">Description</p>
@@ -540,15 +678,26 @@ const EventDetails = () => {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-800">Attendees</h3>
               <span className="px-4 py-2 bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
-                {attendees.length} {attendees.length === 1 ? 'Attendee' : 'Attendees'}
+                {attendees.length}{" "}
+                {attendees.length === 1 ? "Attendee" : "Attendees"}
               </span>
             </div>
-            
+
             {attendees.length === 0 ? (
               <div className="text-center py-8">
                 <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  <svg
+                    className="w-8 h-8 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                    />
                   </svg>
                 </div>
                 <p className="text-gray-600">No tickets sold yet</p>
@@ -558,32 +707,66 @@ const EventDetails = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="p-3 text-left font-semibold text-gray-700">Ticket ID</th>
-                      <th className="p-3 text-left font-semibold text-gray-700">Customer</th>
-                      <th className="p-3 text-left font-semibold text-gray-700">Email</th>
-                      <th className="p-3 text-left font-semibold text-gray-700">Tickets</th>
-                      <th className="p-3 text-left font-semibold text-gray-700">Pet?</th>
-                      <th className="p-3 text-left font-semibold text-gray-700">Date</th>
+                      <th className="p-3 text-left font-semibold text-gray-700">
+                        Ticket ID
+                      </th>
+                      <th className="p-3 text-left font-semibold text-gray-700">
+                        Customer
+                      </th>
+                      <th className="p-3 text-left font-semibold text-gray-700">
+                        Email
+                      </th>
+                      <th className="p-3 text-left font-semibold text-gray-700">
+                        Tickets
+                      </th>
+                      <th className="p-3 text-left font-semibold text-gray-700">
+                        Pet?
+                      </th>
+                      <th className="p-3 text-left font-semibold text-gray-700">
+                        Date
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {attendees.map((a) => (
-                      <tr key={a.id || a.ticketId} className="border-b hover:bg-gray-50">
-                        <td className="p-3 font-mono text-sm">{a.id || a.ticketId || "N/A"}</td>
-                        <td className="p-3 font-semibold">{a.customer?.name || a.customerName || a.name || "N/A"}</td>
-                        <td className="p-3 text-sm text-gray-600">{a.customer?.email || a.customerEmail || a.email || "N/A"}</td>
+                      <tr
+                        key={a.id || a.ticketId}
+                        className="border-b hover:bg-gray-50"
+                      >
+                        <td className="p-3 font-mono text-sm">
+                          {a.id || a.ticketId || "N/A"}
+                        </td>
+                        <td className="p-3 font-semibold">
+                          {a.customer?.name ||
+                            a.customerName ||
+                            a.name ||
+                            "N/A"}
+                        </td>
+                        <td className="p-3 text-sm text-gray-600">
+                          {a.customer?.email ||
+                            a.customerEmail ||
+                            a.email ||
+                            "N/A"}
+                        </td>
                         <td className="p-3 text-center">
                           <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-                            {a.number_of_tickets || a.numberOfTickets || a.tickets || "0"}
+                            {a.number_of_tickets ||
+                              a.numberOfTickets ||
+                              a.tickets ||
+                              "0"}
                           </span>
                         </td>
                         <td className="p-3 text-center">
-                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${(a.pet?.name || a.petName) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                            {(a.pet?.name || a.petName) ? "Yes" : "No"}
+                          <span
+                            className={`px-3 py-1 rounded-full text-sm font-semibold ${a.pet?.name || a.petName ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
+                          >
+                            {a.pet?.name || a.petName ? "Yes" : "No"}
                           </span>
                         </td>
                         <td className="p-3 text-sm text-gray-500">
-                          {new Date(a.purchase_date || a.purchaseDate || a.created_at).toLocaleDateString()}
+                          {new Date(
+                            a.purchase_date || a.purchaseDate || a.created_at,
+                          ).toLocaleDateString()}
                         </td>
                       </tr>
                     ))}

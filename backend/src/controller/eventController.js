@@ -3,6 +3,7 @@ import Ticket from '../models/ticketModel.js';
 import Customer from '../models/customerModel.js'; // <-- ADD THIS IMPORT
 import uploadToCloudinary from '../utils/cloudinaryUploader.js';
 import sendEmail from '../utils/sendEmail.js'; // <-- ADD THIS IMPORT
+import Review from '../models/reviewModel.js';
 
 //@desc Create new event
 //@route POST /api/events
@@ -64,7 +65,7 @@ export const createEvent = async (req, res, next) => {
         // We fetch all customers and send emails individually to protect their privacy
         Customer.find({}).select('email userName')
             .then(async (customers) => {
-                
+
                 const formattedDate = new Date(date_time).toLocaleDateString('en-IN', {
                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                     hour: '2-digit', minute: '2-digit'
@@ -188,7 +189,7 @@ export const getEventManagerEvents = async (req, res, next) => {
         const { page = 1, limit = 10, status, search } = req.query;
 
         let query = { eventManagerId };
-        
+
         if (status === 'upcoming') {
             query.date_time = { $gte: new Date() };
         } else if (status === 'completed') {
@@ -209,7 +210,7 @@ export const getEventManagerEvents = async (req, res, next) => {
                 const tickets = await Ticket.find({ eventId: event._id });
                 const revenue = tickets.reduce((sum, ticket) => sum + ticket.price, 0);
                 const soldPercentage = (event.tickets_sold / event.total_tickets) * 100;
-                
+
                 return {
                     id: event._id,
                     title: event.title,
@@ -248,16 +249,44 @@ export const getEventManagerEvents = async (req, res, next) => {
 export const getEvent = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const event = await Event.findById(id);
+
+        // 1. Fetch the event, populate manager details, and use .lean() to attach new properties
+        const event = await Event.findById(id).populate(
+            'eventManagerId',
+            'userName profilePic companyName'
+        ).lean();
 
         if (!event) {
             return res.status(404).json({ message: "Event not found" });
         }
+
+        // 2. Calculate the manager's overall average rating
+        if (event.eventManagerId) {
+            // Find all events created by this manager
+            const managerEvents = await Event.find({ eventManagerId: event.eventManagerId._id }).select('_id');
+            const managerEventIds = managerEvents.map(e => e._id);
+
+            // Find all reviews for those events
+            const reviews = await Review.find({ eventId: { $in: managerEventIds } });
+
+            let averageRating = 0;
+            let totalReviews = reviews.length;
+
+            if (totalReviews > 0) {
+                const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
+                averageRating = (sum / totalReviews).toFixed(1);
+            }
+
+            // 3. Attach the calculated review stats directly to the manager object
+            event.eventManagerId.averageRating = parseFloat(averageRating);
+            event.eventManagerId.totalReviews = totalReviews;
+        }
+
         res.status(200).json(event);
 
     } catch (error) {
         console.log("Error in getEvent controller:", error);
-        next(error); // Pass error to error handling middleware
+        next(error);
     }
 };
 
@@ -331,8 +360,8 @@ export const deleteEvent = async (req, res, next) => {
 
         const ticketsCount = await Ticket.countDocuments({ eventId: id });
         if (ticketsCount > 0) {
-            return res.status(400).json({ 
-                message: "Cannot delete event with existing tickets. Please cancel the event instead." 
+            return res.status(400).json({
+                message: "Cannot delete event with existing tickets. Please cancel the event instead."
             });
         }
 
@@ -407,11 +436,15 @@ export const getEventAnalytics = async (req, res, next) => {
 //@desc Get all events (public)
 //@route GET /api/events/public
 //@access Public
-export const getAllEvents = async (req, res,next) => {
+export const getAllEvents = async (req, res, next) => {
     try {
         const { page = 1, limit = 10, category, search } = req.query;
 
-        let query = { date_time: { $gte: new Date() } }; // Only upcoming events
+        // Only upcoming events that are NOT cancelled
+        let query = {
+            date_time: { $gte: new Date() },
+            isCancelled: { $ne: true }
+        };
 
         if (category && category !== 'all') {
             query.category = category;
@@ -438,5 +471,99 @@ export const getAllEvents = async (req, res,next) => {
     } catch (error) {
         console.log("Error in getAllEvents controller:", error);
         next(error); // Pass error to error handling middleware
+    }
+};
+//@desc Cancel event, refund tickets (minus platform fee), revoke review access, and notify users
+//@route PUT /api/events/:id/cancel
+//@access Event Manager
+export const cancelEvent = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body; // <-- GET REASON FROM FRONTEND
+        const eventManagerId = req.user.eventManagerId;
+
+        const event = await Event.findById(id);
+        if (!event) {
+            return res.status(404).json({ message: "Event not found" });
+        }
+
+        // Verify ownership
+        if (event.eventManagerId.toString() !== eventManagerId) {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        const tickets = await Ticket.find({ eventId: id, status: true });
+
+        if (tickets.length > 0 && !stripe) {
+            return res.status(500).json({ message: "Stripe test mode is not configured. Cannot process refunds." });
+        }
+
+        for (const ticket of tickets) {
+            const platformFee = ticket.price * 0.06;
+            const refundAmount = ticket.price - platformFee;
+            const refundAmountInPaise = Math.round(refundAmount * 100);
+
+            // A. Issue Stripe Refund
+            if (ticket.paymentIntentId) {
+                try {
+                    await stripe.refunds.create({
+                        payment_intent: ticket.paymentIntentId,
+                        amount: refundAmountInPaise,
+                    });
+                } catch (stripeError) {
+                    console.error(`Refund failed for ticket ${ticket._id}:`, stripeError.message);
+                }
+            }
+
+            // B. Invalidate ticket and revoke review capabilities
+            ticket.status = false;
+            ticket.reviewToken = null;
+            ticket.reviewTokenExpires = null;
+            ticket.isReviewed = true;
+            await ticket.save();
+
+            // C. Send Email Notification to Customer (WITH REASON)
+            const emailMessage = `
+                <div style="font-family: 'DM Sans', sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #000;">
+                    <div style="background-color: #000; padding: 20px; text-align: center;">
+                        <h2 style="color: #FFD700; margin: 0;">🚨 Event Cancelled</h2>
+                    </div>
+                    <div style="padding: 30px;">
+                        <p>Hi <strong>${ticket.contactName}</strong>,</p>
+                        <p>We are very sorry to inform you that the event <strong>${event.title}</strong> has been cancelled by the organizer.</p>
+                        
+                        <div style="background-color: #f8eaeb; border-left: 4px solid #dc2626; padding: 12px; margin: 16px 0;">
+                            <p style="margin: 0; color: #dc2626; font-size: 14px;"><strong>Reason given by organizer:</strong><br/> ${reason || "No specific reason provided."}</p>
+                        </div>
+
+                        <p>We have processed a refund of <strong>₹${refundAmount.toFixed(2)}</strong> (Ticket price minus standard platform fees) back to your original payment method. Please allow 5-7 business days for the funds to appear in your account.</p>
+                        <p>We apologize for the inconvenience and hope to see you at another HappyTails event soon!</p>
+                    </div>
+                </div>
+            `;
+
+            try {
+                await sendEmail({
+                    email: ticket.contactEmail,
+                    subject: `🚨 Event Cancelled: ${event.title}`,
+                    message: emailMessage
+                });
+            } catch (emailErr) {
+                console.error(`Failed to send cancellation email to ${ticket.contactEmail}:`, emailErr.message);
+            }
+        }
+
+        // Mark event as cancelled instead of deleting it
+        event.isCancelled = true;
+        await event.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Event cancelled successfully. ${tickets.length} tickets refunded.`
+        });
+
+    } catch (error) {
+        console.log("Error in cancelEvent controller:", error);
+        next(error);
     }
 };

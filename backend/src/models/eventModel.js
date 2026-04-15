@@ -72,7 +72,11 @@ const eventSchema = new mongoose.Schema({
     tickets_sold: {
         type: Number,
         default: 0
-    }
+    },
+    isCancelled: {
+    type: Boolean,
+    default: false
+}
 }, {
     timestamps: true
 });

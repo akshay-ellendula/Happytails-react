@@ -8,7 +8,7 @@ import {
     updateEvent,
     deleteEvent,
     getEventAnalytics,
-    getAllEvents
+    getAllEvents,cancelEvent
 } from '../controller/eventController.js';
 
 const router = express.Router();
@@ -32,5 +32,6 @@ router.route('/:id')
     .delete(protectRoute(['eventManager']), deleteEvent);
     
 router.get('/:id/eventAnalytics', protectRoute(['eventManager']), getEventAnalytics);
+router.put('/:id/cancel', protectRoute(['eventManager']), cancelEvent);
 
 export default router;
