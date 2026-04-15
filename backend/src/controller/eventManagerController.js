@@ -191,7 +191,7 @@ export const getEventManagerRevenue = async (req, res, next) => {
         const eventIds = events.map(event => event._id);
 
         // Step 2: Get all tickets for those event IDs and calculate total revenue
-        const tickets = await Ticket.find({ eventId: { $in: eventIds } });
+        const tickets = await Ticket.find({ eventId: { $in: eventIds }, status: { $ne: false } });
         const totalRevenue = tickets.reduce((acc, ticket) => acc + ticket.price, 0);
 
         res.status(200).json(totalRevenue);

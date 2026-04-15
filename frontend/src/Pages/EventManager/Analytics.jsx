@@ -311,13 +311,19 @@ const Analytics = () => {
                           <p className="font-bold text-[#1a1a1a] truncate max-w-[200px]" title={evt.name}>{evt.name}</p>
                           <p className="text-xs text-gray-500 font-medium mt-0.5">{evt.date}</p>
                         </div>
-                        <span className="bg-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm border border-gray-200 text-gray-800">
-                          {evt.rate}%
-                        </span>
+                        {evt.isCancelled ? (
+                          <span className="bg-red-50 text-red-600 px-3 py-1 rounded-lg text-[11px] font-bold shadow-sm border border-red-100 uppercase tracking-widest">
+                            Cancelled
+                          </span>
+                        ) : (
+                          <span className="bg-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm border border-gray-200 text-gray-800">
+                            {evt.rate}%
+                          </span>
+                        )}
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                         <div 
-                          className={`h-2.5 rounded-full ${evt.rate > 80 ? 'bg-green-500' : evt.rate > 50 ? 'bg-[#1a1a1a]' : 'bg-red-400'}`} 
+                          className={`h-2.5 rounded-full ${evt.isCancelled ? 'bg-red-400' : evt.rate > 80 ? 'bg-green-500' : evt.rate > 50 ? 'bg-[#1a1a1a]' : 'bg-red-400'}`} 
                           style={{ width: `${Math.min(evt.rate, 100)}%` }}
                         ></div>
                       </div>

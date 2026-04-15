@@ -29,15 +29,17 @@ const Dashboard = ({ setCurrentPage }) => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  const getStatusBadge = (date) => {
-    const isUpcoming = new Date(date) > new Date();
+  const getStatusBadge = (status, date) => {
     const baseClasses = "px-2 py-1 rounded-full text-xs font-medium";
+    if (status === "cancelled") return `${baseClasses} bg-red-100 text-red-800`;
+    const isUpcoming = new Date(date) > new Date();
     return isUpcoming 
       ? `${baseClasses} bg-blue-100 text-blue-800` 
       : `${baseClasses} bg-gray-100 text-gray-800`;
   };
 
-  const getStatusText = (date) => {
+  const getStatusText = (status, date) => {
+    if (status === "cancelled") return "Cancelled";
     return new Date(date) > new Date() ? "Upcoming" : "Completed";
   };
 
@@ -87,7 +89,7 @@ const Dashboard = ({ setCurrentPage }) => {
           icon: "📅", 
           // Mapped actual ticket stats
           tickets: { sold: e.tickets_sold || 0, total: e.total_tickets || 100 },
-          status: "upcoming",
+          status: e.isCancelled ? "cancelled" : "upcoming",
           color: "from-blue-400 to-blue-600"
         })));
 
@@ -100,7 +102,7 @@ const Dashboard = ({ setCurrentPage }) => {
           icon: "✅",
           // Mapped actual ticket stats
           tickets: { sold: e.tickets_sold || 0, total: e.total_tickets || 100 },
-          status: "completed",
+          status: e.isCancelled ? "cancelled" : "completed",
           color: "from-green-400 to-green-600"
         })));
 
@@ -262,7 +264,7 @@ const Dashboard = ({ setCurrentPage }) => {
                             </td>
                             <td className="py-3 text-sm">{event.date}</td>
                             <td className="py-3">
-                                <span className={getStatusBadge(event.date)}>{getStatusText(event.date)}</span>
+                                <span className={getStatusBadge(event.status, event.date)}>{getStatusText(event.status, event.date)}</span>
                             </td>
                             </tr>
                         ))

@@ -4,7 +4,11 @@ import Customer from '../models/customerModel.js'; // <-- ADD THIS IMPORT
 import uploadToCloudinary from '../utils/cloudinaryUploader.js';
 import sendEmail from '../utils/sendEmail.js'; // <-- ADD THIS IMPORT
 import Review from '../models/reviewModel.js';
+import Stripe from 'stripe';
 
+const stripe = process.env.STRIPE_SECRET_KEY
+    ? new Stripe(process.env.STRIPE_SECRET_KEY)
+    : null;
 //@desc Create new event
 //@route POST /api/events
 //@access Event Manager
@@ -208,7 +212,8 @@ export const getEventManagerEvents = async (req, res, next) => {
         const eventsWithRevenue = await Promise.all(
             events.map(async (event) => {
                 const tickets = await Ticket.find({ eventId: event._id });
-                const revenue = tickets.reduce((sum, ticket) => sum + ticket.price, 0);
+                const activeTickets = tickets.filter(t => t.status !== false);
+                const revenue = activeTickets.reduce((sum, ticket) => sum + ticket.price, 0);
                 const soldPercentage = (event.tickets_sold / event.total_tickets) * 100;
 
                 return {
@@ -222,7 +227,7 @@ export const getEventManagerEvents = async (req, res, next) => {
                     tickets_sold: event.tickets_sold,
                     soldPercentage: Math.round(soldPercentage),
                     revenue: Math.round(revenue * 100) / 100,
-                    status: event.date_time > new Date() ? 'upcoming' : 'completed',
+                    status: event.isCancelled ? 'cancelled' : (event.date_time > new Date() ? 'upcoming' : 'completed'),
                     images: event.images
                 };
             })
@@ -396,7 +401,8 @@ export const getEventAnalytics = async (req, res, next) => {
         }
 
         const tickets = await Ticket.find({ eventId: id });
-        const totalRevenue = tickets.reduce((sum, ticket) => sum + ticket.price, 0);
+        const activeTickets = tickets.filter(t => t.status !== false);
+        const totalRevenue = activeTickets.reduce((sum, ticket) => sum + ticket.price, 0);
         const platformFee = totalRevenue * 0.06;
         const netRevenue = totalRevenue - platformFee;
 

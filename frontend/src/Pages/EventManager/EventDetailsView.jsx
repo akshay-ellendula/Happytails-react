@@ -35,9 +35,10 @@ const EventDetailsView = ({ event, setCurrentPage }) => {
   const ticketsSold = event?.tickets_sold || 0;
   const ticketPrice = event?.ticketPrice || 0;
   const grossRevenue = ticketsSold * ticketPrice;
-  // Example tax calculation (Assuming 10% platform fee/tax, adjust as per your logic)
+  // Platform fee is 6%
   const estimatedTaxesAndFees = grossRevenue * 0.06; 
-  const netRevenue = grossRevenue - estimatedTaxesAndFees;
+  // If cancelled, the platform keeps the tax but manager's net earnings are 0
+  const netRevenue = event?.isCancelled ? 0 : (grossRevenue - estimatedTaxesAndFees);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -46,8 +47,11 @@ const EventDetailsView = ({ event, setCurrentPage }) => {
     });
   };
 
-  const getStatusBadge = (dateString) => {
-    const eventDate = new Date(dateString);
+  const getStatusBadge = (event) => {
+    if (event.isCancelled) {
+      return <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold">Cancelled</span>;
+    }
+    const eventDate = new Date(event.date_time);
     const now = new Date();
     return eventDate > now 
       ? <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">Upcoming</span>
@@ -95,7 +99,7 @@ const EventDetailsView = ({ event, setCurrentPage }) => {
               </div>
             )}
             <div className="absolute top-4 left-4 flex gap-2">
-               {getStatusBadge(event.date_time)}
+               {getStatusBadge(event)}
                <span className="px-3 py-1 bg-[#effe8b] text-[#1a1a1a] rounded-full text-xs font-bold shadow-sm">
                  {event.category || 'General'}
                </span>

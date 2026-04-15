@@ -54,27 +54,30 @@ const Events = ({ setCurrentPage }) => {
   // Helper to format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', month: 'short', day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric'
     });
   };
 
-  const getStatusBadge = (dateString) => {
-    const eventDate = new Date(dateString);
+  const getStatusBadge = (event) => {
+    if (event.isCancelled) return "bg-red-100 text-red-800 border border-red-200";
+    const eventDate = new Date(event.date_time);
     const now = new Date();
     return eventDate > now 
       ? "bg-green-100 text-green-800 border border-green-200" 
       : "bg-gray-100 text-gray-800 border border-gray-200";
   };
 
-  const getStatusText = (dateString) => {
-    const eventDate = new Date(dateString);
+  const getStatusText = (event) => {
+    if (event.isCancelled) return "Cancelled";
+    const eventDate = new Date(event.date_time);
     const now = new Date();
     return eventDate > now ? "Upcoming" : "Completed";
   };
 
   // Helper to calculate Net Revenue (after 6% tax)
   const calculateNetRevenue = (event) => {
+    if (event.isCancelled) return 0;
     const sold = event.tickets_sold || 0;
     const price = event.ticketPrice || 0;
     const grossRevenue = sold * price;
@@ -83,7 +86,7 @@ const Events = ({ setCurrentPage }) => {
 
   // Filter and Sort Logic
   const processedEvents = events
-    .filter(event => 
+    .filter(event =>
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (event.category && event.category.toLowerCase().includes(searchTerm.toLowerCase()))
     )
@@ -108,9 +111,9 @@ const Events = ({ setCurrentPage }) => {
           <div className="flex flex-wrap items-center gap-3">
             {/* Search Input */}
             <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Search events..." 
+              <input
+                type="text"
+                placeholder="Search events..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 pr-4 py-2.5 w-64 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#effe8b] focus:border-transparent text-sm transition-shadow"
@@ -133,7 +136,7 @@ const Events = ({ setCurrentPage }) => {
             </div>
 
             {/* Create Button */}
-            <button 
+            <button
               onClick={handleCreateEvent}
               className="bg-[#1a1a1a] text-white px-5 py-2.5 rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center gap-2 text-sm shadow-sm"
             >
@@ -181,11 +184,11 @@ const Events = ({ setCurrentPage }) => {
                         <td className="px-6 py-4">
                           <div className="flex items-center space-x-4">
                             <div className="w-14 h-14 bg-gray-100 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0">
-                               {event.images?.thumbnail || event.thumbnail ? (
-                                 <img src={event.images?.thumbnail || event.thumbnail} alt={event.title} className="w-full h-full object-cover" />
-                               ) : (
-                                 <div className="w-full h-full flex items-center justify-center bg-gray-50 text-xl">📅</div>
-                               )}
+                              {event.images?.thumbnail || event.thumbnail ? (
+                                <img src={event.images?.thumbnail || event.thumbnail} alt={event.title} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gray-50 text-xl">📅</div>
+                              )}
                             </div>
                             <div>
                               <p className="font-bold text-[#1a1a1a] text-sm truncate max-w-[200px]" title={event.title}>{event.title}</p>
@@ -216,33 +219,37 @@ const Events = ({ setCurrentPage }) => {
                           <p className="text-[10px] text-gray-400 mt-0.5">After 6% platform tax</p>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${getStatusBadge(event.date_time)}`}>
-                            {getStatusText(event.date_time)}
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${getStatusBadge(event)}`}>
+                            {getStatusText(event)}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end items-center gap-2">
-                            <button 
+                            <button
                               onClick={() => handleView(event)}
                               className="p-2 text-gray-500 hover:text-[#1a1a1a] hover:bg-gray-100 rounded-lg transition-colors"
                               title="View Analytics & Details"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button 
-                              onClick={() => handleEdit(event)}
-                              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Edit Event"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(event._id)}
-                              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Delete Event"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {!event.isCancelled && (
+                              <>
+                                <button
+                                  onClick={() => handleEdit(event)}
+                                  className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Edit Event"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(event._id)}
+                                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Delete Event"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>

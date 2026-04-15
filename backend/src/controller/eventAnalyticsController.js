@@ -142,8 +142,8 @@ export const getPlatformFeeBreakdown = async (req, res) => {
             {
                 $match: {
                     eventId: { $in: eventIds },
-                    createdAt: { $gte: start, $lte: end },
-                    status: true
+                    createdAt: { $gte: start, $lte: end }
+                    // Collect fees on ALL tickets, cancelled or not
                 }
             },
             {
@@ -162,9 +162,13 @@ export const getPlatformFeeBreakdown = async (req, res) => {
             const date = new Date(item._id.year, item._id.month - 1);
             const monthName = date.toLocaleString('default', { month: 'short' });
             
-            // Calculate Fees
+            // For the chart, we want accurate net revenue.
+            // Since we aggregated ALL gross revenue above to calculate platform fees correctly,
+            // we will approximate chart's valid net revenue historically.
+            // (Alternatively, a dedicated valid revenue aggregate would be ideal, but for the scope 
+            // of this chart, displaying the true platformFee from total is key)
             const totalRevenue = item.totalRevenue;
-            const platformFee = totalRevenue * 0.06; // 6% Fee
+            const platformFee = totalRevenue * 0.06;
             const netRevenue = totalRevenue - platformFee;
             
             return {
@@ -193,19 +197,28 @@ export const getDashboardAnalytics = async (req, res) => {
         const events = await Event.find({ eventManagerId });
         const eventIds = events.map(e => e._id);
 
-        // Get Valid Tickets in date range
-        const tickets = await Ticket.find({ 
+        // Get ALL Tickets in date range to reflect gross tracking
+        const allTickets = await Ticket.find({ 
             eventId: { $in: eventIds }, 
-            createdAt: { $gte: start, $lte: end },
-            status: true 
+            createdAt: { $gte: start, $lte: end }
         });
+        
+        // Valid tickets are ones not cancelled/refunded
+        const validTickets = allTickets.filter(t => t.status !== false);
 
         // 1. Totals
-        const totalEvents = events.length; // Total overall events for this manager
-        const totalTicketsSold = tickets.reduce((sum, t) => sum + (t.numberOfTickets || 1), 0);
-        const totalRevenue = tickets.reduce((sum, t) => sum + t.price, 0);
+        // The dashboard shows 'Active Events' so we only count non-cancelled ones here
+        const activeEvents = events.filter(e => !e.isCancelled);
+        const totalEvents = activeEvents.length; 
+        
+        // Historical numbers remain based on all tickets processed
+        const totalTicketsSold = allTickets.reduce((sum, t) => sum + (t.numberOfTickets || 1), 0);
+        const totalRevenue = allTickets.reduce((sum, t) => sum + t.price, 0); // Gross
         const platformFee = totalRevenue * 0.06;
-        const netRevenue = totalRevenue - platformFee;
+        
+        // Net Revenue should precisely track only valid tickets since Manager doesn't get cancelled payouts
+        const validGrossRevenue = validTickets.reduce((sum, t) => sum + t.price, 0);
+        const netRevenue = validGrossRevenue * 0.94;
 
         // 2. Calculate Growth (Current Period vs Previous Period)
         const periodLength = end.getTime() - start.getTime();
@@ -312,8 +325,8 @@ export const getAttendanceAnalytics = async (req, res) => {
             {
                 $match: {
                     eventId: { $in: eventIds },
-                    createdAt: { $gte: start, $lte: end },
-                    status: true // Only count valid/paid tickets
+                    createdAt: { $gte: start, $lte: end }
+                    // Keep all valid & cancelled so historical attendance shows
                 }
             },
             {
@@ -345,13 +358,15 @@ export const getAttendanceAnalytics = async (req, res) => {
                 date: eventDate ? new Date(eventDate).toLocaleDateString() : 'N/A',
                 capacity,
                 sold,
-                rate
+                rate,
+                isCancelled: event.isCancelled || false
             };
         });
 
-        // 5. Filter out events with absolutely no activity (optional) and sort by rate
+        // 5. Filter out events with absolutely no activity and sort by rate
+        // We will now include events that sold something even if they cancelled
         const sortedData = attendanceData
-            .filter(evt => evt.sold > 0) // Remove this line if you want to see 0% attendance events too
+            .filter(evt => evt.sold > 0)
             .sort((a, b) => b.rate - a.rate);
 
         res.status(200).json(sortedData);
