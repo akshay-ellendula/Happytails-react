@@ -4,38 +4,38 @@ import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import { CartProvider, useCart } from "./context/CartContext";
-import ForgotPassword from "./pages/Auth/ForgotPassword";
-import ResetPassword from "./pages/Auth/ResetPassword";
+import ForgotPassword from "./Pages/Auth/ForgotPassword";
+import ResetPassword from "./Pages/Auth/ResetPassword";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
 
 // --- Pages: Public & General ---
-import HomePage from "./pages/Home/HomePage";
+import HomePage from "./Pages/Home/HomePage";
 import NotFound from "./Pages/NotFoundPage/NotFound";
 import ReviewPage from './Pages/ReviewPage/ReviewPage';
 
 // --- Pages: Auth ---
-import AuthPage from "./pages/Auth/Authpage";
+import AuthPage from "./Pages/Auth/Authpage";
 import ServiceProviderLogin from "./Pages/Auth/ServiceProviderLogin";
 
 // --- Pages: Products & Accessories ---
-import ProductAccessoryPageWrapper from "./pages/Accessory/ProductAccessoryPageWrapper";
-import ProductDetailPage from "./pages/Accessory/ProductDetailPage";
-import CartSidebar from "./pages/Accessory/components/CartSidebar";
-import CheckoutPage from "./pages/Checkout/CheckoutPage";
+import ProductAccessoryPageWrapper from "./Pages/Accessory/ProductAccessoryPageWrapper";
+import ProductDetailPage from "./Pages/Accessory/ProductDetailPage";
+import CartSidebar from "./Pages/Accessory/components/CartSidebar";
+import CheckoutPage from "./Pages/Checkout/CheckoutPage";
 
 // --- Pages: Events & Booking ---
-import EventsPage from "./pages/Events/EventsPage";
-import EventDetailPage from "./pages/EventDeatils/EventDetailPage";
-import BookingPage from "./pages/BookingPage/BookingPage";
+import EventsPage from "./Pages/Events/EventsPage";
+import EventDetailPage from "./Pages/EventDeatils/EventDetailPage";
+import BookingPage from "./Pages/BookingPage/BookingPage";
 import PartnerRegistration from "./Pages/PartnerRegistration/PartnerRegistrationPage";
 
 // --- Pages: Customer Private ---
-import ProfilePage from "./pages/ProfilePage/ProfilePage";
-import MyOrdersPage from "./pages/MyOrdersPage/MyOrdersPage";
-import PaymentPage from "./pages/PaymentPage/PaymentPage";
-import MyEventsPage from "./pages/MyEventsPage/MyEventsPage";
-import TrackOrderPage from "./pages/TrackOrderPage/TrackOrderPage";
+import ProfilePage from "./Pages/ProfilePage/ProfilePage";
+import MyOrdersPage from "./Pages/MyOrdersPage/MyOrdersPage";
+import PaymentPage from "./Pages/PaymentPage/PaymentPage";
+import MyEventsPage from "./Pages/MyEventsPage/MyEventsPage";
+import TrackOrderPage from "./Pages/TrackOrderPage/TrackOrderPage";
 
 // --- Pages: Admin ---
 import AdminLoginPage from "./Pages/AdminLogin/AdminLoginPage";

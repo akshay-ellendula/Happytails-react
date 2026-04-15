@@ -123,12 +123,14 @@ const sendReviewEmails = async () => {
     }
 };
 
-// 2. UNCOMMENT THE LINE BELOW TO TEST IMMEDIATELY ON SERVER START
-sendReviewEmails(); 
+if (process.env.NODE_ENV !== 'test') {
+    // 2. UNCOMMENT THE LINE BELOW TO TEST IMMEDIATELY ON SERVER START
+    // sendReviewEmails(); 
 
-// 3. This remains your daily 10:00 AM production schedule
-cron.schedule('0 10 * * *', () => {
-    // When you are done testing, you must put the yesterday logic back in here
-    // so it doesn't email people about events from 3 months ago!
-    sendReviewEmails(); 
-});
+    // 3. This remains your daily 10:00 AM production schedule
+    cron.schedule('0 10 * * *', () => {
+        // When you are done testing, you must put the yesterday logic back in here
+        // so it doesn't email people about events from 3 months ago!
+        sendReviewEmails(); 
+    });
+}
