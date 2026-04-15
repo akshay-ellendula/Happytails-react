@@ -129,50 +129,26 @@ const getPetAccessories = async (req, res, next) => {
     try {
         console.log("Fetching pet accessories..."); 
 
-        const products = await Product.aggregate([
-            {
-                $lookup: {
-                    from: 'productvariants', 
-                    localField: '_id',
-                    foreignField: 'product_id',
-                    as: 'variants'
-                }
-            },
-            {
-                $lookup: {
-                    from: 'productimages', 
-                    localField: '_id',
-                    foreignField: 'product_id',
-                    as: 'images'
-                }
-            },
-            {
-                $addFields: {
-                    primaryImage: {
-                        $filter: {
-                            input: "$images",
-                            as: "image",
-                            cond: { $eq: [ "$$image.is_primary", true ] }
-                        }
-                    }
-                }
-            },
-            {
-                $unwind: {
-                    path: '$primaryImage',
-                    preserveNullAndEmptyArrays: true 
-                }
-            },
-            {
-                $project: {
+        const [
+            products,
+            productTypesRaw,
+            colorsRaw,
+            sizesRaw,
+            maxPriceResult
+        ] = await Promise.all([
+            Product.aggregate([
+                { $lookup: { from: 'productvariants', localField: '_id', foreignField: 'product_id', as: 'variants' } },
+                { $lookup: { from: 'productimages', localField: '_id', foreignField: 'product_id', as: 'images' } },
+                { $addFields: { primaryImage: { $filter: { input: "$images", as: "image", cond: { $eq: [ "$$image.is_primary", true ] } } } } },
+                { $unwind: { path: '$primaryImage', preserveNullAndEmptyArrays: true } },
+                { $project: {
                     id: { $toString: '$_id' },
                     product_name: 1,
                     product_type: { $ifNull: [ { $toLower: { $trim: { input: '$product_type' } } }, "unknown" ] },
                     product_category: 1, 
                     variants: {
                         $map: {
-                            input: '$variants',
-                            as: 'variant',
+                            input: '$variants', as: 'variant',
                             in: {
                                 variant_id: { $toString: '$$variant._id'}, 
                                 size: { $ifNull: [ { $toLower: { $trim: { input: '$$variant.size' } } }, null ] },
@@ -186,49 +162,36 @@ const getPetAccessories = async (req, res, next) => {
                     image_data: '$primaryImage.image_data', 
                     created_at: 1, 
                     _id: 0 
-                }
-            },
-            { $sort: { created_at: -1 } } 
+                } },
+                { $sort: { created_at: -1 } } 
+            ]),
+            Product.aggregate([ 
+                { $match: { product_type: { $ne: null, $ne: "" } } }, 
+                { $group: { _id: { $toLower: { $trim: { input: '$product_type' } } } } },
+                { $project: { _id: 0, product_type: '$_id' } }
+            ]),
+            ProductVariant.aggregate([ 
+                { $match: { color: { $ne: null, $ne: "" } } }, 
+                { $group: { _id: { $toLower: { $trim: { input: '$color' } } } } },
+                { $project: { _id: 0, color: '$_id' } }
+            ]),
+            ProductVariant.aggregate([
+                { $match: { size: { $ne: null, $ne: "" } } },
+                { $group: { _id: { $toLower: { $trim: { input: '$size' } } } } },
+                { $project: { _id: 0, size: '$_id' } }
+            ]),
+            ProductVariant.aggregate([ 
+                 { $match: { regular_price: { $ne: null } } }, 
+                 { $sort: { regular_price: -1 } },
+                 { $limit: 1 },
+                 { $project: { _id: 0, regular_price: 1 } }
+            ])
         ]);
+
         console.log(`Found ${products.length} products after aggregation.`); 
-
-        console.log("Fetching filters..."); 
-        const productTypesRaw = await Product.aggregate([ 
-            { $match: { product_type: { $ne: null, $ne: "" } } }, 
-            { $group: { _id: { $toLower: { $trim: { input: '$product_type' } } } } },
-            { $project: { _id: 0, product_type: '$_id' } }
-        ]);
         const productTypes = productTypesRaw.map(item => item.product_type).sort();
-
-        const colorsRaw = await ProductVariant.aggregate([ 
-            { $match: { color: { $ne: null, $ne: "" } } }, 
-            { $group: { _id: { $toLower: { $trim: { input: '$color' } } } } },
-            { $project: { _id: 0, color: '$_id' } }
-        ]);
         const colors = colorsRaw.map(item => item.color).sort();
-
-        const sizesRaw = await ProductVariant.aggregate([
-            { $match: { size: { $ne: null, $ne: "" } } },
-            {
-                $group: {
-                    _id: { $toLower: { $trim: { input: '$size' } } }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    size: '$_id'
-                }
-            }
-        ]);
         const sizes = sizesRaw.map(item => item.size).sort();
-
-        const maxPriceResult = await ProductVariant.aggregate([ 
-             { $match: { regular_price: { $ne: null } } }, 
-             { $sort: { regular_price: -1 } },
-             { $limit: 1 },
-             { $project: { _id: 0, regular_price: 1 } }
-        ]);
         const maxPrice = maxPriceResult.length > 0 ? maxPriceResult[0].regular_price : 15000;
         console.log("Filters fetched:", { productTypes, colors, sizes, maxPrice }); 
 
