@@ -5,6 +5,7 @@ import uploadToCloudinary from '../utils/cloudinaryUploader.js';
 import sendEmail from '../utils/sendEmail.js'; // <-- ADD THIS IMPORT
 import Review from '../models/reviewModel.js';
 import Stripe from 'stripe';
+import { invalidateCache } from '../middleware/cacheMiddleware.js';
 
 const stripe = process.env.STRIPE_SECRET_KEY
     ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -59,6 +60,9 @@ export const createEvent = async (req, res, next) => {
 
         // Send response immediately so the event manager doesn't have to wait 
         // for all the emails to finish sending
+        // Invalidate cached event listings so new event appears immediately
+        await invalidateCache('cache:/api/events');
+
         res.status(201).json({
             success: true,
             event,
@@ -334,6 +338,9 @@ export const updateEvent = async (req, res, next) => {
 
         await event.save();
 
+        // Invalidate cached event data for this event and listings
+        await invalidateCache('cache:/api/events');
+
         res.status(200).json({
             success: true,
             event,
@@ -371,6 +378,9 @@ export const deleteEvent = async (req, res, next) => {
         }
 
         await Event.findByIdAndDelete(id);
+
+        // Invalidate cached event data
+        await invalidateCache('cache:/api/events');
 
         res.status(200).json({
             success: true,
@@ -460,12 +470,14 @@ export const getAllEvents = async (req, res, next) => {
             query.title = { $regex: search, $options: 'i' };
         }
 
-        const events = await Event.find(query)
-            .limit(limit * 1)
-            .skip((page - 1) * limit)
-            .sort({ date_time: 1 });
-
-        const total = await Event.countDocuments(query);
+        const [events, total] = await Promise.all([
+            Event.find(query)
+                .lean()
+                .limit(limit * 1)
+                .skip((page - 1) * limit)
+                .sort({ date_time: 1 }),
+            Event.countDocuments(query)
+        ]);
 
         res.status(200).json({
             events,
@@ -562,6 +574,9 @@ export const cancelEvent = async (req, res, next) => {
         // Mark event as cancelled instead of deleting it
         event.isCancelled = true;
         await event.save();
+
+        // Invalidate cached event data
+        await invalidateCache('cache:/api/events');
 
         res.status(200).json({
             success: true,
