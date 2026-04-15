@@ -15,7 +15,9 @@ import {
   MapPin,
   User,
   Calendar,
-  ChevronRight
+  ChevronRight,
+  MessageSquare,
+  Send,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -24,6 +26,9 @@ const ManagerOrderDetails = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notes, setNotes] = useState([]);
+  const [newNote, setNewNote] = useState("");
+  const [noteLoading, setNoteLoading] = useState(false);
 
   useEffect(() => {
     axiosInstance
@@ -31,6 +36,7 @@ const ManagerOrderDetails = () => {
       .then((res) => {
         if (res.data.success) {
           setOrder(res.data.order);
+          setNotes(res.data.order?.vendor_notes || []);
         }
         setLoading(false);
       })
@@ -39,6 +45,24 @@ const ManagerOrderDetails = () => {
         setLoading(false);
       });
   }, [orderId]);
+
+  const addNote = async () => {
+    if (!newNote.trim()) return;
+    setNoteLoading(true);
+    try {
+      const res = await axiosInstance.post(`/vendors/orders/${orderId}/notes`, {
+        text: newNote.trim(),
+      });
+      if (res.data.success) {
+        setNotes(res.data.notes || []);
+        setNewNote("");
+        toast.success("Note added!");
+      }
+    } catch (err) {
+      toast.error("Failed to add note");
+    }
+    setNoteLoading(false);
+  };
 
   const updateStatus = async (newStatus) => {
     if (!window.confirm(`Mark order as ${newStatus}?`)) return;
@@ -456,6 +480,61 @@ const ManagerOrderDetails = () => {
             </tfoot>
           </table>
         </div>
+      </div>
+
+      {/* Vendor Notes */}
+      <div className="bg-gradient-to-br from-white to-amber-50/30 rounded-2xl shadow-lg border border-amber-100/50 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-amber-100 rounded-xl">
+            <MessageSquare className="text-amber-600" size={20} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Internal Notes</h3>
+            <p className="text-gray-500 text-sm">Private notes visible only to you</p>
+          </div>
+        </div>
+
+        {/* Add Note */}
+        <div className="flex gap-2 mb-4">
+          <input
+            type="text"
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addNote()}
+            placeholder="Add a note about this order..."
+            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none bg-white"
+          />
+          <button
+            onClick={addNote}
+            disabled={noteLoading || !newNote.trim()}
+            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 text-sm font-medium"
+          >
+            <Send size={16} />
+            Add
+          </button>
+        </div>
+
+        {/* Notes List */}
+        {notes.length > 0 ? (
+          <div className="space-y-3 max-h-60 overflow-y-auto">
+            {[...notes].reverse().map((note, i) => (
+              <div key={i} className="bg-white border border-amber-100 rounded-xl p-3">
+                <p className="text-sm text-gray-800">{note.text}</p>
+                <p className="text-xs text-gray-400 mt-1.5">
+                  {new Date(note.created_at).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 text-center py-4">No notes yet. Add one above!</p>
+        )}
       </div>
 
       {/* Order Summary Cards */}

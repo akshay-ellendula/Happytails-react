@@ -159,10 +159,14 @@ const AddProduct = () => {
                 required
               >
                 <option value="">Select Category</option>
-                <option value="food">Food</option>
-                <option value="toys">Toys</option>
-                <option value="beds">Beds</option>
-                <option value="grooming">Grooming</option>
+                <option value="food">🍖 Food & Treats</option>
+                <option value="toys">🎾 Toys & Play</option>
+                <option value="grooming">✂️ Grooming & Hygiene</option>
+                <option value="beds">🛏️ Beds & Furniture</option>
+                <option value="accessories">🎀 Accessories & Apparel</option>
+                <option value="healthcare">💊 Healthcare & Wellness</option>
+                <option value="training">🏅 Training & Behaviour</option>
+                <option value="carriers">🧳 Carriers & Travel</option>
               </select>
             </div>
 
@@ -177,8 +181,9 @@ const AddProduct = () => {
                 required
               >
                 <option value="">Select Pet Type</option>
-                <option value="dog">Dog</option>
-                <option value="cat">Cat</option>
+                <option value="dog">🐶 Dog</option>
+                <option value="cat">🐱 Cat</option>
+                <option value="both">🐶🐱 Both (Dog & Cat)</option>
               </select>
             </div>
 

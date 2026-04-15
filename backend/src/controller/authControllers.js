@@ -508,7 +508,9 @@ export const storePartnerSignin = async (req, res) => {
             });
         }
 
-        const vendor = await Vendor.findOne({ email });
+        const vendor = await Vendor.findOne({ 
+            email: { $regex: new RegExp(`^${email.trim()}$`, 'i') } 
+        });
         if (!vendor) {
             return res.status(404).json({
                 success: false,

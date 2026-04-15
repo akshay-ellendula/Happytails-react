@@ -21,6 +21,8 @@ const OrderList = () => {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedOrders, setSelectedOrders] = useState([]);
+  const [batchStatus, setBatchStatus] = useState("");
 
   useEffect(() => {
     axiosInstance
@@ -76,6 +78,62 @@ const OrderList = () => {
       toast.success("Order deleted");
     } catch {
       toast.error("Delete failed");
+    }
+  };
+
+  // CSV Export
+  const exportCSV = () => {
+    const headers = ["Order ID", "Customer", "Total (₹)", "Date", "Status"];
+    const rows = filteredOrders.map((o) => [
+      o.id || o.order_id || "-",
+      o.customer?.name || o.customer_name || "Guest",
+      Number(o.total || 0).toFixed(2),
+      new Date(o.order_date).toLocaleDateString("en-IN"),
+      o.status || "Pending",
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Orders exported!");
+  };
+
+  // Batch status update
+  const handleBatchStatus = async () => {
+    if (!batchStatus || selectedOrders.length === 0) return;
+    if (!window.confirm(`Update ${selectedOrders.length} orders to ${batchStatus}?`)) return;
+    try {
+      const res = await axiosInstance.post("/vendors/orders/batch-status", {
+        orderIds: selectedOrders,
+        status: batchStatus,
+      });
+      toast.success(res.data.message || "Updated!");
+      setSelectedOrders([]);
+      setBatchStatus("");
+      // Refresh orders
+      const refreshRes = await axiosInstance.get(`/vendors/orders?status=${filter}`);
+      if (refreshRes.data.success) setOrders(refreshRes.data.orders);
+    } catch (error) {
+      toast.error("Batch update failed");
+    }
+  };
+
+  // Toggle select
+  const toggleSelect = (orderId) => {
+    setSelectedOrders((prev) =>
+      prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrders.length === filteredOrders.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(filteredOrders.map((o) => o.id));
     }
   };
 
@@ -190,9 +248,12 @@ const OrderList = () => {
         </div>
 
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+          <button
+            onClick={exportCSV}
+            className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+          >
             <Download size={18} />
-            <span className="font-medium">Export</span>
+            <span className="font-medium">Export CSV</span>
           </button>
         </div>
       </div>
@@ -277,6 +338,42 @@ const OrderList = () => {
         </div>
       </div>
 
+      {/* Batch Action Bar */}
+      {selectedOrders.length > 0 && (
+        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <span className="text-sm font-semibold text-indigo-700">
+            {selectedOrders.length} order{selectedOrders.length > 1 ? 's' : ''} selected
+          </span>
+          <div className="flex items-center gap-2 flex-1">
+            <select
+              value={batchStatus}
+              onChange={(e) => setBatchStatus(e.target.value)}
+              className="px-3 py-2 border border-indigo-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-400 outline-none"
+            >
+              <option value="">Change status to...</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Out for Delivery">Out for Delivery</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+            <button
+              onClick={handleBatchStatus}
+              disabled={!batchStatus}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Apply
+            </button>
+          </div>
+          <button
+            onClick={() => setSelectedOrders([])}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
+
       {/* Orders Table */}
       <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
@@ -292,6 +389,14 @@ const OrderList = () => {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
+                <th className="py-4 px-4 w-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedOrders.length === filteredOrders.length && filteredOrders.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                </th>
                 <th className="py-4 px-6 font-semibold text-gray-600 text-sm text-left">
                   Order ID
                 </th>
@@ -315,7 +420,7 @@ const OrderList = () => {
             <tbody className="divide-y divide-gray-100">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center">
+                  <td colSpan="7" className="py-12 text-center">
                     <div className="text-center">
                       <Package className="mx-auto text-gray-300" size={48} />
                       <p className="text-gray-500 mt-4">No orders found</p>
@@ -329,8 +434,16 @@ const OrderList = () => {
                   return (
                     <tr
                       key={order.id}
-                      className="hover:bg-gray-50 transition-colors group"
+                      className={`hover:bg-gray-50 transition-colors group ${selectedOrders.includes(order.id) ? 'bg-indigo-50/50' : ''}`}
                     >
+                      <td className="py-4 px-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.includes(order.id)}
+                          onChange={() => toggleSelect(order.id)}
+                          className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                      </td>
                       <td className="py-4 px-6">
                         <div className="font-medium text-gray-900">
                           #

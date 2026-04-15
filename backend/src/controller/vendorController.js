@@ -11,6 +11,7 @@ import {
   ProductImage,
 } from "../models/productsModel.js";
 import User from "../models/customerModel.js";
+import Rating from "../models/ratingModel.js";
 
 // --- IMPORT CLOUDINARY HELPER ---
 // Fixed: Now importing the function properly instead of the object
@@ -2105,6 +2106,362 @@ const getVendorCustomersSorted = async (req, res) => {
   }
 };
 
+// --- GET VENDOR PRODUCT RATINGS ---
+const getVendorProductRatings = async (req, res, next) => {
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+
+  try {
+    const vendorObjectId = new mongoose.Types.ObjectId(vendorId);
+
+    // 1. Get all products belonging to this vendor
+    const vendorProducts = await Product.find(
+      { vendor_id: vendorObjectId, is_deleted: { $ne: true } },
+      { _id: 1, product_name: 1 }
+    ).lean();
+
+    const productIds = vendorProducts.map((p) => p._id);
+
+    if (productIds.length === 0) {
+      return sendJson(res, {
+        productRatings: [],
+        overallStats: {
+          totalRatings: 0,
+          averageRating: 0,
+          distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        },
+      });
+    }
+
+    // 2. Get all ratings for these products with customer info
+    const ratings = await Rating.find({
+      product_id: { $in: productIds },
+      status: "approved",
+    })
+      .populate("customer_id", "userName profilePic")
+      .populate("product_id", "product_name")
+      .sort({ created_at: -1 })
+      .lean();
+
+    // 3. Aggregate ratings per product
+    const productRatingMap = {};
+
+    for (const product of vendorProducts) {
+      productRatingMap[product._id.toString()] = {
+        product_id: product._id.toString(),
+        product_name: product.product_name,
+        averageRating: 0,
+        totalRatings: 0,
+        distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        recentReviews: [],
+      };
+    }
+
+    let totalAllRatings = 0;
+    let sumAllRatings = 0;
+    const overallDistribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+    for (const rating of ratings) {
+      const pid = rating.product_id._id.toString();
+      if (!productRatingMap[pid]) continue;
+
+      productRatingMap[pid].distribution[rating.rating]++;
+      productRatingMap[pid].totalRatings++;
+      productRatingMap[pid].recentReviews.push({
+        _id: rating._id,
+        rating: rating.rating,
+        review: rating.review,
+        title: rating.title,
+        customer_name: rating.customer_id?.userName || "Anonymous",
+        customer_pic: rating.customer_id?.profilePic || null,
+        isVerifiedPurchase: rating.isVerifiedPurchase,
+        helpful_count: rating.helpful_count,
+        created_at: rating.created_at,
+      });
+
+      totalAllRatings++;
+      sumAllRatings += rating.rating;
+      overallDistribution[rating.rating]++;
+    }
+
+    // Calculate averages per product
+    for (const pid of Object.keys(productRatingMap)) {
+      const p = productRatingMap[pid];
+      if (p.totalRatings > 0) {
+        p.averageRating = parseFloat(
+          (Object.entries(p.distribution).reduce(
+            (sum, [star, count]) => sum + star * count,
+            0
+          ) / p.totalRatings).toFixed(1)
+        );
+      }
+      // Keep only 5 most recent reviews per product
+      p.recentReviews = p.recentReviews.slice(0, 5);
+    }
+
+    // 4. Get product images
+    const productImages = await ProductImage.find({
+      product_id: { $in: productIds },
+      is_primary: true,
+    }).lean();
+
+    const imageMap = {};
+    for (const img of productImages) {
+      imageMap[img.product_id.toString()] = img.image_data;
+    }
+
+    // Attach images and convert to array, sorted by totalRatings desc
+    const productRatings = Object.values(productRatingMap)
+      .map((p) => ({
+        ...p,
+        image: imageMap[p.product_id] || null,
+      }))
+      .filter((p) => p.totalRatings > 0)
+      .sort((a, b) => b.totalRatings - a.totalRatings);
+
+    sendJson(res, {
+      productRatings,
+      overallStats: {
+        totalRatings: totalAllRatings,
+        averageRating:
+          totalAllRatings > 0
+            ? parseFloat((sumAllRatings / totalAllRatings).toFixed(1))
+            : 0,
+        distribution: overallDistribution,
+      },
+    });
+  } catch (error) {
+    console.error("getVendorProductRatings Error:", error);
+    next(error);
+  }
+};
+
+
+// --- ADD ORDER NOTE ---
+const addOrderNote = async (req, res, next) => {
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+  const { orderId } = req.params;
+  const { text } = req.body;
+
+  if (!text || !text.trim()) return sendError(res, "Note text is required", 400);
+
+  try {
+    // Verify vendor owns this order
+    const hasItem = await OrderItem.findOne({ order_id: orderId, vendor_id: vendorId });
+    if (!hasItem) return sendError(res, "Unauthorized: You do not own this order", 403);
+
+    const order = await Order.findByIdAndUpdate(
+      orderId,
+      { $push: { vendor_notes: { text: text.trim(), created_at: new Date() } } },
+      { new: true }
+    );
+
+    if (!order) return sendError(res, "Order not found", 404);
+    sendJson(res, { message: "Note added", notes: order.vendor_notes });
+  } catch (error) {
+    console.error("Add note error:", error);
+    next(error);
+  }
+};
+
+// --- BATCH UPDATE ORDER STATUS ---
+const batchUpdateOrderStatus = async (req, res, next) => {
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+  const { orderIds, status } = req.body;
+
+  if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+    return sendError(res, "No orders selected", 400);
+  }
+
+  const validStatuses = ["Pending", "Confirmed", "Shipped", "Out for Delivery", "Delivered", "Cancelled"];
+  if (!validStatuses.includes(status)) {
+    return sendError(res, "Invalid status", 400);
+  }
+
+  try {
+    // Verify vendor owns all these orders
+    const ownedOrders = await OrderItem.find({
+      order_id: { $in: orderIds },
+      vendor_id: vendorId,
+    }).distinct("order_id");
+
+    if (ownedOrders.length === 0) {
+      return sendError(res, "No matching orders found", 404);
+    }
+
+    const updateFields = { status };
+    if (status === "Confirmed") updateFields.confirmed_at = new Date();
+    if (status === "Shipped") updateFields.shipped_at = new Date();
+    if (status === "Delivered") {
+      updateFields.delivered_at = new Date();
+      updateFields.delivery_date = new Date();
+    }
+    if (status === "Cancelled") updateFields.cancelled_at = new Date();
+
+    const timelineEntry = {
+      status,
+      date: new Date(),
+      description: `Batch status update to ${status}`,
+    };
+
+    await Order.updateMany(
+      { _id: { $in: ownedOrders } },
+      { ...updateFields, $push: { timeline: timelineEntry } }
+    );
+
+    sendJson(res, {
+      message: `${ownedOrders.length} orders updated to ${status}`,
+      updatedCount: ownedOrders.length,
+    });
+  } catch (error) {
+    console.error("Batch status update error:", error);
+    next(error);
+  }
+};
+
+// --- QUICK STOCK UPDATE ---
+const updateProductStock = async (req, res, next) => {
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+  const { productId } = req.params;
+  const { stock_quantity } = req.body;
+
+  if (stock_quantity === undefined || stock_quantity < 0) {
+    return sendError(res, "Valid stock quantity is required", 400);
+  }
+
+  try {
+    const product = await Product.findOne({ _id: productId, vendor_id: vendorId });
+    if (!product) return sendError(res, "Product not found", 404);
+
+    // Update all variants' stock proportionally, or just set the first variant
+    const variants = await ProductVariant.find({ product_id: productId });
+    if (variants.length === 1) {
+      await ProductVariant.updateOne(
+        { _id: variants[0]._id },
+        { stock_quantity: parseInt(stock_quantity) }
+      );
+    } else if (variants.length > 1) {
+      // Distribute evenly across variants
+      const perVariant = Math.floor(parseInt(stock_quantity) / variants.length);
+      const remainder = parseInt(stock_quantity) % variants.length;
+      for (let i = 0; i < variants.length; i++) {
+        await ProductVariant.updateOne(
+          { _id: variants[i]._id },
+          { stock_quantity: perVariant + (i === 0 ? remainder : 0) }
+        );
+      }
+    }
+
+    sendJson(res, { message: "Stock updated", stock_quantity: parseInt(stock_quantity) });
+  } catch (error) {
+    console.error("Stock update error:", error);
+    next(error);
+  }
+};
+
+// --- CSV BULK UPLOAD ---
+const bulkUploadProducts = async (req, res, next) => {
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+  const { csvData } = req.body;
+
+  if (!csvData || typeof csvData !== "string") {
+    return sendError(res, "CSV data is required", 400);
+  }
+
+  try {
+    // Parse CSV: split into lines, extract headers, then rows
+    const lines = csvData
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    if (lines.length < 2) {
+      return sendError(res, "CSV must have a header row and at least one data row", 400);
+    }
+
+    // Parse header
+    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_"));
+
+    const results = { created: 0, failed: 0, errors: [] };
+
+    for (let i = 1; i < lines.length; i++) {
+      try {
+        // Simple CSV parse (handles quoted fields with commas)
+        const values = [];
+        let current = "";
+        let inQuotes = false;
+        for (const ch of lines[i]) {
+          if (ch === '"') { inQuotes = !inQuotes; }
+          else if (ch === ',' && !inQuotes) { values.push(current.trim()); current = ""; }
+          else { current += ch; }
+        }
+        values.push(current.trim());
+
+        // Map headers to values
+        const row = {};
+        headers.forEach((h, idx) => { row[h] = values[idx] || ""; });
+
+        const productName = row.product_name || row.name || "";
+        const category = row.product_category || row.category || "other";
+
+        if (!productName) {
+          results.failed++;
+          results.errors.push({ row: i + 1, error: "Missing product name" });
+          continue;
+        }
+
+        // Create product
+        const newProduct = await Product.create({
+          vendor_id: vendorId,
+          product_name: productName,
+          product_category: category,
+          product_type: row.product_type || row.type || "",
+          product_description: row.product_description || row.description || "",
+          stock_status: row.stock_status || "In Stock",
+        });
+
+        // Create variant
+        await ProductVariant.create({
+          product_id: newProduct._id,
+          size: row.size || null,
+          color: row.color || null,
+          regular_price: parseFloat(row.regular_price || row.price || 0) || 0,
+          sale_price: row.sale_price ? parseFloat(row.sale_price) : null,
+          stock_quantity: parseInt(row.stock_quantity || row.stock || 0) || 0,
+          sku: row.sku || null,
+        });
+
+        // If image_url is provided, save it directly as the primary image (no Cloudinary needed)
+        const imageUrl = row.image_url || row.imageurl || row.image || "";
+        if (imageUrl && imageUrl.startsWith("http")) {
+          await ProductImage.create({
+            product_id: newProduct._id,
+            image_data: imageUrl,
+            is_primary: true,
+          });
+        }
+
+        results.created++;
+      } catch (rowErr) {
+        results.failed++;
+        results.errors.push({ row: i + 1, error: rowErr.message });
+      }
+    }
+
+    sendJson(res, {
+      message: `Bulk upload complete: ${results.created} created, ${results.failed} failed`,
+      ...results,
+    });
+  } catch (error) {
+    console.error("Bulk upload error:", error);
+    next(error);
+  }
+};
+
 const vendorController = {
   serviceProviderLogin,
   logout,
@@ -2129,6 +2486,11 @@ const vendorController = {
   getVendorTop3Products,
   getVendorProductsSorted,
   getVendorCustomersSorted,
+  getVendorProductRatings,
+  addOrderNote,
+  batchUpdateOrderStatus,
+  updateProductStock,
+  bulkUploadProducts,
 };
 
 export default vendorController;

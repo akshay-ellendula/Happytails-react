@@ -286,45 +286,6 @@ const ShopAnalytics = () => {
     },
   };
 
-/* ... inside return ... */
-
-        {/* Orders Card */}
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-500 font-medium">Orders</h3>
-            <div className="p-3 bg-blue-50 rounded-xl">
-              <ShoppingBag className="text-blue-600" size={20} />
-            </div>
-          </div>
-          <p className="text-3xl font-bold text-gray-800">
-            {getValue("orders")}
-          </p>
-          <p className="text-sm text-gray-400 mt-2">
-            {period === "all" ? "Total orders" : `Orders for this ${period}`}
-          </p>
-          <div className="space-y-2 mt-4">
-            <div className="flex justify-between text-sm group relative cursor-help">
-              <span className="text-gray-600 border-b border-dotted border-gray-400">Products sold:</span>
-              <span className="font-medium text-gray-800">
-                {getValue("productsSold")}
-              </span>
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-0 w-48 p-2 bg-gray-800 text-white text-xs rounded hidden group-hover:block z-10 mb-2">
-                Total individual items sold in this period.
-              </div>
-            </div>
-            <div className="flex justify-between text-sm group relative cursor-help">
-              <span className="text-gray-600 border-b border-dotted border-gray-400">Orders with Revenue:</span>
-              <span className="font-medium text-gray-800">
-                {getValue("revenueOrderCount")}
-              </span>
-               {/* Tooltip */}
-              <div className="absolute bottom-full left-0 w-48 p-2 bg-gray-800 text-white text-xs rounded hidden group-hover:block z-10 mb-2">
-                Number of completed orders that generated revenue (excludes returns/cancellations).
-              </div>
-            </div>
-          </div>
-        </div>
 
   const periods = ["today", "week", "month", "all"];
 

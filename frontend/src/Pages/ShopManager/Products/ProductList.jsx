@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { axiosInstance } from "../../../utils/axios";
 import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import {
   Search,
   Filter,
@@ -14,6 +15,12 @@ import {
   DollarSign,
   AlertCircle,
   ArrowRight,
+  Trash2,
+  Check,
+  X,
+  Upload,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
 
 const ProductList = () => {
@@ -22,12 +29,29 @@ const ProductList = () => {
   const [filters, setFilters] = useState({
     category: "All Categories",
     sort: "newest",
+    petType: "All",
   });
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState("grid");
   const [loading, setLoading] = useState(true);
   const [topLoading, setTopLoading] = useState(true);
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [editingStock, setEditingStock] = useState(null);
+  const [stockValue, setStockValue] = useState("");
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
+  const [csvPreview, setCsvPreview] = useState([]);
+  const [csvRawText, setCsvRawText] = useState("");
+  const [csvUploading, setCsvUploading] = useState(false);
   const navigate = useNavigate();
+
+  // Read low stock threshold from settings (defaults to 15 if not set)
+  const getLowStockThreshold = () => {
+    try {
+      const s = JSON.parse(localStorage.getItem("shopSettings") || "{}");
+      return parseInt(s.lowStockThreshold) || 15;
+    } catch { return 15; }
+  };
+  const LOW_STOCK = getLowStockThreshold();
 
   useEffect(() => {
     fetchProducts();
@@ -85,10 +109,144 @@ const ProductList = () => {
 
   const filteredProducts = products.filter(
     (p) =>
-      search === "" ||
-      p.product_name?.toLowerCase().includes(search.toLowerCase()) ||
-      p.product_category?.toLowerCase().includes(search.toLowerCase()),
+      (search === "" ||
+        p.product_name?.toLowerCase().includes(search.toLowerCase()) ||
+        p.product_category?.toLowerCase().includes(search.toLowerCase())) &&
+      (filters.petType === "All" ||
+        p.product_type === filters.petType ||
+        p.product_type === "both")
   );
+
+  // Bulk delete
+  const handleBulkDelete = async () => {
+    if (selectedProducts.length === 0) return;
+    if (!window.confirm(`Delete ${selectedProducts.length} product(s)? This cannot be undone.`)) return;
+    try {
+      let deleted = 0;
+      for (const id of selectedProducts) {
+        await axiosInstance.delete(`/vendors/products/${id}`);
+        deleted++;
+      }
+      setProducts(products.filter((p) => !selectedProducts.includes(p._id || p.id)));
+      setSelectedProducts([]);
+      toast.success(`${deleted} product(s) deleted`);
+    } catch (error) {
+      toast.error("Some products failed to delete");
+      fetchProducts();
+    }
+  };
+
+  // Toggle product selection
+  const toggleProductSelect = (id) => {
+    setSelectedProducts((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedProducts.length === filteredProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(filteredProducts.map((p) => p._id || p.id));
+    }
+  };
+
+  // Quick stock update
+  const handleQuickStock = async (productId) => {
+    const qty = parseInt(stockValue);
+    if (isNaN(qty) || qty < 0) {
+      toast.error("Enter a valid stock quantity");
+      return;
+    }
+    try {
+      await axiosInstance.put(`/vendors/products/${productId}/stock`, {
+        stock_quantity: qty,
+      });
+      setProducts(products.map((p) => {
+        if ((p._id || p.id) === productId) {
+          return { ...p, stock_quantity: qty };
+        }
+        return p;
+      }));
+      setEditingStock(null);
+      setStockValue("");
+      toast.success("Stock updated!");
+    } catch (error) {
+      toast.error("Failed to update stock");
+    }
+  };
+
+  // --- CSV Bulk Upload Helpers ---
+  const CSV_TEMPLATE = "product_name,product_category,product_type,product_description,regular_price,sale_price,stock_quantity,size,color,sku,image_url\n";
+
+  const downloadTemplate = () => {
+    const exampleRows = [
+      '"Royal Canin Adult Dog Food",food,dog,"Complete dry nutrition for adult dogs",1299,999,50,3kg,,SKU-001,',
+      '"Catit Petal Fountain",accessories,cat,"Automatic water fountain for cats",2499,,30,2L,White,SKU-002,',
+      '"Kong Classic Chew Toy",toys,both,"Durable rubber chew toy for dogs and cats",599,499,100,Medium,Red,SKU-003,',
+      '"Wahl Pet Clipper Kit",grooming,both,"Professional grooming kit for dogs and cats",1899,1599,20,,,SKU-004,',
+      '"Beaphar Vitamin Capsules",healthcare,dog,"Daily health supplement for dogs",349,,75,30 caps,,SKU-005,',
+    ].join('\n');
+    const blob = new Blob([CSV_TEMPLATE + exampleRows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "happytails_products_template.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCsvFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target.result;
+      setCsvRawText(text);
+      // Parse for preview
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+      if (lines.length < 2) { setCsvPreview([]); return; }
+      const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+      const rows = [];
+      for (let i = 1; i < lines.length && i <= 10; i++) {
+        const vals = [];
+        let cur = "", inQ = false;
+        for (const ch of lines[i]) {
+          if (ch === '"') inQ = !inQ;
+          else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ""; }
+          else cur += ch;
+        }
+        vals.push(cur.trim());
+        const obj = {};
+        headers.forEach((h, idx) => { obj[h] = vals[idx] || ""; });
+        rows.push(obj);
+      }
+      setCsvPreview(rows);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleCsvUpload = async () => {
+    if (!csvRawText) { toast.error("Please select a CSV file first"); return; }
+    setCsvUploading(true);
+    try {
+      const res = await axiosInstance.post("/vendors/products/bulk-upload", { csvData: csvRawText });
+      if (res.data.success) {
+        toast.success(res.data.message);
+        if (res.data.errors?.length > 0) {
+          res.data.errors.slice(0, 3).forEach(e => toast.error(`Row ${e.row}: ${e.error}`));
+        }
+        setCsvModalOpen(false);
+        setCsvPreview([]);
+        setCsvRawText("");
+        fetchProducts();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Bulk upload failed");
+    } finally {
+      setCsvUploading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -122,7 +280,46 @@ const ProductList = () => {
         </div>
       </div>
 
-      {/* Top 3 Best Sellers – no "View Details" links */}
+      {/* Low Stock Alert Banner */}
+      {(() => {
+        const lowStockProducts = products.filter(
+          (p) => (p.stock_quantity || 0) <= LOW_STOCK
+        );
+        if (lowStockProducts.length === 0) return null;
+        return (
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-2xl p-4 flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
+                <AlertCircle className="text-red-600" size={20} />
+              </div>
+              <div>
+                <p className="font-semibold text-red-800">
+                  {lowStockProducts.length} product{lowStockProducts.length > 1 ? 's' : ''} need{lowStockProducts.length === 1 ? 's' : ''} restocking
+                </p>
+                <p className="text-sm text-red-600 mt-0.5">
+                  {lowStockProducts.map((p) => (
+                    <span
+                      key={p._id || p.id}
+                      className="inline-flex items-center gap-1 mr-2 mt-1 px-2 py-0.5 bg-red-100 rounded-full text-xs font-medium text-red-700"
+                    >
+                      {p.product_name}
+                      <span className="text-red-500">({p.stock_quantity || 0} left)</span>
+                    </span>
+                  ))}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/shop/products/view-all')}
+              className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              <Eye size={16} />
+              View All
+            </button>
+          </div>
+        );
+      })()}
+
       <div className="bg-white rounded-2xl shadow border border-gray-200 overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -278,10 +475,14 @@ const ProductList = () => {
             className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
           >
             <option value="All Categories">All Categories</option>
-            <option value="food">Food</option>
-            <option value="toys">Toys</option>
-            <option value="grooming">Grooming</option>
-            <option value="beds">Beds</option>
+            <option value="food">🍖 Food & Treats</option>
+            <option value="toys">🎾 Toys & Play</option>
+            <option value="grooming">✂️ Grooming</option>
+            <option value="beds">🛏️ Beds & Furniture</option>
+            <option value="accessories">🎀 Accessories</option>
+            <option value="healthcare">💊 Healthcare</option>
+            <option value="training">🏅 Training</option>
+            <option value="carriers">🧳 Carriers & Travel</option>
           </select>
         </div>
 
@@ -296,8 +497,42 @@ const ProductList = () => {
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
           </select>
+          <select
+            name="petType"
+            onChange={handleFilterChange}
+            className="p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white min-w-[160px]"
+          >
+            <option value="All">🐾 All Pets</option>
+            <option value="dog">🐶 Dog</option>
+            <option value="cat">🐱 Cat</option>
+            <option value="both">🐶🐱 Both</option>
+          </select>
         </div>
       </div>
+
+      {/* Bulk Action Bar */}
+      {selectedProducts.length > 0 && (
+        <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <span className="text-sm font-semibold text-red-700">
+            {selectedProducts.length} product{selectedProducts.length > 1 ? 's' : ''} selected
+          </span>
+          <div className="flex items-center gap-2 flex-1">
+            <button
+              onClick={handleBulkDelete}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium transition-colors"
+            >
+              <Trash2 size={16} />
+              Delete Selected
+            </button>
+          </div>
+          <button
+            onClick={() => setSelectedProducts([])}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
 
       {/* Stock Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -326,7 +561,7 @@ const ProductList = () => {
             {
               products.filter(
                 (p) =>
-                  (p.stock_quantity || 0) > 0 && (p.stock_quantity || 0) <= 15,
+                  (p.stock_quantity || 0) > 0 && (p.stock_quantity || 0) <= LOW_STOCK,
               ).length
             }
           </p>
@@ -349,9 +584,18 @@ const ProductList = () => {
               return (
                 <div
                   key={product._id || product.id}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all group"
+                  className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-all group ${selectedProducts.includes(product._id || product.id) ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200'}`}
                 >
                   <div className="relative h-44 sm:h-48 bg-gray-50">
+                    {/* Selection checkbox */}
+                    <div className="absolute top-3 right-3 z-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.includes(product._id || product.id)}
+                        onChange={() => toggleProductSelect(product._id || product.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                    </div>
                     {product.image_data ? (
                       <img
                         src={product.image_data}
@@ -389,11 +633,42 @@ const ProductList = () => {
                           ).toFixed(2)}
                         </p>
                       </div>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${stockBadge.color}`}
-                      >
-                        {stockBadge.text}
-                      </span>
+                      {editingStock === (product._id || product.id) ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="0"
+                            value={stockValue}
+                            onChange={(e) => setStockValue(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleQuickStock(product._id || product.id)}
+                            className="w-16 px-2 py-1 border border-gray-300 rounded-lg text-xs text-center focus:ring-2 focus:ring-blue-400 outline-none"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleQuickStock(product._id || product.id)}
+                            className="p-1 bg-emerald-500 text-white rounded-md hover:bg-emerald-600"
+                          >
+                            <Check size={12} />
+                          </button>
+                          <button
+                            onClick={() => { setEditingStock(null); setStockValue(""); }}
+                            className="p-1 bg-gray-300 text-gray-600 rounded-md hover:bg-gray-400"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 ${stockBadge.color}`}
+                          onClick={() => {
+                            setEditingStock(product._id || product.id);
+                            setStockValue(String(product.stock_quantity || 0));
+                          }}
+                          title="Click to edit stock"
+                        >
+                          {stockBadge.text}
+                        </span>
+                      )}
                     </div>
 
                     <div className="mt-4 flex gap-2">
@@ -417,8 +692,60 @@ const ProductList = () => {
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow border border-gray-200 overflow-hidden p-8 text-center text-gray-500">
-            List view not implemented in this version
+          <div className="bg-white rounded-2xl shadow border border-gray-200 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Product</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Price</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredProducts.map((product) => {
+                  const stockBadge = getStockBadge(product.stock_quantity || 0);
+                  return (
+                    <tr key={product._id || product.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          {product.image_data ? (
+                            <img src={product.image_data} alt={product.product_name} className="w-10 h-10 rounded-lg object-cover border border-gray-200" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                              <Package className="text-gray-400" size={18} />
+                            </div>
+                          )}
+                          <span className="font-medium text-gray-900 text-sm">{product.product_name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getCategoryColor(product.product_category)}`}>
+                          {product.product_category || 'other'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-gray-800 text-sm">
+                        ₹{(product.sale_price || product.regular_price || 0).toFixed(2)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${stockBadge.color}`}>
+                          {stockBadge.text} ({product.stock_quantity || 0})
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <button
+                          onClick={() => navigate(`/shop/products/edit/${product._id || product.id}`)}
+                          className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )
       ) : (
@@ -444,13 +771,165 @@ const ProductList = () => {
         </div>
       )}
 
-      {/* Floating Add Button */}
-      <Link
-        to="/shop/products/add"
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all duration-300 z-50"
-      >
-        <Plus size={24} />
-      </Link>
+      {/* Floating Buttons */}
+      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+        <button
+          onClick={() => setCsvModalOpen(true)}
+          className="w-14 h-14 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all duration-300"
+          title="Bulk Upload CSV"
+        >
+          <Upload size={22} />
+        </button>
+        <Link
+          to="/shop/products/add"
+          className="w-14 h-14 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-all duration-300"
+        >
+          <Plus size={24} />
+        </Link>
+      </div>
+
+      {/* CSV Upload Modal */}
+      {csvModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCsvModalOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="p-5 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-100 rounded-xl">
+                  <FileSpreadsheet className="text-emerald-600" size={22} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Bulk Upload Products</h2>
+                  <p className="text-sm text-gray-500">Upload a CSV file to add multiple products at once</p>
+                </div>
+              </div>
+              <button onClick={() => setCsvModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {/* Step 1: Download Template */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <div className="p-1.5 bg-blue-100 rounded-lg mt-0.5">
+                    <Download className="text-blue-600" size={16} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-blue-900 text-sm">Step 1: Download CSV Template</h3>
+                    <p className="text-xs text-blue-700 mt-1">Get the template with correct column headers and example data</p>
+                    <button
+                      onClick={downloadTemplate}
+                      className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <Download size={14} /> Download Template
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 2: Upload */}
+              <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-200">
+                <div className="flex items-start gap-3">
+                  <div className="p-1.5 bg-emerald-100 rounded-lg mt-0.5">
+                    <Upload className="text-emerald-600" size={16} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-emerald-900 text-sm">Step 2: Upload Your CSV File</h3>
+                    <p className="text-xs text-emerald-700 mt-1">Fill in the template and upload it here</p>
+                    <label className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer">
+                      <Upload size={14} /> Choose CSV File
+                      <input type="file" accept=".csv" onChange={handleCsvFile} className="hidden" />
+                    </label>
+                    {csvRawText && (
+                      <span className="ml-3 text-sm text-emerald-700 font-medium">✅ File loaded ({csvPreview.length} products found)</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview Table */}
+              {csvPreview.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Preview (first {csvPreview.length} rows)</h3>
+                  <div className="border border-gray-200 rounded-xl overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500">#</th>
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500">Name</th>
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500">Category</th>
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500">Price</th>
+                          <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500">Stock</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {csvPreview.map((row, i) => (
+                          <tr key={i} className="hover:bg-gray-50">
+                            <td className="py-2 px-3 text-gray-400">{i + 1}</td>
+                            <td className="py-2 px-3 font-medium text-gray-800">{row.product_name || row.name || "-"}</td>
+                            <td className="py-2 px-3 text-gray-600">{row.product_category || row.category || "-"}</td>
+                            <td className="py-2 px-3 text-gray-600">₹{row.regular_price || row.price || 0}</td>
+                            <td className="py-2 px-3 text-gray-600">{row.stock_quantity || row.stock || 0}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Required columns info */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Required Columns</h4>
+                <div className="flex flex-wrap gap-2">
+                  {["product_name", "product_category", "product_type", "regular_price", "stock_quantity"].map(col => (
+                    <span key={col} className="px-2 py-1 bg-white border border-gray-200 rounded-md text-xs font-mono text-gray-700">{col}</span>
+                  ))}
+                </div>
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider mt-3 mb-2">Optional Columns</h4>
+                <div className="flex flex-wrap gap-2">
+                  {["product_description", "sale_price", "size", "color", "sku", "image_url"].map(col => (
+                    <span key={col} className="px-2 py-1 bg-white border border-gray-200 rounded-md text-xs font-mono text-gray-500">{col}</span>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  📸 <strong>image_url</strong>: Paste any public image link (e.g. from Google Drive, Imgur, or your website). Leave blank to add images later via Edit Product.
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  <strong>Categories:</strong> food · toys · grooming · beds · accessories · healthcare · training · carriers<br/>
+                  <strong>Pet Types:</strong> dog · cat · both
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 border-t border-gray-200 flex items-center justify-end gap-3">
+              <button
+                onClick={() => { setCsvModalOpen(false); setCsvPreview([]); setCsvRawText(""); }}
+                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCsvUpload}
+                disabled={!csvRawText || csvUploading}
+                className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2 ${
+                  !csvRawText || csvUploading
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:shadow-lg"
+                }`}
+              >
+                {csvUploading ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Uploading...</>
+                ) : (
+                  <><Upload size={16} /> Upload {csvPreview.length > 0 ? `${csvPreview.length} Products` : "Products"}</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -62,12 +62,13 @@ import AddProduct from "./Pages/ShopManager/Products/AddProduct";
 import EditProduct from "./Pages/ShopManager/Products/EditProduct";
 import ViewAllProducts from "./Pages/ShopManager/Products/ViewAllProducts";
 import OrderList from "./Pages/ShopManager/Orders/OrderList";
-import ManagerOrderDetails from "./pages/ShopManager/Orders/ManagerOrderDetails";
+import ManagerOrderDetails from "./Pages/ShopManager/Orders/ManagerOrderDetails";
 import CustomerList from "./Pages/ShopManager/Customers/CustomerList";
 import CustomerDetails from "./Pages/ShopManager/Customers/CustomerDetails";
 import ViewAllCustomers from "./Pages/ShopManager/Customers/ViewAllCustomers";
 import ShopAnalytics from "./Pages/ShopManager/Analytics/ShopAnalytics";
 import ShopProfile from "./Pages/ShopManager/Profile/ShopProfile";
+import ShopSettings from "./Pages/ShopManager/Settings/ShopSettings";
 
 // --- Components ---
 import RoleBasedRoute from "./components/RoleBasedRoute";
@@ -257,10 +258,11 @@ function AppRoutes() {
           <Route path="orders" element={<OrderList />} />
           <Route path="orders/:orderId" element={<ManagerOrderDetails />} />
           <Route path="customers" element={<CustomerList />} />
-          <Route path="customers/:customerId" element={<CustomerDetails />} />
           <Route path="customers/view-all" element={<ViewAllCustomers />} />
+          <Route path="customers/:customerId" element={<CustomerDetails />} />
           <Route path="analytics" element={<ShopAnalytics />} />
           <Route path="profile" element={<ShopProfile />} />
+          <Route path="settings" element={<ShopSettings />} />
           <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 

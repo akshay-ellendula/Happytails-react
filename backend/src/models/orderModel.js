@@ -25,6 +25,10 @@ const orderSchema = new mongoose.Schema({
         date: { type: Date },
         description: { type: String }
     }],
+    vendor_notes: [{
+        text: { type: String, required: true },
+        created_at: { type: Date, default: Date.now },
+    }],
 });
 
 const orderItemSchema = new mongoose.Schema({

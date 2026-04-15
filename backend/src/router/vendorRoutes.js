@@ -43,6 +43,13 @@ router.get(
   vendorController.getVendorProductsSorted,
 );
 
+// ─── Product Ratings ─────────────────────────────────────────────
+router.get(
+  "/products/ratings",
+  protectRoute(["vendor"]),
+  vendorController.getVendorProductRatings,
+);
+
 // --- Product Management ---
 router.get(
   "/products",
@@ -120,6 +127,34 @@ router.get(
   "/customers/:customerId",
   protectRoute(["vendor"]),
   vendorController.getVendorCustomerDetails,
+);
+
+// --- Order Notes ---
+router.post(
+  "/orders/:orderId/notes",
+  protectRoute(["vendor"]),
+  vendorController.addOrderNote,
+);
+
+// --- Batch Status Update ---
+router.post(
+  "/orders/batch-status",
+  protectRoute(["vendor"]),
+  vendorController.batchUpdateOrderStatus,
+);
+
+// --- Quick Stock Update ---
+router.put(
+  "/products/:productId/stock",
+  protectRoute(["vendor"]),
+  vendorController.updateProductStock,
+);
+
+// --- CSV Bulk Upload ---
+router.post(
+  "/products/bulk-upload",
+  protectRoute(["vendor"]),
+  vendorController.bulkUploadProducts,
 );
 
 export default router;
