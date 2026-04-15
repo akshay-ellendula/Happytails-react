@@ -37,7 +37,10 @@ const customerSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
-    resetPasswordToken: String,
+    resetPasswordToken: {
+        type: String,
+        index: true
+    },
     resetPasswordExpire: Date,
     // Google Login Fields
     googleId: {

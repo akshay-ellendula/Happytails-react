@@ -4,7 +4,8 @@ const eventSchema = new mongoose.Schema({
     eventManagerId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'EventManager',
-        required: true
+        required: true,
+        index: true
     },
     title: {
         type: String,
@@ -38,6 +39,7 @@ const eventSchema = new mongoose.Schema({
     date_time: {
         type: Date,
         required: true,
+        index: true
     },
     // Multiple Image Sizes
     images: {
@@ -53,7 +55,8 @@ const eventSchema = new mongoose.Schema({
     // Category & Type
     category: {
         type: String,
-        required: true
+        required: true,
+        index: true
     },
     // Location
     venue: {
@@ -74,9 +77,10 @@ const eventSchema = new mongoose.Schema({
         default: 0
     },
     isCancelled: {
-    type: Boolean,
-    default: false
-}
+        type: Boolean,
+        default: false,
+        index: true
+    }
 }, {
     timestamps: true
 });

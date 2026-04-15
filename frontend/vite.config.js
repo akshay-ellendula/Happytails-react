@@ -6,11 +6,13 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    host: true,
+    port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:5001', // Your backend server port
-        changeOrigin: true, // Ensures the host header matches the target
-        secure: false, // Disable SSL verification (for local dev)
+        target: process.env.VITE_DOCKER_ENV === 'true' ? 'http://backend:5001' : 'http://localhost:5001',
+        changeOrigin: true,
+        secure: false,
       },
     },
   },

@@ -17,12 +17,14 @@ const ticketSchema = new mongoose.Schema({
     eventId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Event',
-        required: true
+        required: true,
+        index: true
     },
     customerId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Customer',
         required: true,
+        index: true
     },
     // --- NEW FIELDS TO STORE BILLING DETAILS ---
     contactName: {
@@ -45,6 +47,7 @@ const ticketSchema = new mongoose.Schema({
     purchaseDate: {
         type: Date,
         default: Date.now,
+        index: true
     },
     status: {
         type: Boolean,
@@ -75,7 +78,8 @@ const ticketSchema = new mongoose.Schema({
     },
     reviewToken: {
         type: String, // Store the hashed token
-        default: null
+        default: null,
+        index: true
     },
     reviewTokenExpires: {
         type: Date,

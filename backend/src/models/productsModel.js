@@ -5,9 +5,9 @@ import mongoose from 'mongoose'; // Change require to import
 // --- Schemas related to Product Catalog ---
 
 const productSchema = new mongoose.Schema({
-    vendor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
+    vendor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true, index: true },
     product_name: { type: String, required: true },
-    product_category: { type: String, required: true },
+    product_category: { type: String, required: true, index: true },
     product_type: { type: String, required: true },
     product_description: { type: String, required: true },
     sku: { type: String, default: null },
@@ -28,7 +28,7 @@ const productSchema = new mongoose.Schema({
 });
 
 const productVariantSchema = new mongoose.Schema({
-    product_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    product_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
     size: { type: String, default: null },
     color: { type: String, default: null },
     regular_price: { type: Number, required: true },
@@ -38,7 +38,7 @@ const productVariantSchema = new mongoose.Schema({
 });
 
 const productImageSchema = new mongoose.Schema({
-    product_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    product_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
     image_data: { type: String, required: true },
     is_primary: { type: Boolean, default: false },
 });

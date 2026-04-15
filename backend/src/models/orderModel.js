@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
 const orderSchema = new mongoose.Schema({
-    customer_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
-    order_date: { type: Date, default: Date.now },
+    customer_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true, index: true },
+    order_date: { type: Date, default: Date.now, index: true },
     status: { type: String, required: true, default: 'Pending' },
     subtotal: { type: Number, required: true },
     total_amount: { type: Number, required: true },
@@ -28,10 +28,10 @@ const orderSchema = new mongoose.Schema({
 });
 
 const orderItemSchema = new mongoose.Schema({
-    order_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
-    product_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: null },
+    order_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, index: true },
+    product_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: null, index: true },
     variant_id: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductVariant', default: null },
-    vendor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
+    vendor_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true, index: true },
     product_name: { type: String, required: true },
     quantity: { type: Number, required: true },
     price: { type: Number, required: true },
