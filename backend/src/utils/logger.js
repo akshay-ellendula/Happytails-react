@@ -18,16 +18,18 @@ const fileRotateTransport = new winston.transports.DailyRotateFile({
   zippedArchive: true,
 });
 
+const transportsList = [fileRotateTransport];
+if (process.env.NODE_ENV !== 'test') {
+  transportsList.push(new winston.transports.Console());
+}
+
 const logger = winston.createLogger({
   format: combine(
     timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     errors({ stack: true }),
     logFormat
   ),
-  transports: [
-    fileRotateTransport,
-    new winston.transports.Console() // Also show in console
-  ]
+  transports: transportsList
 });
 
 export default logger;

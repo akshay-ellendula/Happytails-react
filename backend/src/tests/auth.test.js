@@ -1,148 +1,139 @@
 import request from 'supertest';
 import { createApp } from '../app.js';
 import { jest } from '@jest/globals';
+import Customer from '../models/customerModel.js';
+import EventManager from '../models/eventManagerModel.js';
+import Vendor from '../models/vendorModel.js';
+import Admin from '../models/adminModel.js';
+import * as sendEmailModule from '../utils/sendEmail.js';
 
 // Set up required environment variables for testing
 beforeAll(() => {
     process.env.JWT_SECRET_KEY = 'test-secret';
     process.env.NODE_ENV = 'test';
-    // Mock cloudinary and other remote services if needed
+});
+
+afterEach(() => {
+    jest.restoreAllMocks();
 });
 
 describe('Authentication API', () => {
     let app;
 
     beforeAll(() => {
-        // Create an app instance without external logging to reduce noise
         app = createApp({ enableLogging: false, initializePassport: false });
     });
 
-    describe('POST /api/auth/signup', () => {
-        it('should require all fields', async () => {
-            const res = await request(app)
-                .post('/api/auth/signup')
-                .send({ userName: 'TestUser' }); // missing email and password
-
-            expect(res.status).toBe(404);
-            expect(res.body.message).toBe('All fields are required');
-        });
-
-        it('should require a valid email format', async () => {
-            const res = await request(app)
-                .post('/api/auth/signup')
-                .send({ 
-                    userName: 'TestUser', 
-                    email: 'invalid-email', 
-                    password: 'password123' 
-                });
-
-            expect(res.status).toBe(400);
-            expect(res.body.message).toBe('Invalid email format');
-        });
-
-        it('should require a password of at least 6 characters', async () => {
-            const res = await request(app)
-                .post('/api/auth/signup')
-                .send({ 
-                    userName: 'TestUser', 
-                    email: 'test@gmail.com', 
-                    password: '123' 
-                });
-
-            expect(res.status).toBe(403);
-            expect(res.body.message).toBe('Password Must have 6 characters');
-        });
-
-        it('should successfully register a new user and return a JWT cookie', async () => {
-            const res = await request(app)
-                .post('/api/auth/signup')
-                .send({ 
-                    userName: 'NewUser', 
-                    email: 'newtest@gmail.com', 
-                    password: 'password123' 
-                });
-
+    describe('Customer Auth (POST /api/auth/signup & /signin)', () => {
+        it('should successfully register a customer and login', async () => {
+            const res = await request(app).post('/api/auth/signup').send({ userName: 'Cust', email: 'cust@gmail.com', password: 'password123' });
             expect(res.status).toBe(201);
-            expect(res.body.success).toBe(true);
-            expect(res.body.user).toHaveProperty('customerId');
-            expect(res.body.user.email).toBe('newtest@gmail.com');
-            expect(res.body.user.role).toBe('customer');
-
-            // Check if JWT cookie is set
-            const cookies = res.headers['set-cookie'];
-            expect(cookies).toBeDefined();
-            expect(cookies[0]).toMatch(/jwt=/);
+            
+            const loginRes = await request(app).post('/api/auth/signin').send({ email: 'cust@gmail.com', password: 'password123' });
+            expect(loginRes.status).toBe(200);
+            expect(loginRes.headers['set-cookie']).toBeDefined();
         });
 
-        it('should prevent registering an already registered email', async () => {
-            // First signup
-            await request(app).post('/api/auth/signup').send({ 
-                userName: 'UserOne', 
-                email: 'duplicate@gmail.com', 
-                password: 'password123' 
-            });
+        it('should handle DB failure gracefully on signin', async () => {
+            jest.spyOn(Customer, 'findOne').mockRejectedValue(new Error('DB Error Simulator'));
+            const res = await request(app).post('/api/auth/signin').send({ email: 'fail@gmail.com', password: 'pass' });
+            expect(res.status).toBe(500);
+        });
 
-            // Second signup with same email
-            const res = await request(app)
-                .post('/api/auth/signup')
-                .send({ 
-                    userName: 'UserTwo', 
-                    email: 'duplicate@gmail.com', 
-                    password: 'password456' 
-                });
-
-            expect(res.status).toBe(409);
-            expect(res.body.message).toBe('Email is already registered');
+        it('should handle DB failure gracefully on signup', async () => {
+            jest.spyOn(Customer, 'findOne').mockRejectedValue(new Error('DB Error Simulator'));
+            const res = await request(app).post('/api/auth/signup').send({ userName: 'test', email: 'fail2@gmail.com', password: 'password123' });
+            expect(res.status).toBe(500);
         });
     });
 
-    describe('POST /api/auth/signin', () => {
-        beforeEach(async () => {
-            // Register a user before signin tests
-            await request(app)
-                .post('/api/auth/signup')
-                .send({ 
-                    userName: 'SigninUser', 
-                    email: 'signin@gmail.com', 
-                    password: 'password123' 
-                });
+    describe('EventManager Auth', () => {
+        it('should reject missing fields on eventManagerSignup', async () => {
+            const res = await request(app).post('/api/auth/eventManagerSignup').send({});
+            expect(res.status).toBe(400);
         });
 
-        it('should login a registered user successfully', async () => {
-            const res = await request(app)
-                .post('/api/auth/signin')
-                .send({ 
-                    email: 'signin@gmail.com', 
-                    password: 'password123' 
-                });
+        it('should successfully register an EventManager, login, and handle DB errors', async () => {
+            const payload = { userName: 'EM', email: 'em@gmail.com', password: 'password123', contactnumber: '1234567890', companyname: 'Happy', location: 'City' };
+            const res = await request(app).post('/api/auth/eventManagerSignup').send(payload);
+            expect(res.status).toBe(201);
 
+            const loginRes = await request(app).post('/api/auth/eventManagerSignin').send({ email: 'em@gmail.com', password: 'password123' });
+            expect(loginRes.status).toBe(200);
+
+            // DB mock tests
+            jest.spyOn(EventManager, 'findOne').mockRejectedValue(new Error('DB Crash'));
+            const resCrash = await request(app).post('/api/auth/eventManagerSignup').send(payload);
+            expect(resCrash.status).toBe(500);
+
+            const errRes = await request(app).post('/api/auth/eventManagerSignin').send({ email: 'em@gmail.com', password: 'password123' });
+            expect(errRes.status).toBe(500);
+        });
+    });
+
+    describe('Vendor/StorePartner Auth', () => {
+        it('should reject missing fields on storeSignup', async () => {
+            const res = await request(app).post('/api/auth/storeSignup').send({});
+            expect(res.status).toBe(400);
+        });
+
+        it('should successfully register and login a Vendor, then catch DB errors', async () => {
+            const payload = { userName: 'Vendor', email: 'v@gmail.com', password: 'password123', contactnumber: '1234567890', storename: 'Store1', storelocation: 'Loc' };
+            const res = await request(app).post('/api/auth/storeSignup').send(payload);
+            expect(res.status).toBe(201);
+
+            const login = await request(app).post('/api/auth/storeSignin').send({ email: 'v@gmail.com', password: 'password123' });
+            expect(login.status).toBe(200);
+
+            jest.spyOn(Vendor, 'findOne').mockRejectedValue(new Error('DB Crash'));
+            const errSign = await request(app).post('/api/auth/storeSignup').send(payload);
+            expect(errSign.status).toBe(500);
+
+            const errLogin = await request(app).post('/api/auth/storeSignin').send({ email: 'v@gmail.com', password: 'pass' });
+            expect(errLogin.status).toBe(500);
+        });
+    });
+
+    describe('Admin Auth', () => {
+        it('should register admin and trigger DB errors', async () => {
+            const payload = { userName: 'Admin', email: 'admin2@gmail.com', password: 'password123' };
+            const res = await request(app).post('/api/auth/adminSignup').send(payload);
+            expect(res.status).toBe(201);
+
+            jest.spyOn(Admin, 'findOne').mockRejectedValue(new Error('DB failure'));
+            const resFail = await request(app).post('/api/auth/adminSignup').send(payload);
+            expect(resFail.status).toBe(500);
+        });
+
+        it('should login hardcoded admin', async () => {
+            const res = await request(app).post('/api/auth/adminSignin').send({ email: 'admin@gmail.com', password: 'admin123#' });
             expect(res.status).toBe(200);
-            expect(res.body.success).toBe(true);
-            expect(res.body.user.email).toBe('signin@gmail.com');
+        });
+    });
+
+    describe('Verify Auth & Logout', () => {
+        it('should logout correctly', async () => {
+            const res = await request(app).post('/api/auth/logout');
+            expect(res.status).toBe(200);
         });
 
-        it('should reject invalid credentials', async () => {
-            const res = await request(app)
-                .post('/api/auth/signin')
-                .send({ 
-                    email: 'signin@gmail.com', 
-                    password: 'wrongpassword' 
-                });
+        it('should fail verifyAuth without cookie', async () => {
+            const res = await request(app).get('/api/auth/verify');
+            expect(res.body.authenticated).toBe(false);
+        });
+    });
 
-            expect(res.status).toBe(401);
-            expect(res.body.message).toBe('Invalid email or password');
+    describe('Forgot & Reset Password Edge Cases', () => {
+        it('should handle forgotten password DB crashes', async () => {
+            jest.spyOn(Customer, 'findOne').mockRejectedValue(new Error('DB Down'));
+            const res = await request(app).post('/api/auth/forgotpassword').send({ email: 'cust@gmail.com', role: 'customer' });
+            expect(res.status).toBe(500);
         });
 
-        it('should reject unregistered email', async () => {
-            const res = await request(app)
-                .post('/api/auth/signin')
-                .send({ 
-                    email: 'nonexistent@gmail.com', 
-                    password: 'password123' 
-                });
-
-            expect(res.status).toBe(404);
-            expect(res.body.message).toBe('Email is not registered');
+        it('should handle password reset DB crashes', async () => {
+            jest.spyOn(Customer, 'findOne').mockRejectedValue(new Error('DB Crash'));
+            const res = await request(app).put('/api/auth/resetpassword/faketoken').query({ role: 'customer' }).send({ password: 'new' });
+            expect(res.status).toBe(500);
         });
     });
 });

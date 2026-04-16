@@ -5,6 +5,10 @@ import { jest } from '@jest/globals';
 let mongoServer;
 
 beforeAll(async () => {
+    // Silence console output globally to prevent clutter from expected test errors
+    console.log = () => {};
+    console.error = () => {};
+    console.warn = () => {};
     // Start MongoDB Memory Server
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
