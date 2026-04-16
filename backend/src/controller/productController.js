@@ -15,7 +15,7 @@ const CHECKOUT_COOKIE_NAME = 'checkout_session';
 const getCheckoutCookieOptions = () => ({
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 10 * 60 * 1000,
 });
 
@@ -23,7 +23,7 @@ const clearCheckoutSessionCookie = (res) => {
     res.clearCookie(CHECKOUT_COOKIE_NAME, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
 };
 

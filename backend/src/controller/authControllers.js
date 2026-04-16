@@ -47,7 +47,7 @@ export const signup = async (req, res, next) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             secure: process.env.NODE_ENV === 'production'
         });
         
@@ -98,7 +98,7 @@ export const signin = async (req, res, next) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             secure: process.env.NODE_ENV === 'production'
         });
 
@@ -170,7 +170,7 @@ export const eventManagersignup = async (req, res, next) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: "lax",
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             secure: process.env.NODE_ENV === 'production'
         });
 
@@ -211,7 +211,7 @@ export const eventManagersignin = async (req, res, next) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             secure: process.env.NODE_ENV === 'production'
         });
 
@@ -265,7 +265,7 @@ export const adminSignup = async (req, res, next) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             secure: process.env.NODE_ENV === 'production'
         });
 
@@ -300,16 +300,12 @@ export const adminSignin = async (req, res, next) => {
                 { expiresIn: "7days" }
             );
 
-            // --- FIX START ---
-            // Changed secure to be dynamic and sameSite to 'strict' or 'lax'
-            // to allow it to work on localhost (HTTP).
             res.cookie('jwt', token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production', // False on localhost
-                sameSite: "strict", // Matches your other controllers
-                maxAge: 30 * 60 * 1000 
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+                maxAge: 30 * 60 * 1000
             });
-            // --- FIX END ---
 
             return res.status(200).json({ 
                 success: true, 
@@ -469,7 +465,7 @@ export const storePartnerSignup = async (req, res) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             secure: process.env.NODE_ENV === 'production'
         });
 
@@ -541,7 +537,7 @@ export const storePartnerSignin = async (req, res) => {
         res.cookie('jwt', token, {
             maxAge: 90 * 60 * 1000,
             httpOnly: true,
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             secure: process.env.NODE_ENV === 'production'
         });
 
@@ -594,7 +590,7 @@ export const forgotPassword = async (req, res) => {
 
         // Create Reset URL with role as a query parameter
         // Ensure this matches your Frontend Route: http://localhost:5173/reset-password/:resetToken
-        const resetUrl = `http://localhost:5173/reset-password/${resetToken}?role=${role}`;
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}?role=${role}`;
 
         const message = `
             <h1>Password Reset Request</h1>
@@ -741,8 +737,8 @@ export const googleAuthCallback = (req, res, next) => {
             res.cookie('jwt', token, {
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
                 httpOnly: true,
-                sameSite: 'lax',
-                secure: false,
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+                secure: process.env.NODE_ENV === 'production',
             });
             
             // Redirect based on role

@@ -2238,10 +2238,10 @@ const updateProduct = async (req, res) => {
 
 const logout = async (req, res) => {
     try {
-        res.clearCookie("token", {  // Change "token" if your cookie name is different (check login code)
+        res.clearCookie("token", {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             path: "/",
         });
         return res.status(200).json({ success: true, message: "Logged out" });
