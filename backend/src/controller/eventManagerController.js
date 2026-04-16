@@ -7,7 +7,7 @@ import uploadToCloudinary from '../utils/cloudinaryUploader.js';
 //@access admin
 export const getEventManagers = async (req, res, next) => {
     try {
-        const eventManager = await EventManager.find({});
+        const eventManager = await EventManager.find({}).lean();
         res.status(200).json(eventManager);
     } catch (error) {
         console.log("something went wrong in geteventManagers controller", error);
@@ -20,7 +20,7 @@ export const getEventManagers = async (req, res, next) => {
 export const geteventManager = async (req, res, next) => {
     const { id: eventManagerId } = req.params;
     try {
-        const eventManager = await EventManager.findById(eventManagerId);
+        const eventManager = await EventManager.findById(eventManagerId).lean();
         if (!eventManager) {
             return res.status(404).json({ message: 'eventManager not found' });
         }
@@ -115,7 +115,7 @@ export const getEventsAttendees = async (req, res, next) => {
     const eventManagerId = req.user.eventManagerId;
     try {
         // Step 1: Get all events created by the event manager
-        const events = await Event.find({ eventManagerId }).select('_id');
+        const events = await Event.find({ eventManagerId }).select('_id').lean();
 
         // Extract event IDs as an array of ObjectIds
         const eventIds = events.map(event => event._id);
@@ -123,7 +123,8 @@ export const getEventsAttendees = async (req, res, next) => {
         // Step 2: Get all tickets for those event IDs
         const eventAttendees = await Ticket.find({ eventId: { $in: eventIds } })
             .populate('customerId') // Optional: populate customer info
-            .populate('eventId');   // Optional: populate event info
+            .populate('eventId')
+            .lean();   // Optional: populate event info
 
         res.status(200).json(eventAttendees);
     } catch (error) {
@@ -137,12 +138,12 @@ export const getEventsAttendees = async (req, res, next) => {
 export const getEventAttendees = async (req, res, next) => {
     const { id: eventId } = req.params;
     try {
-        const event = await Event.findById(eventId);
+        const event = await Event.findById(eventId).lean();
         if (!event) {
             return res.status(404).json({ message: "Event not found" });
         }
 
-        const tickets = await Ticket.find({ eventId }).populate('customerId');
+        const tickets = await Ticket.find({ eventId }).populate('customerId').lean();
         const attendees = tickets.map(ticket => ({
             customerId: ticket.customerId?._id,
             customerName: ticket.customerId?.userName,
@@ -171,7 +172,7 @@ export const getEventAttendees = async (req, res, next) => {
 export const getEventManagerEvents = async (req, res, next) => {
     const eventManagerId = req.user.eventManagerId;
     try {
-        const events = await Event.find({ eventManagerId });
+        const events = await Event.find({ eventManagerId }).lean();
         res.status(200).json(events);
     } catch (error) {
         console.error("Error in getEventManagerEvents controller:", error);
@@ -185,13 +186,13 @@ export const getEventManagerRevenue = async (req, res, next) => {
     const eventManagerId = req.user.eventManagerId;
     try {
         // Step 1: Get all events created by the event manager
-        const events = await Event.find({ eventManagerId }).select('_id');
+        const events = await Event.find({ eventManagerId }).select('_id').lean();
 
         // Extract event IDs as an array of ObjectIds
         const eventIds = events.map(event => event._id);
 
         // Step 2: Get all tickets for those event IDs and calculate total revenue
-        const tickets = await Ticket.find({ eventId: { $in: eventIds }, status: { $ne: false } });
+        const tickets = await Ticket.find({ eventId: { $in: eventIds }, status: { $ne: false } }).lean();
         const totalRevenue = tickets.reduce((acc, ticket) => acc + ticket.price, 0);
 
         res.status(200).json(totalRevenue);
@@ -245,7 +246,7 @@ export const changePassword = async (req, res, next) => {
 export const getMyProfile = async (req, res, next) => {
     try {
         const eventManagerId = req.user.eventManagerId;
-        const eventManager = await EventManager.findById(eventManagerId).select('-password');
+        const eventManager = await EventManager.findById(eventManagerId).select('-password').lean();
         
         if (!eventManager) {
             return res.status(404).json({ message: "Event manager not found" });
@@ -328,12 +329,12 @@ export const updateMyProfile = async (req, res, next) => {
 export const getManagerEventDetails = async (req, res) => {
   try {
     const { eventId } = req.params;
-    const event = await Event.findById(eventId);
+    const event = await Event.findById(eventId).lean();
 
     if (!event) return res.status(404).json({ message: 'Event not found' });
 
     // Fetch all successful orders/tickets for this event
-    const tickets = await Ticket.find({ eventId, status: 'purchased' }).populate('customerId');
+    const tickets = await Ticket.find({ eventId, status: 'purchased' }).populate('customerId').lean();
 
     let totalTicketsSold = 0;
     let grossRevenue = 0;

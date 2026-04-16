@@ -209,33 +209,39 @@ export const getEventManagerEvents = async (req, res, next) => {
         }
 
         const events = await Event.find(query)
+            .lean()
             .limit(limit * 1)
             .skip((page - 1) * limit)
             .sort({ date_time: 1 });
 
-        const eventsWithRevenue = await Promise.all(
-            events.map(async (event) => {
-                const tickets = await Ticket.find({ eventId: event._id });
-                const activeTickets = tickets.filter(t => t.status !== false);
-                const revenue = activeTickets.reduce((sum, ticket) => sum + ticket.price, 0);
-                const soldPercentage = (event.tickets_sold / event.total_tickets) * 100;
+        const eventIds = events.map(e => e._id);
+        const allTickets = await Ticket.find({ eventId: { $in: eventIds }, status: { $ne: false } }).lean();
+        
+        const eventRevenueMap = new Map();
+        allTickets.forEach(t => {
+            const eid = t.eventId.toString();
+            eventRevenueMap.set(eid, (eventRevenueMap.get(eid) || 0) + t.price);
+        });
 
-                return {
-                    id: event._id,
-                    title: event.title,
-                    category: event.category,
-                    date_time: event.date_time,
-                    venue: event.venue,
-                    location: event.location,
-                    total_tickets: event.total_tickets,
-                    tickets_sold: event.tickets_sold,
-                    soldPercentage: Math.round(soldPercentage),
-                    revenue: Math.round(revenue * 100) / 100,
-                    status: event.isCancelled ? 'cancelled' : (event.date_time > new Date() ? 'upcoming' : 'completed'),
-                    images: event.images
-                };
-            })
-        );
+        const eventsWithRevenue = events.map((event) => {
+            const revenue = eventRevenueMap.get(event._id.toString()) || 0;
+            const soldPercentage = event.total_tickets > 0 ? (event.tickets_sold / event.total_tickets) * 100 : 0;
+
+            return {
+                id: event._id,
+                title: event.title,
+                category: event.category,
+                date_time: event.date_time,
+                venue: event.venue,
+                location: event.location,
+                total_tickets: event.total_tickets,
+                tickets_sold: event.tickets_sold,
+                soldPercentage: Math.round(soldPercentage),
+                revenue: Math.round(revenue * 100) / 100,
+                status: event.isCancelled ? 'cancelled' : (event.date_time > new Date() ? 'upcoming' : 'completed'),
+                images: event.images
+            };
+        });
 
         const total = await Event.countDocuments(query);
 
@@ -401,7 +407,7 @@ export const getEventAnalytics = async (req, res, next) => {
         const { id } = req.params;
         const eventManagerId = req.user.eventManagerId;
 
-        const event = await Event.findById(id);
+        const event = await Event.findById(id).lean();
         if (!event) {
             return res.status(404).json({ message: "Event not found" });
         }
@@ -410,7 +416,7 @@ export const getEventAnalytics = async (req, res, next) => {
             return res.status(403).json({ message: "Access denied" });
         }
 
-        const tickets = await Ticket.find({ eventId: id });
+        const tickets = await Ticket.find({ eventId: id }).lean();
         const activeTickets = tickets.filter(t => t.status !== false);
         const totalRevenue = activeTickets.reduce((sum, ticket) => sum + ticket.price, 0);
         const platformFee = totalRevenue * 0.06;
