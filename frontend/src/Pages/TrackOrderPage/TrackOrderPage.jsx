@@ -20,7 +20,6 @@ import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
 import Footer from "../../components/Footer";
 
-// Use the functional import for jspdf-autotable
 import jsPDF from "jspdf";
 import lastAutoTable from "jspdf-autotable";
 
@@ -34,7 +33,6 @@ export default function TrackOrderPage() {
   const [loading, setLoading] = useState(!location.state?.order);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Fallback: Fetch order if page is refreshed
   useEffect(() => {
     if (!order) {
       const fetchOrder = async () => {
@@ -42,7 +40,7 @@ export default function TrackOrderPage() {
           const res = await axiosInstance.get("/products/getUserOrders");
           if (res.data.success) {
             const foundOrder = res.data.orders.find(
-              (o) => o.id === orderId || o._id === orderId
+              (o) => o.id === orderId || o._id === orderId,
             );
             if (foundOrder) {
               setOrder(foundOrder);
@@ -103,241 +101,306 @@ export default function TrackOrderPage() {
 
   const currentStep = getStepStatus(order?.status);
 
-  // --- CALCULATIONS ---
   const subtotal =
     order?.subtotal ||
     order?.items?.reduce((acc, item) => acc + item.price * item.quantity, 0) ||
     0;
-  const platformFee = subtotal * 0.04; // 4% Platform Charge
+  const platformFee = subtotal * 0.04;
   const finalTotal = order?.total_amount || subtotal + platformFee;
 
-  // --- RECEIPT GENERATOR FUNCTION ---
+  // PROFESSIONAL RECEIPT PDF GENERATOR
   const downloadReceipt = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
+    try {
+      const doc = new jsPDF("p", "mm", "a4");
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+      let yPos = 15;
 
-    // Brand Colors
-    const colorBlack = "#1a1a1a";
-    const colorYellow = "#effe8b";
-    const colorGray = "#f3f4f6";
+      // Color scheme
+      const primary = [26, 26, 26];
+      // === HEADER ===
+      doc.setFillColor(26, 26, 26);
+      doc.rect(0, 0, pageWidth, 30, "F");
 
-    // --- 1. HEADER ---
-    // Brand Name (Top Left)
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(24);
-    doc.setTextColor(colorBlack);
-    doc.text("HAPPY TAILS", 20, 25);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("HAPPY TAILS", 15, 12);
 
-    // Receipt Label (Top Right)
-    doc.setFontSize(30);
-    doc.setTextColor(220, 220, 220); // Light gray watermark style
-    doc.text("RECEIPT", pageWidth - 20, 25, { align: "right" });
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text("Pet Care & Supplies", 15, 18);
 
-    // Yellow Divider Line
-    doc.setDrawColor(colorYellow);
-    doc.setLineWidth(1.5);
-    doc.line(20, 35, pageWidth - 20, 35);
+      doc.setTextColor(200, 200, 200);
+      doc.setFontSize(8);
+      doc.text("support@happytails.com | +91 98765 43210", pageWidth - 15, 12, {
+        align: "right",
+      });
+      doc.text("www.happytails.com", pageWidth - 15, 18, { align: "right" });
 
-    // --- 2. ORDER & COMPANY INFO ---
-    let yPos = 50;
+      yPos = 40;
 
-    // Left: From Info
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(colorBlack);
-    doc.text("From:", 20, yPos);
+      // === RECEIPT TITLE ===
+      doc.setFillColor(255, 254, 139);
+      doc.rect(0, yPos - 8, pageWidth, 14, "F");
 
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(80);
-    doc.text("Happy Tails Pet Store", 20, yPos + 6);
-    doc.text("support@happytails.com", 20, yPos + 11);
-    doc.text("+91 98765 43210", 20, yPos + 16);
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("ORDER RECEIPT", 15, yPos);
 
-    // Right: Order Details
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(colorBlack);
-    doc.text("Order Details:", pageWidth - 20, yPos, { align: "right" });
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`#${order?.id || order?._id}`, pageWidth - 15, yPos - 3, {
+        align: "right",
+      });
 
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(80);
-    doc.text(`Order ID: #${order.id || order._id}`, pageWidth - 20, yPos + 6, {
-      align: "right",
-    });
-    doc.text(
-      `Date: ${new Date(order.order_date).toLocaleDateString()}`,
-      pageWidth - 20,
-      yPos + 11,
-      { align: "right" }
-    );
-    doc.text(`Status: ${order.status}`, pageWidth - 20, yPos + 16, {
-      align: "right",
-    });
+      yPos += 12;
 
-    yPos += 25;
+      // === ORDER INFO & DATES ===
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      doc.setFont("helvetica", "bold");
+      doc.text("Order Information:", 15, yPos);
 
-    // --- 3. BILL TO SECTION (Gray Rounded Box) ---
-    doc.setFillColor(colorGray);
-    doc.roundedRect(20, yPos, pageWidth - 40, 28, 3, 3, "F");
+      doc.setFont("helvetica", "normal");
+      yPos += 6;
 
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(colorBlack);
-    doc.text("Billed To:", 26, yPos + 10);
+      const orderDate = new Date(order?.order_date).toLocaleDateString(
+        "en-IN",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        },
+      );
 
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(60);
-    const userName = user?.userName || "Customer";
-    const userEmail = user?.email || "";
-    let addressLine = "";
-    if (user?.address) {
-      addressLine = `${user.address.houseNumber}, ${user.address.streetNo}, ${user.address.city} - ${user.address.pincode}`;
-    }
+      doc.text(`Date: ${orderDate}`, 15, yPos);
+      doc.text(`Status: ${order?.status}`, 100, yPos);
 
-    doc.setFontSize(10);
-    doc.text(`${userName}  |  ${userEmail}`, 26, yPos + 16);
-    if (addressLine) {
-      // Truncate if too long to fit one line
-      const splitAddr = doc.splitTextToSize(addressLine, pageWidth - 60);
-      doc.text(splitAddr[0], 26, yPos + 22);
-    }
+      yPos += 8;
 
-    yPos += 40;
+      // === CUSTOMER DETAILS BOX ===
+      doc.setFillColor(243, 244, 246);
+      doc.rect(15, yPos, pageWidth - 30, 32, "F");
 
-    // --- 4. ITEMS TABLE ---
-    const tableColumn = ["Item", "Variant", "Qty", "Price", "Total"];
-    const tableRows = [];
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("BILL TO:", 20, yPos + 5);
 
-    order.items.forEach((item) => {
-      const variant = `${item.size || "-"} ${
-        item.color ? "• " + item.color : ""
-      }`;
-      const itemTotal = item.price * item.quantity;
-      const rowData = [
-        item.product_name,
-        variant,
-        item.quantity,
-        `Rs. ${item.price}`,
-        `Rs. ${itemTotal.toFixed(2)}`,
-      ];
-      tableRows.push(rowData);
-    });
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60, 60, 60);
+      doc.setFontSize(8);
+      let custY = yPos + 11;
 
-    lastAutoTable(doc, {
-      startY: yPos,
-      head: [tableColumn],
-      body: tableRows,
-      theme: "grid",
-      headStyles: {
-        fillColor: colorBlack,
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        halign: "left",
-        cellPadding: 4,
-      },
-      bodyStyles: {
-        textColor: 50,
-        cellPadding: 3,
-      },
-      alternateRowStyles: {
-        fillColor: [250, 250, 250], // Very light gray stripe
-      },
-      columnStyles: {
-        0: { cellWidth: 70 },
-        4: { halign: "right", fontStyle: "bold" },
-        3: { halign: "right" },
-        2: { halign: "center" },
-      },
-      styles: { fontSize: 10, lineColor: 240 }, // Light borders
-    });
+      doc.text(`${user?.userName || "Customer"}`, 20, custY);
+      custY += 5;
+      doc.text(`${user?.email || "No email"}`, 20, custY);
+      custY += 5;
+      doc.text(`${user?.phoneNumber || "No phone"}`, 20, custY);
+      custY += 5;
 
-    // --- 5. FINANCIAL SUMMARY ---
-    let finalY = doc.lastAutoTable.finalY + 10;
-
-    const drawTotalLine = (label, value, isTotal = false) => {
-      if (isTotal) {
-        // Highlight Box for Grand Total
-        doc.setFillColor(colorYellow);
-        doc.roundedRect(pageWidth - 90, finalY - 6, 70, 10, 2, 2, "F");
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(colorBlack);
-      } else {
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(80);
+      if (user?.address) {
+        const addr =
+          `${user.address.houseNumber || ""} ${user.address.streetNo || ""}, ${user.address.city || ""} - ${user.address.pincode || ""}`.trim();
+        const splitAddr = doc.splitTextToSize(addr, pageWidth - 50);
+        if (splitAddr[0]) doc.text(splitAddr[0], 20, custY);
       }
 
-      doc.text(label, pageWidth - 85, finalY);
-      doc.text(value, pageWidth - 25, finalY, { align: "right" });
-      finalY += 9;
-    };
+      yPos += 38;
 
-    drawTotalLine("Subtotal:", `Rs. ${subtotal.toFixed(2)}`);
-    drawTotalLine("Platform Charges (4%):", `Rs. ${platformFee.toFixed(2)}`);
-    drawTotalLine("Delivery Fee:", "Free");
+      // === ITEMS TABLE ===
+      const tableColumn = [
+        "Item Name",
+        "Size/Color",
+        "Qty",
+        "Unit Price",
+        "Total",
+      ];
+      const tableRows = [];
 
-    finalY += 2; // Extra spacing
-    drawTotalLine("Grand Total:", `Rs. ${finalTotal.toFixed(2)}`, true);
+      order?.items?.forEach((item) => {
+        const variant = item.size ? item.size : "-";
+        const color = item.color ? item.color : "";
+        const sizeColor = `${variant}${color ? " / " + color : ""}`;
+        const itemTotal = item.price * item.quantity;
 
-    // --- 6. POLICY SECTION ---
-    let policyY = 240; // Push to bottom area
+        tableRows.push([
+          item.product_name || "Product",
+          sizeColor,
+          item.quantity.toString(),
+          `Rs. ${item.price.toFixed(2)}`,
+          `Rs. ${itemTotal.toFixed(2)}`,
+        ]);
+      });
 
-    // Separator line
-    doc.setDrawColor(220);
-    doc.setLineWidth(0.5);
-    doc.line(20, policyY, pageWidth - 20, policyY);
+      lastAutoTable(doc, {
+        startY: yPos,
+        head: [tableColumn],
+        body: tableRows,
+        theme: "grid",
+        headStyles: {
+          fillColor: primary,
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          halign: "center",
+          cellPadding: 4,
+          fontSize: 8,
+          lineColor: [200, 200, 200],
+        },
+        bodyStyles: {
+          textColor: [60, 60, 60],
+          cellPadding: 3,
+          fontSize: 8,
+          lineColor: [230, 230, 230],
+        },
+        alternateRowStyles: {
+          fillColor: [250, 250, 250],
+        },
+        columnStyles: {
+          0: { cellWidth: 50, halign: "left" },
+          1: { cellWidth: 30, halign: "center" },
+          2: { cellWidth: 15, halign: "center" },
+          3: { cellWidth: 35, halign: "right" },
+          4: { cellWidth: 35, halign: "right", fontStyle: "bold" },
+        },
+        margin: { left: 15, right: 15 },
+      });
 
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(colorBlack);
-    doc.text("Refund Policy & Terms:", 20, policyY + 10);
+      yPos = doc.lastAutoTable.finalY + 10;
 
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(100);
-    doc.setFontSize(8);
-    const policyText =
-      "Refund requests must be made within 14 days of delivery. Items must be unused, in original packaging, and accompanied by this receipt. Platform charges are non-refundable.";
-    const splitPolicy = doc.splitTextToSize(policyText, pageWidth - 40);
-    doc.text(splitPolicy, 20, policyY + 16);
+      // === BILLING SUMMARY ===
+      const summaryLeft = pageWidth / 2 + 10;
+      doc.setFontSize(8);
+      doc.setTextColor(80, 80, 80);
+      doc.setFont("helvetica", "normal");
 
-    // --- 7. FOOTER ---
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text("Thank you for shopping with Happy Tails!", pageWidth / 2, 280, {
-      align: "center",
-    });
+      doc.text("Subtotal:", summaryLeft, yPos);
+      doc.text(`Rs. ${subtotal.toFixed(2)}`, pageWidth - 15, yPos, {
+        align: "right",
+      });
 
-    doc.save(`Happytails_Receipt_${order.id || order._id}.pdf`);
+      yPos += 6;
+      doc.text("Delivery Fee:", summaryLeft, yPos);
+      doc.text("FREE", pageWidth - 15, yPos, { align: "right" });
+
+      yPos += 6;
+      doc.text("Platform Charge (4%):", summaryLeft, yPos);
+      doc.text(`Rs. ${platformFee.toFixed(2)}`, pageWidth - 15, yPos, {
+        align: "right",
+      });
+
+      // === TOTAL BOX ===
+      yPos += 8;
+      doc.setFillColor(255, 254, 139);
+      doc.rect(summaryLeft - 5, yPos - 4, pageWidth - summaryLeft, 12, "F");
+
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("GRAND TOTAL:", summaryLeft, yPos + 4);
+      doc.text(`Rs. ${finalTotal.toFixed(2)}`, pageWidth - 15, yPos + 4, {
+        align: "right",
+      });
+
+      // === FOOTER ===
+      yPos = pageHeight - 45;
+
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(15, yPos, pageWidth - 15, yPos);
+
+      yPos += 8;
+      doc.setFontSize(8);
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.text("RETURN & REFUND POLICY", 15, yPos);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(7);
+      yPos += 5;
+
+      const policies = [
+        "• Returns accepted within 14 days of delivery",
+        "• Items must be unused and in original packaging",
+        "• Include this receipt with your return",
+        "• Platform charges are non-refundable",
+      ];
+
+      policies.forEach((policy) => {
+        doc.text(policy, 15, yPos);
+        yPos += 4;
+      });
+
+      // === THANK YOU ===
+      yPos = pageHeight - 8;
+      doc.setTextColor(150, 150, 150);
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.text(
+        "Thank you for shopping with Happy Tails! 🐾",
+        pageWidth / 2,
+        yPos,
+        { align: "center" },
+      );
+
+      doc.save(`Happytails_Receipt_${order?.id || order?._id}.pdf`);
+    } catch (error) {
+      console.error("Error generating receipt:", error);
+      alert("Failed to generate receipt. Please try again.");
+    }
   };
+
+  const addressStr = user?.address
+    ? `${user.address.houseNumber || ""} ${user.address.streetNo || ""}, ${user.address.city || ""} - ${user.address.pincode || ""}`
+    : "Address not available";
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#effe8b] flex items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-[#1a1a1a]" />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-[#1a1a1a]" />
       </div>
     );
   }
 
-  if (!order) return null;
-
-  const addressStr = user?.address
-    ? `${user.address.houseNumber}, ${user.address.streetNo}, ${user.address.city} - ${user.address.pincode}`
-    : "Address not available";
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-[#effe8b] flex items-center justify-center">
+        <div className="text-center">
+          <Package className="w-16 h-16 mx-auto text-[#1a1a1a] mb-4" />
+          <h1 className="text-2xl font-bold text-[#1a1a1a] mb-2">
+            Order Not Found
+          </h1>
+          <button
+            onClick={() => navigate("/my_orders")}
+            className="text-blue-600 hover:underline"
+          >
+            Go back to orders
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-[#effe8b] font-outfit min-h-screen flex flex-col">
-      <Header onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
-      {isMobileMenuOpen && (
-        <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
-      )}
+    <div className="min-h-screen bg-[#effe8b]">
+      <Header
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
+      />
+      <MobileMenu isOpen={isMobileMenuOpen} />
 
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         <button
-          onClick={() => navigate("/my_orders")}
-          className="flex items-center text-[#1a1a1a] font-bold mb-6 hover:underline transition-all hover:-translate-x-1"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-[#1a1a1a] font-bold mb-8 hover:opacity-70"
         >
-          <ArrowLeft className="w-5 h-5 mr-2" /> Back to My Orders
+          <ArrowLeft className="w-5 h-5" /> Back
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* LEFT COLUMN: Tracking & Items */}
           <div className="lg:col-span-2 space-y-8">
             {/* Tracking Card */}
             <div className="bg-white rounded-3xl shadow-xl border-4 border-black overflow-hidden">
@@ -352,9 +415,7 @@ export default function TrackOrderPage() {
                 </div>
                 <div className="bg-[#effe8b] text-[#1a1a1a] px-4 py-2 rounded-xl font-bold text-sm">
                   {order.delivery_date
-                    ? `Exp: ${new Date(
-                        order.delivery_date
-                      ).toLocaleDateString()}`
+                    ? `Exp: ${new Date(order.delivery_date).toLocaleDateString()}`
                     : "Est: 3-5 Days"}
                 </div>
               </div>
@@ -366,9 +427,7 @@ export default function TrackOrderPage() {
                   <div
                     className="absolute top-1/2 left-0 h-2 bg-green-500 rounded-full -translate-y-1/2 transition-all duration-1000 ease-out"
                     style={{
-                      width: `${
-                        ((currentStep - 1) / (steps.length - 1)) * 100
-                      }%`,
+                      width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
                     }}
                   ></div>
 
@@ -386,8 +445,8 @@ export default function TrackOrderPage() {
                               isCompleted
                                 ? "bg-green-500 border-green-500 text-white shadow-lg scale-110"
                                 : isCurrent
-                                ? "bg-white border-green-500 text-green-500 shadow-md scale-110"
-                                : "bg-white border-gray-200 text-gray-300"
+                                  ? "bg-white border-green-500 text-green-500 shadow-md scale-110"
+                                  : "bg-white border-gray-200 text-gray-300"
                             }`}
                           >
                             {isCompleted ? (
@@ -423,8 +482,8 @@ export default function TrackOrderPage() {
                             isCompleted
                               ? "bg-green-500 border-green-500 text-white"
                               : isCurrent
-                              ? "bg-white border-green-500 text-green-500"
-                              : "bg-white border-gray-200 text-gray-300"
+                                ? "bg-white border-green-500 text-green-500"
+                                : "bg-white border-gray-200 text-gray-300"
                           }`}
                         >
                           <step.icon className="w-5 h-5" />
@@ -586,13 +645,8 @@ export default function TrackOrderPage() {
                   <span>₹{finalTotal.toFixed(2)}</span>
                 </div>
 
-                {/* Policy Note on UI */}
                 <div className="bg-gray-50 p-3 rounded-lg mt-4 flex items-start gap-2 text-xs text-gray-500">
                   <Info className="w-4 h-4 mt-0.5 shrink-0" />
-                  <p>
-                    Returns accepted within 14 days of delivery. Platform
-                    charges are non-refundable.
-                  </p>
                 </div>
               </div>
 

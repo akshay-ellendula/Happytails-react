@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { axiosInstance } from "../../../utils/axios";
 import {
   Settings,
   Bell,
@@ -32,24 +33,59 @@ const ShopSettings = () => {
 
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    const syncSettingsFromServer = async () => {
+      try {
+        const res = await axiosInstance.get("/vendors/settings");
+        if (res.data?.success && res.data?.settings) {
+          setSettings((prev) => ({
+            ...prev,
+            autoConfirmOrders:
+              typeof res.data.settings.autoConfirmOrders === "boolean"
+                ? res.data.settings.autoConfirmOrders
+                : prev.autoConfirmOrders,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to sync settings from server:", error);
+      }
+    };
+
+    syncSettingsFromServer();
+  }, []);
+
   const handleChange = (key, value) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
     // Dark mode: apply instantly so user sees visual feedback right away
     if (key === "darkMode") {
-      window.dispatchEvent(new CustomEvent("shopDarkModeChange", { detail: value }));
+      window.dispatchEvent(
+        new CustomEvent("shopDarkModeChange", { detail: value }),
+      );
       localStorage.setItem("shopDarkMode", value);
       if (value) document.documentElement.classList.add("dark");
       else document.documentElement.classList.remove("dark");
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    try {
+      await axiosInstance.put("/vendors/settings", {
+        autoConfirmOrders: !!settings.autoConfirmOrders,
+      });
+    } catch (error) {
+      console.error("Failed to save server settings:", error);
+      toast.error("Failed to save auto-confirm setting.");
+      return;
+    }
+
     localStorage.setItem("shopSettings", JSON.stringify(settings));
     // Sync dark mode with layout
     localStorage.setItem("shopDarkMode", settings.darkMode);
     // Notify the Layout in the same tab via a custom event
-    window.dispatchEvent(new CustomEvent("shopDarkModeChange", { detail: settings.darkMode }));
+    window.dispatchEvent(
+      new CustomEvent("shopDarkModeChange", { detail: settings.darkMode }),
+    );
     if (settings.darkMode) {
       document.documentElement.classList.add("dark");
     } else {
@@ -93,9 +129,7 @@ const ShopSettings = () => {
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">Notifications</h2>
-            <p className="text-sm text-gray-500">
-              Configure alert preferences
-            </p>
+            <p className="text-sm text-gray-500">Configure alert preferences</p>
           </div>
         </div>
         <div className="p-5 space-y-4">
@@ -152,9 +186,7 @@ const ShopSettings = () => {
         <div className="p-5 space-y-4">
           <div className="flex items-center justify-between py-3">
             <div>
-              <p className="font-medium text-gray-800">
-                Low Stock Threshold
-              </p>
+              <p className="font-medium text-gray-800">Low Stock Threshold</p>
               <p className="text-sm text-gray-500">
                 Products below this quantity are marked as low stock
               </p>
@@ -165,7 +197,10 @@ const ShopSettings = () => {
               max="100"
               value={settings.lowStockThreshold}
               onChange={(e) =>
-                handleChange("lowStockThreshold", parseInt(e.target.value) || 15)
+                handleChange(
+                  "lowStockThreshold",
+                  parseInt(e.target.value) || 15,
+                )
               }
               className="w-20 px-3 py-2 border border-gray-200 rounded-xl text-center font-medium focus:ring-2 focus:ring-amber-400 outline-none"
             />
@@ -180,8 +215,12 @@ const ShopSettings = () => {
             <ShoppingBag className="text-orange-600" size={20} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Order Management</h2>
-            <p className="text-sm text-gray-500">Order processing preferences</p>
+            <h2 className="text-lg font-bold text-gray-900">
+              Order Management
+            </h2>
+            <p className="text-sm text-gray-500">
+              Order processing preferences
+            </p>
           </div>
         </div>
         <div className="p-5">
@@ -248,7 +287,6 @@ const ShopSettings = () => {
               />
             </button>
           </div>
-
         </div>
       </div>
 

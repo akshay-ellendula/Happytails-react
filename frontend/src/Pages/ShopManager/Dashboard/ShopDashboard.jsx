@@ -83,8 +83,21 @@ const ShopDashboard = () => {
         const res = await axiosInstance.get("/vendors/products");
         if (res.data.success) {
           const prods = res.data.products || [];
-          const threshold = (() => { try { return parseInt(JSON.parse(localStorage.getItem("shopSettings") || "{}").lowStockThreshold) || 15; } catch { return 15; } })();
-          setLowStockProducts(prods.filter((p) => (p.stock_quantity || 0) <= threshold));
+          const threshold = (() => {
+            try {
+              return (
+                parseInt(
+                  JSON.parse(localStorage.getItem("shopSettings") || "{}")
+                    .lowStockThreshold,
+                ) || 15
+              );
+            } catch {
+              return 15;
+            }
+          })();
+          setLowStockProducts(
+            prods.filter((p) => (p.stock_quantity || 0) <= threshold),
+          );
         }
       } catch (error) {
         console.error("Low stock fetch error:", error);
@@ -95,8 +108,13 @@ const ShopDashboard = () => {
     const fetchVendor = async () => {
       try {
         const res = await axiosInstance.get("/vendors/profile");
-        if (res.data.success) setVendorName(res.data.vendor?.store_name || res.data.vendor?.owner_name || "");
-      } catch (error) { /* ignore */ }
+        if (res.data.success)
+          setVendorName(
+            res.data.vendor?.store_name || res.data.vendor?.owner_name || "",
+          );
+      } catch (error) {
+        /* ignore */
+      }
     };
 
     fetchData();
@@ -120,14 +138,26 @@ const ShopDashboard = () => {
     const total = stats.totalOrders || 1;
     const segments = [
       { label: "New", value: stats.newOrders || 0, color: "#f59e0b" },
-      { label: "Active", value: (stats.activeOrders || 0) - (stats.newOrders || 0), color: "#3b82f6" },
-      { label: "Delivered", value: Math.max(total - (stats.activeOrders || 0), 0), color: "#10b981" },
+      {
+        label: "Active",
+        value: (stats.activeOrders || 0) - (stats.newOrders || 0),
+        color: "#3b82f6",
+      },
+      {
+        label: "Delivered",
+        value: Math.max(total - (stats.activeOrders || 0), 0),
+        color: "#10b981",
+      },
     ].filter((s) => s.value > 0);
 
-    if (segments.length === 0) segments.push({ label: "No Orders", value: 1, color: "#e5e7eb" });
+    if (segments.length === 0)
+      segments.push({ label: "No Orders", value: 1, color: "#e5e7eb" });
 
     let startAngle = -Math.PI / 2;
-    const cx = 100, cy = 100, outerR = 80, innerR = 55;
+    const cx = 100,
+      cy = 100,
+      outerR = 80,
+      innerR = 55;
     segments.forEach((seg) => {
       const sliceAngle = (seg.value / total) * 2 * Math.PI;
       ctx.beginPath();
@@ -156,7 +186,8 @@ const ShopDashboard = () => {
     const canvas = miniChartRef.current;
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
-    const w = 280, h = 80;
+    const w = 280,
+      h = 80;
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     canvas.style.width = w + "px";
@@ -190,7 +221,16 @@ const ShopDashboard = () => {
       else {
         const prevX = padding + ((i - 1) / (points.length - 1)) * chartW;
         const cpX = (prevX + x) / 2;
-        ctx.bezierCurveTo(cpX, ctx.getTransform ? h - padding - (points[i - 1] / maxVal) * chartH : y, cpX, y, x, y);
+        ctx.bezierCurveTo(
+          cpX,
+          ctx.getTransform
+            ? h - padding - (points[i - 1] / maxVal) * chartH
+            : y,
+          cpX,
+          y,
+          x,
+          y,
+        );
       }
     });
     ctx.lineTo(padding + chartW, h - padding);
@@ -238,24 +278,31 @@ const ShopDashboard = () => {
             size={size}
             className="text-amber-400"
             fill="currentColor"
-          />
+          />,
         );
       } else if (i === fullStars && hasHalf) {
         stars.push(
-          <div key={i} className="relative" style={{ width: size, height: size }}>
+          <div
+            key={i}
+            className="relative"
+            style={{ width: size, height: size }}
+          >
             <Star
               size={size}
               className="text-gray-200 absolute"
               fill="currentColor"
             />
-            <div className="overflow-hidden absolute" style={{ width: size / 2 }}>
+            <div
+              className="overflow-hidden absolute"
+              style={{ width: size / 2 }}
+            >
               <Star
                 size={size}
                 className="text-amber-400"
                 fill="currentColor"
               />
             </div>
-          </div>
+          </div>,
         );
       } else {
         stars.push(
@@ -264,7 +311,7 @@ const ShopDashboard = () => {
             size={size}
             className="text-gray-200"
             fill="currentColor"
-          />
+          />,
         );
       }
     }
@@ -275,7 +322,9 @@ const ShopDashboard = () => {
     const percentage = total > 0 ? (count / total) * 100 : 0;
     return (
       <div className="flex items-center gap-2 text-sm">
-        <span className="w-8 text-right text-gray-600 font-medium">{star}★</span>
+        <span className="w-8 text-right text-gray-600 font-medium">
+          {star}★
+        </span>
         <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-700 ease-out"
@@ -333,7 +382,8 @@ const ShopDashboard = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-            {getGreeting()}{vendorName ? `, ${vendorName}` : ""} 👋
+            {getGreeting()}
+            {vendorName ? `, ${vendorName}` : ""} 👋
           </h1>
           <p className="text-gray-500 mt-1 text-sm sm:text-base">
             Here's what's happening with your store today
@@ -369,7 +419,9 @@ const ShopDashboard = () => {
               </div>
               <div>
                 <p className="font-semibold text-red-800 text-sm sm:text-base">
-                  {lowStockProducts.length} product{lowStockProducts.length > 1 ? 's' : ''} need{lowStockProducts.length === 1 ? 's' : ''} restocking
+                  {lowStockProducts.length} product
+                  {lowStockProducts.length > 1 ? "s" : ""} need
+                  {lowStockProducts.length === 1 ? "s" : ""} restocking
                 </p>
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {lowStockProducts.slice(0, 5).map((p) => (
@@ -378,17 +430,21 @@ const ShopDashboard = () => {
                       className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 rounded-full text-xs font-medium text-red-700"
                     >
                       {p.product_name}
-                      <span className="text-red-500">({p.stock_quantity || 0})</span>
+                      <span className="text-red-500">
+                        ({p.stock_quantity || 0})
+                      </span>
                     </span>
                   ))}
                   {lowStockProducts.length > 5 && (
-                    <span className="text-xs text-red-500">+{lowStockProducts.length - 5} more</span>
+                    <span className="text-xs text-red-500">
+                      +{lowStockProducts.length - 5} more
+                    </span>
                   )}
                 </div>
               </div>
             </div>
             <button
-              onClick={() => navigate('/shop/products')}
+              onClick={() => navigate("/shop/products")}
               className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium transition-colors"
             >
               Manage Stock <ArrowRight size={16} />
@@ -506,9 +562,9 @@ const ShopDashboard = () => {
                           Math.round(
                             ((stats.totalOrders - (stats.newOrders || 0)) /
                               stats.totalOrders) *
-                              100
+                              100,
                           ),
-                          100
+                          100,
                         )
                       : 0
                   }%`,
@@ -521,11 +577,12 @@ const ShopDashboard = () => {
                     Math.round(
                       ((stats.totalOrders - (stats.newOrders || 0)) /
                         stats.totalOrders) *
-                        100
+                        100,
                     ),
-                    100
+                    100,
                   )
-                : 0}% processed
+                : 0}
+              % processed
             </span>
           </div>
         </div>
@@ -562,8 +619,12 @@ const ShopDashboard = () => {
         <div className="bg-gradient-to-br from-white to-emerald-50/30 rounded-2xl shadow-lg border border-emerald-100/50 p-4 sm:p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-800">Revenue Trend</h2>
-              <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Today → All Time</p>
+              <h2 className="text-base sm:text-lg font-bold text-gray-800">
+                Revenue Trend
+              </h2>
+              <p className="text-gray-500 text-xs sm:text-sm mt-0.5">
+                Today → All Time
+              </p>
             </div>
             <Link
               to="/shop/analytics"
@@ -586,8 +647,12 @@ const ShopDashboard = () => {
         <div className="bg-gradient-to-br from-white to-blue-50/30 rounded-2xl shadow-lg border border-blue-100/50 p-4 sm:p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-800">Order Status</h2>
-              <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Current breakdown</p>
+              <h2 className="text-base sm:text-lg font-bold text-gray-800">
+                Order Status
+              </h2>
+              <p className="text-gray-500 text-xs sm:text-sm mt-0.5">
+                Current breakdown
+              </p>
             </div>
             <Link
               to="/shop/orders"
@@ -602,17 +667,29 @@ const ShopDashboard = () => {
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <span className="text-sm text-gray-600">New</span>
-                <span className="text-sm font-bold text-gray-800 ml-auto">{stats.newOrders || 0}</span>
+                <span className="text-sm font-bold text-gray-800 ml-auto">
+                  {stats.newOrders || 0}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                 <span className="text-sm text-gray-600">Active</span>
-                <span className="text-sm font-bold text-gray-800 ml-auto">{Math.max((stats.activeOrders || 0) - (stats.newOrders || 0), 0)}</span>
+                <span className="text-sm font-bold text-gray-800 ml-auto">
+                  {Math.max(
+                    (stats.activeOrders || 0) - (stats.newOrders || 0),
+                    0,
+                  )}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
                 <span className="text-sm text-gray-600">Delivered</span>
-                <span className="text-sm font-bold text-gray-800 ml-auto">{Math.max((stats.totalOrders || 0) - (stats.activeOrders || 0), 0)}</span>
+                <span className="text-sm font-bold text-gray-800 ml-auto">
+                  {Math.max(
+                    (stats.totalOrders || 0) - (stats.activeOrders || 0),
+                    0,
+                  )}
+                </span>
               </div>
             </div>
           </div>
@@ -625,7 +702,11 @@ const ShopDashboard = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-gray-800 flex items-center gap-2">
-                <Star size={20} className="text-amber-500" fill="currentColor" />
+                <Star
+                  size={20}
+                  className="text-amber-500"
+                  fill="currentColor"
+                />
                 Product Ratings & Reviews
               </h2>
               <p className="text-gray-500 text-sm mt-1">
@@ -693,7 +774,7 @@ const ShopDashboard = () => {
                     <button
                       onClick={() =>
                         setExpandedProduct(
-                          isExpanded ? null : product.product_id
+                          isExpanded ? null : product.product_id,
                         )
                       }
                       className="w-full p-4 sm:p-5 flex items-center gap-3 sm:gap-4 text-left hover:bg-gray-50/50 transition-colors"
@@ -796,13 +877,15 @@ const ShopDashboard = () => {
                                         {review.isVerifiedPurchase && (
                                           <span className="flex items-center gap-0.5 text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
                                             <BadgeCheck size={12} />
-                                            <span className="hidden sm:inline">Verified</span>
+                                            <span className="hidden sm:inline">
+                                              Verified
+                                            </span>
                                           </span>
                                         )}
                                       </div>
                                       <span className="text-xs text-gray-400">
                                         {new Date(
-                                          review.created_at
+                                          review.created_at,
                                         ).toLocaleDateString("en-US", {
                                           month: "short",
                                           day: "numeric",
@@ -818,9 +901,21 @@ const ShopDashboard = () => {
                                         {review.title}
                                       </p>
                                     )}
-                                    {review.review && (
+                                    {(
+                                      review.review ||
+                                      review.comment ||
+                                      ""
+                                    ).trim().length > 0 ? (
                                       <p className="text-sm text-gray-600 leading-relaxed">
-                                        {review.review}
+                                        {(
+                                          review.review ||
+                                          review.comment ||
+                                          ""
+                                        ).trim()}
+                                      </p>
+                                    ) : (
+                                      <p className="text-sm text-gray-400 italic">
+                                        No written comment provided.
                                       </p>
                                     )}
                                     {review.helpful_count > 0 && (
@@ -941,7 +1036,9 @@ const ShopDashboard = () => {
       <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800">Recent Orders</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+              Recent Orders
+            </h2>
             <p className="text-gray-500 text-sm mt-1">
               Latest customer purchases
             </p>
@@ -1005,7 +1102,9 @@ const ShopDashboard = () => {
           ) : (
             <div className="text-center py-8">
               <ShoppingBag className="mx-auto text-gray-300" size={40} />
-              <p className="text-gray-500 mt-3 text-sm">No recent orders found.</p>
+              <p className="text-gray-500 mt-3 text-sm">
+                No recent orders found.
+              </p>
             </div>
           )}
         </div>

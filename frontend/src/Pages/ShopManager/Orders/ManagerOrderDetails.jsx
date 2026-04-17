@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { axiosInstance } from "../../../utils/axios";
 import {
-  Printer,
+  Download,
   Package,
   Truck,
   CheckCircle,
@@ -20,6 +20,7 @@ import {
   Send,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import jsPDF from "jspdf";
 
 const ManagerOrderDetails = () => {
   const { orderId } = useParams();
@@ -88,7 +89,9 @@ const ManagerOrderDetails = () => {
   };
 
   const deleteOrder = async () => {
-    if (!window.confirm("Delete this order permanently? This cannot be undone."))
+    if (
+      !window.confirm("Delete this order permanently? This cannot be undone.")
+    )
       return;
 
     try {
@@ -100,8 +103,247 @@ const ManagerOrderDetails = () => {
     }
   };
 
-  const printOrder = () => {
-    window.print();
+  const downloadReceipt = () => {
+    try {
+      const doc = new jsPDF("p", "mm", "a4");
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+
+      const subtotal = Number(order.subtotal || 0);
+      const platformFee = Number(order.platform_charge || 0);
+      const total = Number(order.total || subtotal + platformFee);
+      const items = Array.isArray(order.items) ? order.items : [];
+
+      doc.setFillColor(26, 26, 26);
+      doc.rect(0, 0, pageWidth, 28, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      const orderNumber = order.id?.slice(-6).toUpperCase() || orderId;
+      const orderDate = safeFormatDate(order.order_date, {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      const customerName =
+        order.customer?.name || order.customer_name || "Guest Customer";
+      const customerEmail = order.customer?.email || "-";
+      const customerPhone = order.customer?.phone || "-";
+      const addressParts = [
+        order.shipping?.address?.houseNumber,
+        order.shipping?.address?.streetNo,
+        order.shipping?.address?.city,
+        order.shipping?.address?.pincode,
+      ].filter(Boolean);
+      const addressText = addressParts.length ? addressParts.join(", ") : "-";
+      // === HEADER ===
+      doc.setFillColor(26, 26, 26);
+      doc.rect(0, 0, pageWidth, 34, "F");
+
+      doc.setFillColor(255, 254, 139);
+      doc.circle(18, 17, 7, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("HAPPY TAILS", 30, 14);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.text("Shop Manager Invoice", 30, 19);
+      doc.setFontSize(8.5);
+      doc.text(`ORDER #${orderNumber}`, pageWidth - 15, 12, { align: "right" });
+      doc.text(orderDate, pageWidth - 15, 18, { align: "right" });
+
+      // status badge
+      doc.setFillColor(255, 254, 139);
+      doc.roundedRect(pageWidth - 52, 22, 37, 8, 2, 2, "F");
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.text(order.status || "-", pageWidth - 33.5, 27.5, {
+        align: "center",
+      });
+
+      let y = 42;
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("ORDER RECEIPT", 15, y);
+
+      y += 7;
+      doc.setFontSize(9.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(90, 90, 90);
+      doc.text(`Placed: ${orderDate}`, 15, y);
+      doc.text(`Payment: Paid`, 95, y);
+      doc.text(`Status: ${order.status || "-"}`, 155, y);
+
+      // === INFO CARDS ===
+      y += 8;
+      doc.setFillColor(248, 249, 250);
+      doc.roundedRect(15, y, 88, 36, 3, 3, "F");
+      doc.setFillColor(248, 249, 250);
+      doc.roundedRect(107, y, 88, 36, 3, 3, "F");
+
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.text("BILL TO", 20, y + 6);
+      doc.text("SHIP TO", 112, y + 6);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60, 60, 60);
+      doc.setFontSize(8.3);
+      doc.text(customerName, 20, y + 13);
+      doc.text(customerEmail, 20, y + 18);
+      doc.text(customerPhone, 20, y + 23);
+
+      const addressWrapped = doc.splitTextToSize(addressText, 72);
+      doc.text(addressWrapped, 112, y + 13);
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.text("Delivery: Standard", 112, y + 29);
+
+      y += 44;
+
+      // === ITEMS LIST ===
+      const itemLeft = 15;
+      const itemRight = pageWidth - 15;
+      const itemWidth = 112;
+      const qtyX = 146;
+      const amountX = 190;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9.5);
+      doc.setTextColor(26, 26, 26);
+      doc.text("Item", itemLeft, y);
+      doc.text("Qty", qtyX, y, { align: "center" });
+      doc.text("Amount", amountX, y, { align: "right" });
+
+      y += 4;
+
+      items.forEach((item, index) => {
+        const price = Number(item.price || 0);
+        const quantity = Number(item.quantity || 0);
+        const amount = price * quantity;
+        const nameLines = doc.splitTextToSize(
+          item.product_name || "Product",
+          itemWidth,
+        );
+        const lineCount = Math.max(1, nameLines.length);
+        const rowHeight = Math.max(10, lineCount * 4.2 + 4);
+
+        doc.setFillColor(index % 2 === 0 ? 250 : 255, 255, 255);
+        doc.roundedRect(
+          itemLeft,
+          y - 1,
+          itemRight - itemLeft,
+          rowHeight,
+          2,
+          2,
+          "F",
+        );
+        doc.setDrawColor(235, 235, 235);
+        doc.roundedRect(
+          itemLeft,
+          y - 1,
+          itemRight - itemLeft,
+          rowHeight,
+          2,
+          2,
+          "S",
+        );
+
+        doc.setTextColor(26, 26, 26);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.text(nameLines, itemLeft + 3, y + 3);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text(String(quantity), qtyX, y + 4, { align: "center" });
+        doc.setFont("helvetica", "bold");
+        doc.text(`₹${amount.toFixed(2)}`, amountX, y + 4, { align: "right" });
+
+        doc.setTextColor(140, 140, 140);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+        doc.text(`Unit: ₹${price.toFixed(2)}`, amountX, y + 8, {
+          align: "right",
+        });
+
+        y += rowHeight + 4;
+      });
+
+      // === SUMMARY ===
+      y += 4;
+      doc.setDrawColor(220, 220, 220);
+      doc.line(15, y, pageWidth - 15, y);
+      y += 8;
+
+      doc.setFillColor(255, 254, 139);
+      doc.roundedRect(120, y - 2, 75, 25, 3, 3, "F");
+
+      doc.setFontSize(9);
+      doc.text(
+        order.customer?.name || order.customer_name || "Guest Customer",
+        20,
+        y + 13,
+      );
+      doc.setFont("helvetica", "normal");
+      doc.text("Subtotal", 135, y + 4);
+      doc.text("Platform Fee", 135, y + 9.5);
+      doc.text("Total", 135, y + 17);
+
+      doc.setFont("helvetica", "bold");
+      doc.text(`₹${subtotal.toFixed(2)}`, 188, y + 4, { align: "right" });
+      doc.text(`₹${platformFee.toFixed(2)}`, 188, y + 9.5, { align: "right" });
+      doc.setFontSize(10.5);
+      doc.text(`₹${total.toFixed(2)}`, 188, y + 17, { align: "right" });
+
+      y += 32;
+
+      // === POLICY + FOOTER ===
+      doc.setFillColor(248, 249, 250);
+      doc.roundedRect(15, y, pageWidth - 30, 20, 3, 3, "F");
+      doc.setTextColor(100, 100, 100);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.8);
+      doc.text(
+        "Returns accepted within 14 days of delivery. Keep this receipt for support or exchange requests.",
+        20,
+        y + 8,
+      );
+      doc.text(
+        "Generated electronically by Happy Tails",
+        pageWidth / 2,
+        y + 15,
+        { align: "center" },
+      );
+
+      doc.setTextColor(150, 150, 150);
+      doc.setFontSize(8);
+      doc.text(
+        "Thank you for shopping with Happy Tails 🐾",
+        pageWidth / 2,
+        pageHeight - 10,
+        {
+          align: "center",
+        },
+      );
+
+      const fileName = `Happytails_Receipt_${orderNumber}.pdf`;
+      const blob = doc.output("blob");
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(downloadUrl);
+      toast.success("Receipt downloaded successfully");
+    } catch (error) {
+      console.error("Error generating receipt:", error);
+      toast.error("Failed to generate receipt. Please try again.");
+    }
   };
 
   if (loading) {
@@ -122,7 +364,9 @@ const ManagerOrderDetails = () => {
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="text-gray-400" size={32} />
           </div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Order not found</h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">
+            Order not found
+          </h3>
           <button
             onClick={() => navigate("/shop/orders")}
             className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
@@ -156,7 +400,8 @@ const ManagerOrderDetails = () => {
   const getAllowedNextStatuses = () => {
     if (status === "Pending") return ["Confirmed", "Cancelled"];
     if (status === "Confirmed") return ["Shipped", "Cancelled"];
-    if (status === "Shipped") return ["Out for Delivery", "Delivered", "Cancelled"];
+    if (status === "Shipped")
+      return ["Out for Delivery", "Delivered", "Cancelled"];
     if (status === "Out for Delivery") return ["Delivered", "Cancelled"];
     if (status === "Delivered") return [];
     return [];
@@ -178,17 +423,20 @@ const ManagerOrderDetails = () => {
           </button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Order Details</h1>
-            <p className="text-gray-500 mt-1">Order #{order.id?.slice(-6).toUpperCase() || orderId}</p>
+            <p className="text-gray-500 mt-1">
+              Order #{order.id?.slice(-6).toUpperCase() || orderId}
+            </p>
           </div>
         </div>
-        
+
         <div className="flex gap-3">
           <button
-            onClick={printOrder}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            type="button"
+            onClick={downloadReceipt}
+            className="flex items-center gap-2 px-4 py-2 bg-black text-white border border-black rounded-xl hover:bg-gray-800 hover:border-gray-800 transition-colors cursor-pointer shadow-sm"
           >
-            <Printer size={20} />
-            <span className="font-medium">Print</span>
+            <Download size={20} />
+            <span className="font-medium">Download Receipt</span>
           </button>
           <button
             onClick={deleteOrder}
@@ -207,17 +455,19 @@ const ManagerOrderDetails = () => {
             <h2 className="text-xl font-bold text-gray-900">Order Timeline</h2>
             <p className="text-gray-500 text-sm mt-1">Track order progress</p>
           </div>
-          <div className={`px-4 py-2 rounded-full text-sm font-bold ${
-            status === "Pending"
-              ? "bg-yellow-100 text-yellow-800"
-              : status === "Confirmed"
-              ? "bg-purple-100 text-purple-800"
-              : status === "Shipped"
-              ? "bg-blue-100 text-blue-800"
-              : status === "Delivered"
-              ? "bg-emerald-100 text-emerald-800"
-              : "bg-red-100 text-red-800"
-          }`}>
+          <div
+            className={`px-4 py-2 rounded-full text-sm font-bold ${
+              status === "Pending"
+                ? "bg-yellow-100 text-yellow-800"
+                : status === "Confirmed"
+                  ? "bg-purple-100 text-purple-800"
+                  : status === "Shipped"
+                    ? "bg-blue-100 text-blue-800"
+                    : status === "Delivered"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-red-100 text-red-800"
+            }`}
+          >
             {status}
           </div>
         </div>
@@ -225,7 +475,7 @@ const ManagerOrderDetails = () => {
         {/* Timeline */}
         <div className="relative">
           <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-          
+
           {/* Order Placed */}
           <div className="flex items-start gap-6 mb-8 relative">
             <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center z-10">
@@ -254,15 +504,17 @@ const ManagerOrderDetails = () => {
           {/* Timeline Events */}
           {timeline.map((event, index) => (
             <div key={index} className="flex items-start gap-6 mb-8 relative">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center z-10 ${
-                event.status === "Shipped"
-                  ? "bg-blue-500"
-                  : event.status === "Delivered"
-                  ? "bg-emerald-500"
-                  : event.status === "Cancelled"
-                  ? "bg-red-500"
-                  : "bg-purple-500"
-              }`}>
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center z-10 ${
+                  event.status === "Shipped"
+                    ? "bg-blue-500"
+                    : event.status === "Delivered"
+                      ? "bg-emerald-500"
+                      : event.status === "Cancelled"
+                        ? "bg-red-500"
+                        : "bg-purple-500"
+                }`}
+              >
                 {event.status === "Shipped" ? (
                   <Truck size={24} className="text-white" />
                 ) : event.status === "Delivered" ? (
@@ -278,10 +530,14 @@ const ManagerOrderDetails = () => {
                   <div>
                     <p className="font-bold text-gray-900">
                       {event.status === "Shipped" && "Order has been shipped"}
-                      {event.status === "Out for Delivery" && "Order is out for delivery"}
-                      {event.status === "Delivered" && "Order has been delivered"}
-                      {event.status === "Cancelled" && "Order has been cancelled"}
-                      {event.status === "Confirmed" && "Order Confirmed by seller"}
+                      {event.status === "Out for Delivery" &&
+                        "Order is out for delivery"}
+                      {event.status === "Delivered" &&
+                        "Order has been delivered"}
+                      {event.status === "Cancelled" &&
+                        "Order has been cancelled"}
+                      {event.status === "Confirmed" &&
+                        "Order Confirmed by seller"}
                     </p>
                     <p className="text-gray-500 text-sm mt-1">
                       {safeFormatDate(event.date, {
@@ -305,15 +561,29 @@ const ManagerOrderDetails = () => {
       {/* Update Status Section */}
       {allowedStatuses.length > 0 && (
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Update Order Status</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            Update Order Status
+          </h3>
           <div className="flex flex-wrap gap-3">
             {allowedStatuses.map((newStatus) => {
               const statusConfig = {
-                Pending: { bg: "bg-yellow-500 hover:bg-yellow-600", icon: "⏳" },
-                Confirmed: { bg: "bg-purple-500 hover:bg-purple-600", icon: "✓" },
+                Pending: {
+                  bg: "bg-yellow-500 hover:bg-yellow-600",
+                  icon: "⏳",
+                },
+                Confirmed: {
+                  bg: "bg-purple-500 hover:bg-purple-600",
+                  icon: "✓",
+                },
                 Shipped: { bg: "bg-blue-500 hover:bg-blue-600", icon: "🚚" },
-                "Out for Delivery": { bg: "bg-indigo-500 hover:bg-indigo-600", icon: "📦" },
-                Delivered: { bg: "bg-emerald-500 hover:bg-emerald-600", icon: "✅" },
+                "Out for Delivery": {
+                  bg: "bg-indigo-500 hover:bg-indigo-600",
+                  icon: "📦",
+                },
+                Delivered: {
+                  bg: "bg-emerald-500 hover:bg-emerald-600",
+                  icon: "✅",
+                },
                 Cancelled: { bg: "bg-red-500 hover:bg-red-600", icon: "✕" },
               };
 
@@ -341,25 +611,33 @@ const ManagerOrderDetails = () => {
             <div className="p-3 bg-blue-100 rounded-xl">
               <User className="text-blue-600" size={24} />
             </div>
-            <h3 className="text-lg font-bold text-gray-900">Customer Information</h3>
+            <h3 className="text-lg font-bold text-gray-900">
+              Customer Information
+            </h3>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <p className="text-sm text-gray-500">Name</p>
               <p className="font-bold text-gray-900 text-lg">
-                {order.customer?.name || order.customer_name || "Guest Customer"}
+                {order.customer?.name ||
+                  order.customer_name ||
+                  "Guest Customer"}
               </p>
             </div>
-            
+
             <div>
               <p className="text-sm text-gray-500">Email</p>
-              <p className="font-medium text-gray-700">{order.customer?.email || "-"}</p>
+              <p className="font-medium text-gray-700">
+                {order.customer?.email || "-"}
+              </p>
             </div>
-            
+
             <div>
               <p className="text-sm text-gray-500">Phone</p>
-              <p className="font-medium text-gray-700">{order.customer?.phone || "-"}</p>
+              <p className="font-medium text-gray-700">
+                {order.customer?.phone || "-"}
+              </p>
             </div>
           </div>
         </div>
@@ -370,9 +648,11 @@ const ManagerOrderDetails = () => {
             <div className="p-3 bg-emerald-100 rounded-xl">
               <MapPin className="text-emerald-600" size={24} />
             </div>
-            <h3 className="text-lg font-bold text-gray-900">Shipping Address</h3>
+            <h3 className="text-lg font-bold text-gray-900">
+              Shipping Address
+            </h3>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <p className="text-sm text-gray-500">Recipient</p>
@@ -380,22 +660,26 @@ const ManagerOrderDetails = () => {
                 {order.customer?.name || order.customer_name || "Guest"}
               </p>
             </div>
-            
+
             <div>
               <p className="text-sm text-gray-500">Contact</p>
-              <p className="font-medium text-gray-700">{order.customer?.phone || "-"}</p>
+              <p className="font-medium text-gray-700">
+                {order.customer?.phone || "-"}
+              </p>
             </div>
-            
+
             <div className="space-y-1">
               <p className="text-sm text-gray-500">Address</p>
               <div className="text-gray-700">
                 <p>{order.shipping?.address?.houseNumber || "-"},</p>
                 <p>{order.shipping?.address?.streetNo || "-"},</p>
                 <p>{order.shipping?.address?.city || "-"},</p>
-                <p className="font-bold text-lg">{order.shipping?.address?.pincode || "-"}</p>
+                <p className="font-bold text-lg">
+                  {order.shipping?.address?.pincode || "-"}
+                </p>
               </div>
             </div>
-            
+
             <div>
               <p className="text-sm text-gray-500">Delivery Method</p>
               <p className="font-medium text-gray-700">
@@ -414,20 +698,30 @@ const ManagerOrderDetails = () => {
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-sm text-gray-500">Order Total</p>
-                <p className="text-2xl font-bold text-gray-900">₹{fmt(order.total)}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ₹{fmt(order.total)}
+                </p>
               </div>
             </div>
           </div>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="py-4 px-6 font-semibold text-gray-600 text-sm text-left">Product</th>
-                <th className="py-4 px-6 font-semibold text-gray-600 text-sm text-left">Price</th>
-                <th className="py-4 px-6 font-semibold text-gray-600 text-sm text-left">Qty</th>
-                <th className="py-4 px-6 font-semibold text-gray-600 text-sm text-right">Total</th>
+                <th className="py-4 px-6 font-semibold text-gray-600 text-sm text-left">
+                  Product
+                </th>
+                <th className="py-4 px-6 font-semibold text-gray-600 text-sm text-left">
+                  Price
+                </th>
+                <th className="py-4 px-6 font-semibold text-gray-600 text-sm text-left">
+                  Qty
+                </th>
+                <th className="py-4 px-6 font-semibold text-gray-600 text-sm text-right">
+                  Total
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -454,7 +748,10 @@ const ManagerOrderDetails = () => {
             </tbody>
             <tfoot className="bg-gray-50">
               <tr>
-                <td colSpan="3" className="py-4 px-6 text-right font-semibold text-gray-700">
+                <td
+                  colSpan="3"
+                  className="py-4 px-6 text-right font-semibold text-gray-700"
+                >
                   Subtotal
                 </td>
                 <td className="py-4 px-6 text-right font-bold text-gray-900">
@@ -462,7 +759,10 @@ const ManagerOrderDetails = () => {
                 </td>
               </tr>
               <tr>
-                <td colSpan="3" className="py-4 px-6 text-right font-semibold text-gray-700">
+                <td
+                  colSpan="3"
+                  className="py-4 px-6 text-right font-semibold text-gray-700"
+                >
                   Platform Fee
                 </td>
                 <td className="py-4 px-6 text-right font-bold text-gray-900">
@@ -470,7 +770,10 @@ const ManagerOrderDetails = () => {
                 </td>
               </tr>
               <tr className="bg-gray-100">
-                <td colSpan="3" className="py-4 px-6 text-right font-bold text-gray-900 text-lg">
+                <td
+                  colSpan="3"
+                  className="py-4 px-6 text-right font-bold text-gray-900 text-lg"
+                >
                   Total Amount
                 </td>
                 <td className="py-4 px-6 text-right font-bold text-gray-900 text-2xl">
@@ -490,7 +793,9 @@ const ManagerOrderDetails = () => {
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-900">Internal Notes</h3>
-            <p className="text-gray-500 text-sm">Private notes visible only to you</p>
+            <p className="text-gray-500 text-sm">
+              Private notes visible only to you
+            </p>
           </div>
         </div>
 
@@ -518,7 +823,10 @@ const ManagerOrderDetails = () => {
         {notes.length > 0 ? (
           <div className="space-y-3 max-h-60 overflow-y-auto">
             {[...notes].reverse().map((note, i) => (
-              <div key={i} className="bg-white border border-amber-100 rounded-xl p-3">
+              <div
+                key={i}
+                className="bg-white border border-amber-100 rounded-xl p-3"
+              >
                 <p className="text-sm text-gray-800">{note.text}</p>
                 <p className="text-xs text-gray-400 mt-1.5">
                   {new Date(note.created_at).toLocaleDateString("en-IN", {
@@ -533,7 +841,9 @@ const ManagerOrderDetails = () => {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-400 text-center py-4">No notes yet. Add one above!</p>
+          <p className="text-sm text-gray-400 text-center py-4">
+            No notes yet. Add one above!
+          </p>
         )}
       </div>
 
@@ -545,39 +855,51 @@ const ManagerOrderDetails = () => {
             <div>
               <p className="text-sm text-blue-600 font-medium">Order Date</p>
               <p className="font-bold text-blue-900">
-                {safeFormatDate(order.order_date, { day: 'numeric', month: 'short' })}
+                {safeFormatDate(order.order_date, {
+                  day: "numeric",
+                  month: "short",
+                })}
               </p>
             </div>
           </div>
         </div>
-        
+
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-5 border border-purple-200">
           <div className="flex items-center gap-3">
             <Clock className="text-purple-600" size={20} />
             <div>
               <p className="text-sm text-purple-600 font-medium">Order Time</p>
               <p className="font-bold text-purple-900">
-                {safeFormatTime(order.order_date, { hour: '2-digit', minute: '2-digit' })}
+                {safeFormatTime(order.order_date, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </p>
             </div>
           </div>
         </div>
-        
+
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl p-5 border border-emerald-200">
           <div className="flex items-center gap-3">
             <DollarSign className="text-emerald-600" size={20} />
             <div>
-              <p className="text-sm text-emerald-600 font-medium">Total Items</p>
-              <p className="font-bold text-emerald-900">{order.items?.length || 0}</p>
+              <p className="text-sm text-emerald-600 font-medium">
+                Total Items
+              </p>
+              <p className="font-bold text-emerald-900">
+                {order.items?.length || 0}
+              </p>
             </div>
           </div>
         </div>
-        
+
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-5 border border-orange-200">
           <div className="flex items-center gap-3">
             <Package className="text-orange-600" size={20} />
             <div>
-              <p className="text-sm text-orange-600 font-medium">Payment Status</p>
+              <p className="text-sm text-orange-600 font-medium">
+                Payment Status
+              </p>
               <p className="font-bold text-orange-900">Paid</p>
             </div>
           </div>

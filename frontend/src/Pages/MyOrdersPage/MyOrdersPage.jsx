@@ -8,28 +8,35 @@ import { useNavigate } from "react-router";
 import RatingModal from "../../components/RatingModal";
 import { toast } from "react-hot-toast";
 
-const PaginationControls = ({ currentPage, totalItems, itemsPerPage, onPageChange }) => {
+const PaginationControls = ({
+  currentPage,
+  totalItems,
+  itemsPerPage,
+  onPageChange,
+}) => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   if (totalPages <= 1) return null;
 
   return (
     <div className="flex justify-center items-center gap-4 mt-8">
-      <button 
+      <button
         onClick={() => {
           onPageChange(currentPage - 1);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }} 
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
         disabled={currentPage === 1}
         className="px-4 py-2 border-2 border-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 font-semibold transition-colors bg-white text-black text-sm"
       >
         Previous
       </button>
-      <span className="font-semibold text-md text-black">Page {currentPage} of {totalPages}</span>
-      <button 
+      <span className="font-semibold text-md text-black">
+        Page {currentPage} of {totalPages}
+      </span>
+      <button
         onClick={() => {
           onPageChange(currentPage + 1);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }} 
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
         disabled={currentPage === totalPages}
         className="px-4 py-2 border-2 border-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 font-semibold transition-colors bg-white text-black text-sm"
       >
@@ -46,7 +53,8 @@ export default function MyOrdersPage() {
   const navigate = useNavigate();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [selectedProductForRating, setSelectedProductForRating] = useState(null);
+  const [selectedProductForRating, setSelectedProductForRating] =
+    useState(null);
   const [selectedOrderForRating, setSelectedOrderForRating] = useState(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
 
@@ -68,7 +76,7 @@ export default function MyOrdersPage() {
       const response = await axiosInstance.get("/ratings/my-ratings");
       if (response.data.success) {
         const ratingsMap = {};
-        response.data.ratings.forEach(rating => {
+        response.data.ratings.forEach((rating) => {
           // Key by product_id only - customer can only rate each product once
           const productId = rating.product_id._id || rating.product_id;
           ratingsMap[productId] = rating;
@@ -99,7 +107,7 @@ export default function MyOrdersPage() {
       console.error("Error fetching orders:", err);
       toast.error(
         "Error fetching orders: " +
-          (err.response?.data?.message || err.message)
+          (err.response?.data?.message || err.message),
       );
     } finally {
       setLoading(false);
@@ -109,7 +117,7 @@ export default function MyOrdersPage() {
   const handleBuyAgain = async (orderId) => {
     try {
       const res = await axiosInstance.post(
-        `/products/orders/${orderId}/reorder`
+        `/products/orders/${orderId}/reorder`,
       );
       const data = res.data;
 
@@ -121,7 +129,7 @@ export default function MyOrdersPage() {
               c.product_id === item.product_id &&
               c.variant_id === item.variant_id &&
               c.size === item.size &&
-              c.color === item.color
+              c.color === item.color,
           );
           if (existing > -1) cart[existing].quantity += item.quantity;
           else cart.push(item);
@@ -135,7 +143,7 @@ export default function MyOrdersPage() {
       console.error(err);
       toast.error(
         "Error adding items to cart: " +
-          (err.response?.data?.message || err.message)
+          (err.response?.data?.message || err.message),
       );
     }
   };
@@ -146,7 +154,7 @@ export default function MyOrdersPage() {
       id: product.product_id || product._id,
       product_name: product.product_name,
       image_data: product.image_data,
-      variant_id: product.variant_id
+      variant_id: product.variant_id,
     });
     setShowRatingModal(true);
   };
@@ -154,9 +162,9 @@ export default function MyOrdersPage() {
   const handleRatingSuccess = (rating) => {
     toast.success("Thank you for your rating!");
     // Update the local state to mark this product as rated
-    setUserRatings(prev => ({
+    setUserRatings((prev) => ({
       ...prev,
-      [rating.product_id]: rating
+      [rating.product_id]: rating,
     }));
   };
 
@@ -193,12 +201,12 @@ export default function MyOrdersPage() {
 
     const getDeliveryDisplay = (order, isDelivered) => {
       if (isDelivered) {
-        if (order.delivery_date) return formatDate(order.delivery_date);
         if (order.delivered_at) return formatDate(order.delivered_at);
+        if (order.delivery_date) return formatDate(order.delivery_date);
         const evt = (order.timeline || []).find(
           (t) =>
             (t.status && t.status.toLowerCase().includes("out")) ||
-            (t.status && t.status.toLowerCase().includes("deliv"))
+            (t.status && t.status.toLowerCase().includes("deliv")),
         );
         if (evt && evt.date) return formatDate(evt.date);
         return "N/A";
@@ -285,7 +293,9 @@ export default function MyOrdersPage() {
                   })}
                 </p>
                 <p className="text-gray-700">
-                  <span className="font-bold text-[#1a1a1a]">Delivery Date:</span>{" "}
+                  <span className="font-bold text-[#1a1a1a]">
+                    Delivery Date:
+                  </span>{" "}
                   {order.status === "Delivered"
                     ? getDeliveryDisplay(order, true)
                     : getDeliveryDisplay(order, false)}
@@ -297,8 +307,8 @@ export default function MyOrdersPage() {
                       order.status === "Delivered"
                         ? "bg-green-100 text-green-800"
                         : order.status === "Shipped"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-[#f2c737] text-[#1a1a1a]"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-[#f2c737] text-[#1a1a1a]"
                     }`}
                   >
                     {order.status}
@@ -335,7 +345,11 @@ export default function MyOrdersPage() {
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                       : "bg-green-600 text-white hover:scale-105 hover:shadow-lg"
                   }`}
-                  title={isProductRated ? "You have already rated this product" : "Rate this product"}
+                  title={
+                    isProductRated
+                      ? "You have already rated this product"
+                      : "Rate this product"
+                  }
                 >
                   {isProductRated ? "Already Rated" : "Rate Product"}
                 </button>
@@ -355,8 +369,14 @@ export default function MyOrdersPage() {
   const currentOrders = orders.filter((o) => o.status !== "Delivered");
   const previousOrders = orders.filter((o) => o.status === "Delivered");
 
-  const paginatedCurrentOrders = currentOrders.slice((currentOrdersPage - 1) * itemsPerPage, currentOrdersPage * itemsPerPage);
-  const paginatedPreviousOrders = previousOrders.slice((previousOrdersPage - 1) * itemsPerPage, previousOrdersPage * itemsPerPage);
+  const paginatedCurrentOrders = currentOrders.slice(
+    (currentOrdersPage - 1) * itemsPerPage,
+    currentOrdersPage * itemsPerPage,
+  );
+  const paginatedPreviousOrders = previousOrders.slice(
+    (previousOrdersPage - 1) * itemsPerPage,
+    previousOrdersPage * itemsPerPage,
+  );
 
   return (
     <div className="bg-[#f2c737] font-outfit min-h-screen flex flex-col">
@@ -377,11 +397,11 @@ export default function MyOrdersPage() {
             ) : currentOrders.length > 0 ? (
               <div className="space-y-6">
                 {paginatedCurrentOrders.map((order) => renderOrderCard(order))}
-                <PaginationControls 
-                  currentPage={currentOrdersPage} 
-                  totalItems={currentOrders.length} 
-                  itemsPerPage={itemsPerPage} 
-                  onPageChange={setCurrentOrdersPage} 
+                <PaginationControls
+                  currentPage={currentOrdersPage}
+                  totalItems={currentOrders.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentOrdersPage}
                 />
               </div>
             ) : (
@@ -398,11 +418,11 @@ export default function MyOrdersPage() {
             ) : previousOrders.length > 0 ? (
               <div className="space-y-6">
                 {paginatedPreviousOrders.map((order) => renderOrderCard(order))}
-                <PaginationControls 
-                  currentPage={previousOrdersPage} 
-                  totalItems={previousOrders.length} 
-                  itemsPerPage={itemsPerPage} 
-                  onPageChange={setPreviousOrdersPage} 
+                <PaginationControls
+                  currentPage={previousOrdersPage}
+                  totalItems={previousOrders.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setPreviousOrdersPage}
                 />
               </div>
             ) : (
