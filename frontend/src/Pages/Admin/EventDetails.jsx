@@ -325,30 +325,18 @@ const EventDetails = () => {
     }
   };
 
-  // Replace handleDelete with this:
-  const handleCancelEvent = async (eventId) => {
-    const reason = window.prompt(
-      "Are you sure you want to cancel this event?\n\nPlease enter a reason (this will be emailed to all ticket holders):",
-    );
-
-    if (reason === null) return; // User clicked cancel on the prompt box
-    if (reason.trim() === "") {
-      alert("A reason is required to cancel the event.");
-      return;
-    }
-
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this event? This cannot be undone.")) return;
     try {
-      // Assuming your backend route is PUT /api/events/:id/cancel
-      await axiosInstance.put(`/events/${eventId}/cancel`, { reason });
-
-      // Remove the event from the UI since it is cancelled/deleted
-      setEvents(events.filter((event) => event._id !== eventId));
-      alert(
-        "Event cancelled successfully. Emails have been sent to ticket holders.",
-      );
+      const result = await dispatch(deleteEvent(id));
+      if (deleteEvent.fulfilled.match(result)) {
+        alert("Event deleted successfully.");
+        navigate("/admin/events");
+      } else {
+        alert(result.payload || "Failed to delete event");
+      }
     } catch (err) {
-      console.error("Error cancelling event:", err);
-      alert(err.response?.data?.message || "Failed to cancel event");
+      alert("Failed to delete event");
     }
   };
 
@@ -512,13 +500,15 @@ const EventDetails = () => {
                 >
                   Edit Event
                 </button>
-                {/* Replace the old delete button with this Cancel Event button */}
                 <button
-                  onClick={() => handleCancelEvent(event._id)}
-                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Cancel Event & Refund Tickets"
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 text-white px-5 py-2.5 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  title="Delete Event"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete Event
                 </button>
               </div>
             </div>
