@@ -91,21 +91,7 @@ const getVendorTop3Products = async (req, res) => {
       // 1. Only order items for this vendor
       { $match: { vendor_id: vendorId } },
 
-      // 2. Join with the actual Product to verify it still belongs to this vendor
-      {
-        $lookup: {
-          from: "products",
-          localField: "product_id",
-          foreignField: "_id",
-          as: "product",
-        },
-      },
-      { $unwind: { path: "$product", preserveNullAndEmptyArrays: false } }, // drop if product not found or mismatch
-
-      // 3. Extra safety: ensure product.vendor_id matches (in case of data inconsistency)
-      { $match: { "product.vendor_id": vendorId } },
-
-      // 4. Join with Order to get status
+      // 2. Join with Order to get status (do this first for efficient filtering)
       {
         $lookup: {
           from: "orders",
@@ -116,18 +102,16 @@ const getVendorTop3Products = async (req, res) => {
       },
       { $unwind: { path: "$order", preserveNullAndEmptyArrays: false } },
 
-      // 5. Only count "successful" orders – adjust statuses to your real ones
+      // 3. Filter for successful orders early
       {
         $match: {
           "order.status": {
             $in: ["Delivered", "Confirmed", "Completed", "Shipped"],
-            // If you want to include more: add "Processing", etc.
-            // Or use $nin: ["Cancelled", "Refunded", "Failed"]
           },
         },
       },
 
-      // 6. Group → calculate revenue & quantity
+      // 4. Group → calculate revenue & quantity
       {
         $group: {
           _id: "$product_id",
@@ -137,13 +121,13 @@ const getVendorTop3Products = async (req, res) => {
         },
       },
 
-      // 7. Sort by revenue descending (highest income first)
+      // 5. Sort by revenue descending (highest income first)
       { $sort: { total_revenue: -1 } },
 
-      // 8. Limit to top 3
+      // 6. Limit to top 3
       { $limit: 3 },
 
-      // 9. Get primary image (optional)
+      // 7. Get primary image
       {
         $lookup: {
           from: "productimages",
@@ -155,11 +139,17 @@ const getVendorTop3Products = async (req, res) => {
                 is_primary: true,
               },
             },
+            { $limit: 1 },
+            { $project: { image_data: 1 } },
           ],
           as: "primary_image",
         },
       },
-      { $unwind: { path: "$primary_image", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          primary_image: { $arrayElemAt: ["$primary_image", 0] },
+        },
+      },
     ]);
 
     const result = topProducts.map((p) => ({
@@ -276,12 +266,64 @@ const getVendorProfile = async (req, res, next) => {
       phone: vendor.contact_number,
       address: vendor.store_location,
       description: vendor.description || "",
+      auto_confirm_orders: !!vendor.auto_confirm_orders,
       createdAt: vendor.createdAt,
     };
 
     sendJson(res, { vendor: vendorData });
   } catch (error) {
     console.error("Profile Error:", error);
+    next(error);
+  }
+};
+
+const getVendorSettings = async (req, res, next) => {
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+
+  try {
+    const vendor = await Vendor.findById(vendorId).select(
+      "auto_confirm_orders",
+    );
+    if (!vendor) return sendError(res, "Vendor not found", 404);
+
+    sendJson(res, {
+      settings: {
+        autoConfirmOrders: !!vendor.auto_confirm_orders,
+      },
+    });
+  } catch (error) {
+    console.error("Get vendor settings error:", error);
+    next(error);
+  }
+};
+
+const updateVendorSettings = async (req, res, next) => {
+  if (!req.user) return sendError(res, "Unauthorized", 401);
+  const vendorId = req.user.vendorId;
+  const { autoConfirmOrders } = req.body;
+
+  if (typeof autoConfirmOrders !== "boolean") {
+    return sendError(res, "autoConfirmOrders must be a boolean", 400);
+  }
+
+  try {
+    const updatedVendor = await Vendor.findByIdAndUpdate(
+      vendorId,
+      { auto_confirm_orders: autoConfirmOrders },
+      { new: true, runValidators: true },
+    ).select("auto_confirm_orders");
+
+    if (!updatedVendor) return sendError(res, "Vendor not found", 404);
+
+    sendJson(res, {
+      message: "Settings updated successfully",
+      settings: {
+        autoConfirmOrders: !!updatedVendor.auto_confirm_orders,
+      },
+    });
+  } catch (error) {
+    console.error("Update vendor settings error:", error);
     next(error);
   }
 };
@@ -394,9 +436,7 @@ const getVendorAnalytics = async (req, res, next) => {
 const getVendorProducts = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
-  const { category, sort } = req.query;
-
-  console.log("Fetching products for vendor:", vendorId);
+  const { category, sort, petType, limit = 50, skip = 0 } = req.query;
 
   const matchStage = {
     $or: [
@@ -406,8 +446,22 @@ const getVendorProducts = async (req, res, next) => {
     is_deleted: { $ne: true },
   };
 
-  if (category && category !== "All Categories")
+  if (category && category !== "All Categories") {
     matchStage.product_category = category;
+  }
+
+  const normalizedPetType =
+    typeof petType === "string" ? petType.toLowerCase() : "all";
+  if (normalizedPetType && normalizedPetType !== "all") {
+    matchStage.product_type = {
+      $in: [
+        normalizedPetType,
+        normalizedPetType.toUpperCase(),
+        normalizedPetType[0]?.toUpperCase() + normalizedPetType.slice(1),
+        "both",
+      ],
+    };
+  }
 
   const sortStage = {};
   if (sort === "oldest") sortStage.created_at = 1;
@@ -421,67 +475,85 @@ const getVendorProducts = async (req, res, next) => {
       {
         $lookup: {
           from: "productvariants",
-          localField: "_id",
-          foreignField: "product_id",
+          let: { productId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$product_id", "$$productId"] } } },
+            { $limit: 1 },
+            {
+              $project: { regular_price: 1, sale_price: 1, stock_quantity: 1 },
+            },
+          ],
           as: "variants",
         },
       },
       {
         $lookup: {
           from: "productimages",
-          localField: "_id",
-          foreignField: "product_id",
-          as: "images",
+          let: { productId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$product_id", "$$productId"] },
+                is_primary: true,
+              },
+            },
+            { $limit: 1 },
+            { $project: { image_data: 1 } },
+          ],
+          as: "primary_image",
         },
       },
       {
         $lookup: {
-          from: "orderitems",
-          localField: "_id",
-          foreignField: "product_id",
-          as: "order_items",
+          from: "productimages",
+          let: { productId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$product_id", "$$productId"] },
+              },
+            },
+            { $sort: { is_primary: -1, _id: 1 } },
+            { $limit: 5 },
+            { $project: { _id: 1, image_data: 1, is_primary: 1 } },
+          ],
+          as: "images",
         },
       },
       {
         $addFields: {
-          primary_image: {
-            $arrayElemAt: [
-              {
-                $filter: {
-                  input: "$images",
-                  as: "image",
-                  cond: { $eq: ["$$image.is_primary", true] },
-                },
-              },
-              0,
-            ],
-          },
+          primary_image: { $arrayElemAt: ["$primary_image", 0] },
           price_for_sort: {
             $ifNull: [{ $arrayElemAt: ["$variants.regular_price", 0] }, 0],
           },
-          total_stock: { $sum: "$variants.stock_quantity" },
+          total_stock: {
+            $ifNull: [{ $arrayElemAt: ["$variants.stock_quantity", 0] }, 0],
+          },
         },
       },
       { $sort: sortStage },
+      { $skip: parseInt(skip) || 0 },
+      { $limit: Math.min(parseInt(limit) || 50, 100) },
       {
         $project: {
           id: "$_id",
+          _id: 1,
           product_name: 1,
           product_category: 1,
+          product_type: 1,
           regular_price: {
             $ifNull: [{ $arrayElemAt: ["$variants.regular_price", 0] }, 0],
           },
           sale_price: { $arrayElemAt: ["$variants.sale_price", 0] },
           stock_quantity: "$total_stock",
-          sold: { $sum: "$order_items.quantity" },
           image_data: {
             $ifNull: ["$primary_image.image_data", "/images/default.jpg"],
           },
+          images: 1,
         },
       },
     ]);
 
-    console.log(`Found ${products.length} products for vendor ${vendorId}`);
     sendJson(res, { products });
   } catch (error) {
     console.error("getVendorProducts error:", error);
@@ -853,6 +925,12 @@ const getVendorCustomerDetails = async (req, res, next) => {
     const customer = await User.findById(customerId).select("-password");
     if (!customer) return sendError(res, "Customer not found", 404);
 
+    const defaultCustomerAddress =
+      (Array.isArray(customer.addresses) &&
+        (customer.addresses.find((address) => address?.isDefault) ||
+          customer.addresses[0])) ||
+      null;
+
     const orders = await OrderItem.aggregate([
       {
         $match: {
@@ -880,6 +958,7 @@ const getVendorCustomerDetails = async (req, res, next) => {
           order_id: "$order._id",
           order_date: "$order.order_date",
           status: "$order.status",
+          shippingAddress: "$order.shippingAddress",
           product_name: 1,
           quantity: 1,
           price: 1,
@@ -891,6 +970,32 @@ const getVendorCustomerDetails = async (req, res, next) => {
 
     const totalOrders = new Set(orders.map((o) => o.order_id.toString())).size;
     const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+
+    const latestShippingAddress = orders[0]?.shippingAddress || null;
+    const normalizedAddress =
+      latestShippingAddress || defaultCustomerAddress
+        ? {
+            name:
+              latestShippingAddress?.name ||
+              defaultCustomerAddress?.name ||
+              customer.userName ||
+              "",
+            houseNumber:
+              latestShippingAddress?.houseNumber ||
+              defaultCustomerAddress?.houseNumber ||
+              "",
+            streetNo:
+              latestShippingAddress?.streetNo ||
+              defaultCustomerAddress?.streetNo ||
+              "",
+            city:
+              latestShippingAddress?.city || defaultCustomerAddress?.city || "",
+            pincode:
+              latestShippingAddress?.pincode ||
+              defaultCustomerAddress?.pincode ||
+              "",
+          }
+        : null;
 
     const productCounts = {};
     orders.forEach((o) => {
@@ -931,7 +1036,8 @@ const getVendorCustomerDetails = async (req, res, next) => {
         name: customer.userName,
         email: customer.email,
         phone: customer.phoneNumber,
-        address: customer.address,
+        address: normalizedAddress,
+        addresses: customer.addresses || [],
         joined: new Date(customer.createdAt).toLocaleDateString(),
       },
       summary: {
@@ -970,6 +1076,29 @@ const getOrderDetails = async (req, res, next) => {
 
     const platformCharge = order.total_amount - order.subtotal;
 
+    const orderShippingAddress =
+      order.shippingAddress && typeof order.shippingAddress === "object"
+        ? order.shippingAddress
+        : {};
+    const customerAddress =
+      order.customer_id?.address &&
+      typeof order.customer_id.address === "object"
+        ? order.customer_id.address
+        : {};
+
+    const normalizedShippingAddress = {
+      name:
+        orderShippingAddress.name ||
+        customerAddress.name ||
+        order.customer_id?.userName ||
+        "N/A",
+      houseNumber:
+        orderShippingAddress.houseNumber || customerAddress.houseNumber || "",
+      streetNo: orderShippingAddress.streetNo || customerAddress.streetNo || "",
+      city: orderShippingAddress.city || customerAddress.city || "",
+      pincode: orderShippingAddress.pincode || customerAddress.pincode || "",
+    };
+
     const orderData = {
       order_id: order._id,
       status: order.status === "Confirmed" ? "Confirmed" : order.status,
@@ -984,7 +1113,7 @@ const getOrderDetails = async (req, res, next) => {
         phone: order.customer_id?.phoneNumber || "N/A",
       },
       shipping: {
-        address: order.customer_id?.address || "N/A",
+        address: normalizedShippingAddress,
         method: "Standard Delivery",
       },
       payment_method: order.payment_last_four
@@ -1033,12 +1162,9 @@ const updateOrderStatus = async (req, res, next) => {
 
     if (status === "Pending") updateFields.pending_at = new Date();
     if (status === "Confirmed") updateFields.confirmed_at = new Date();
-    if (status === "Out for Delivery") updateFields.delivery_date = new Date();
     if (status === "Shipped") updateFields.shipped_at = new Date();
     if (status === "Delivered") {
       updateFields.delivered_at = new Date();
-      // ensure delivery_date is set when marking delivered
-      updateFields.delivery_date = updateFields.delivery_date || new Date();
     }
     if (status === "Cancelled") updateFields.cancelled_at = new Date();
 
@@ -2117,7 +2243,7 @@ const getVendorProductRatings = async (req, res, next) => {
     // 1. Get all products belonging to this vendor
     const vendorProducts = await Product.find(
       { vendor_id: vendorObjectId, is_deleted: { $ne: true } },
-      { _id: 1, product_name: 1 }
+      { _id: 1, product_name: 1 },
     ).lean();
 
     const productIds = vendorProducts.map((p) => p._id);
@@ -2165,12 +2291,20 @@ const getVendorProductRatings = async (req, res, next) => {
       const pid = rating.product_id._id.toString();
       if (!productRatingMap[pid]) continue;
 
+      const reviewText =
+        typeof rating.review === "string" && rating.review.trim().length > 0
+          ? rating.review.trim()
+          : typeof rating.comment === "string" &&
+              rating.comment.trim().length > 0
+            ? rating.comment.trim()
+            : "";
+
       productRatingMap[pid].distribution[rating.rating]++;
       productRatingMap[pid].totalRatings++;
       productRatingMap[pid].recentReviews.push({
         _id: rating._id,
         rating: rating.rating,
-        review: rating.review,
+        review: reviewText,
         title: rating.title,
         customer_name: rating.customer_id?.userName || "Anonymous",
         customer_pic: rating.customer_id?.profilePic || null,
@@ -2189,14 +2323,22 @@ const getVendorProductRatings = async (req, res, next) => {
       const p = productRatingMap[pid];
       if (p.totalRatings > 0) {
         p.averageRating = parseFloat(
-          (Object.entries(p.distribution).reduce(
-            (sum, [star, count]) => sum + star * count,
-            0
-          ) / p.totalRatings).toFixed(1)
+          (
+            Object.entries(p.distribution).reduce(
+              (sum, [star, count]) => sum + star * count,
+              0,
+            ) / p.totalRatings
+          ).toFixed(1),
         );
       }
-      // Keep only 5 most recent reviews per product
-      p.recentReviews = p.recentReviews.slice(0, 5);
+      // Keep only 5 most recent entries, prioritizing written comments first
+      const withText = p.recentReviews.filter(
+        (r) => typeof r.review === "string" && r.review.trim().length > 0,
+      );
+      const withoutText = p.recentReviews.filter(
+        (r) => !(typeof r.review === "string" && r.review.trim().length > 0),
+      );
+      p.recentReviews = [...withText, ...withoutText].slice(0, 5);
     }
 
     // 4. Get product images
@@ -2236,7 +2378,6 @@ const getVendorProductRatings = async (req, res, next) => {
   }
 };
 
-
 // --- ADD ORDER NOTE ---
 const addOrderNote = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
@@ -2244,17 +2385,24 @@ const addOrderNote = async (req, res, next) => {
   const { orderId } = req.params;
   const { text } = req.body;
 
-  if (!text || !text.trim()) return sendError(res, "Note text is required", 400);
+  if (!text || !text.trim())
+    return sendError(res, "Note text is required", 400);
 
   try {
     // Verify vendor owns this order
-    const hasItem = await OrderItem.findOne({ order_id: orderId, vendor_id: vendorId });
-    if (!hasItem) return sendError(res, "Unauthorized: You do not own this order", 403);
+    const hasItem = await OrderItem.findOne({
+      order_id: orderId,
+      vendor_id: vendorId,
+    });
+    if (!hasItem)
+      return sendError(res, "Unauthorized: You do not own this order", 403);
 
     const order = await Order.findByIdAndUpdate(
       orderId,
-      { $push: { vendor_notes: { text: text.trim(), created_at: new Date() } } },
-      { new: true }
+      {
+        $push: { vendor_notes: { text: text.trim(), created_at: new Date() } },
+      },
+      { new: true },
     );
 
     if (!order) return sendError(res, "Order not found", 404);
@@ -2275,7 +2423,14 @@ const batchUpdateOrderStatus = async (req, res, next) => {
     return sendError(res, "No orders selected", 400);
   }
 
-  const validStatuses = ["Pending", "Confirmed", "Shipped", "Out for Delivery", "Delivered", "Cancelled"];
+  const validStatuses = [
+    "Pending",
+    "Confirmed",
+    "Shipped",
+    "Out for Delivery",
+    "Delivered",
+    "Cancelled",
+  ];
   if (!validStatuses.includes(status)) {
     return sendError(res, "Invalid status", 400);
   }
@@ -2296,7 +2451,6 @@ const batchUpdateOrderStatus = async (req, res, next) => {
     if (status === "Shipped") updateFields.shipped_at = new Date();
     if (status === "Delivered") {
       updateFields.delivered_at = new Date();
-      updateFields.delivery_date = new Date();
     }
     if (status === "Cancelled") updateFields.cancelled_at = new Date();
 
@@ -2308,7 +2462,7 @@ const batchUpdateOrderStatus = async (req, res, next) => {
 
     await Order.updateMany(
       { _id: { $in: ownedOrders } },
-      { ...updateFields, $push: { timeline: timelineEntry } }
+      { ...updateFields, $push: { timeline: timelineEntry } },
     );
 
     sendJson(res, {
@@ -2333,7 +2487,10 @@ const updateProductStock = async (req, res, next) => {
   }
 
   try {
-    const product = await Product.findOne({ _id: productId, vendor_id: vendorId });
+    const product = await Product.findOne({
+      _id: productId,
+      vendor_id: vendorId,
+    });
     if (!product) return sendError(res, "Product not found", 404);
 
     // Update all variants' stock proportionally, or just set the first variant
@@ -2341,7 +2498,7 @@ const updateProductStock = async (req, res, next) => {
     if (variants.length === 1) {
       await ProductVariant.updateOne(
         { _id: variants[0]._id },
-        { stock_quantity: parseInt(stock_quantity) }
+        { stock_quantity: parseInt(stock_quantity) },
       );
     } else if (variants.length > 1) {
       // Distribute evenly across variants
@@ -2350,12 +2507,15 @@ const updateProductStock = async (req, res, next) => {
       for (let i = 0; i < variants.length; i++) {
         await ProductVariant.updateOne(
           { _id: variants[i]._id },
-          { stock_quantity: perVariant + (i === 0 ? remainder : 0) }
+          { stock_quantity: perVariant + (i === 0 ? remainder : 0) },
         );
       }
     }
 
-    sendJson(res, { message: "Stock updated", stock_quantity: parseInt(stock_quantity) });
+    sendJson(res, {
+      message: "Stock updated",
+      stock_quantity: parseInt(stock_quantity),
+    });
   } catch (error) {
     console.error("Stock update error:", error);
     next(error);
@@ -2380,7 +2540,11 @@ const bulkUploadProducts = async (req, res, next) => {
       .filter((l) => l.length > 0);
 
     if (lines.length < 2) {
-      return sendError(res, "CSV must have a header row and at least one data row", 400);
+      return sendError(
+        res,
+        "CSV must have a header row and at least one data row",
+        400,
+      );
     }
 
     // Parse header (convert to lowercase for matching)
@@ -2388,16 +2552,28 @@ const bulkUploadProducts = async (req, res, next) => {
     const headers = [];
     let current = "";
     let inQuotes = false;
-    
+
     for (const ch of headerLine) {
-      if (ch === '"') { inQuotes = !inQuotes; }
-      else if (ch === ',' && !inQuotes) { 
-        headers.push(current.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_"));
-        current = ""; 
+      if (ch === '"') {
+        inQuotes = !inQuotes;
+      } else if (ch === "," && !inQuotes) {
+        headers.push(
+          current
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, "_"),
+        );
+        current = "";
+      } else {
+        current += ch;
       }
-      else { current += ch; }
     }
-    headers.push(current.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_"));
+    headers.push(
+      current
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, "_"),
+    );
 
     const results = { created: 0, failed: 0, errors: [] };
 
@@ -2408,11 +2584,11 @@ const bulkUploadProducts = async (req, res, next) => {
         let current = "";
         let inQuotes = false;
         let isQuotedField = false;
-        
+
         for (let j = 0; j < lines[i].length; j++) {
           const ch = lines[i][j];
           const nextCh = lines[i][j + 1];
-          
+
           if (ch === '"') {
             if (inQuotes && nextCh === '"') {
               // Escaped quote
@@ -2423,7 +2599,7 @@ const bulkUploadProducts = async (req, res, next) => {
               inQuotes = !inQuotes;
               isQuotedField = true;
             }
-          } else if (ch === ',' && !inQuotes) {
+          } else if (ch === "," && !inQuotes) {
             values.push(current.trim());
             current = "";
             isQuotedField = false;
@@ -2435,8 +2611,8 @@ const bulkUploadProducts = async (req, res, next) => {
 
         // Map headers to values
         const row = {};
-        headers.forEach((h, idx) => { 
-          row[h] = values[idx] ? values[idx].replace(/^"|"$/g, '') : ""; 
+        headers.forEach((h, idx) => {
+          row[h] = values[idx] ? values[idx].replace(/^"|"$/g, "") : "";
         });
 
         console.log(`Row ${i}: `, row);
@@ -2446,7 +2622,11 @@ const bulkUploadProducts = async (req, res, next) => {
 
         if (!productName) {
           results.failed++;
-          results.errors.push({ row: i + 1, error: "Missing product name", data: row });
+          results.errors.push({
+            row: i + 1,
+            error: "Missing product name",
+            data: row,
+          });
           continue;
         }
 
@@ -2463,7 +2643,8 @@ const bulkUploadProducts = async (req, res, next) => {
         console.log(`Created product: ${newProduct._id} - ${productName}`);
 
         // Create variant
-        const regularPrice = parseFloat(row.regular_price || row.price || 0) || 0;
+        const regularPrice =
+          parseFloat(row.regular_price || row.price || 0) || 0;
         const salePrice = row.sale_price ? parseFloat(row.sale_price) : null;
         const stockQty = parseInt(row.stock_quantity || row.stock || 0) || 0;
 
@@ -2481,20 +2662,27 @@ const bulkUploadProducts = async (req, res, next) => {
 
         // Handle images: can be single URL or semicolon-separated URLs
         const imageUrlsRaw = row.image_url || row.imageurl || row.image || "";
-        
+
         if (imageUrlsRaw.trim().length > 0) {
           // Split by semicolon for multiple images
           const imageUrls = imageUrlsRaw
-            .split(';')
-            .map(url => url.trim())
-            .filter(url => url.length > 0 && (url.startsWith('http://') || url.startsWith('https://')));
+            .split(";")
+            .map((url) => url.trim())
+            .filter(
+              (url) =>
+                url.length > 0 &&
+                (url.startsWith("http://") || url.startsWith("https://")),
+            );
 
-          console.log(`Processing ${imageUrls.length} images for product ${newProduct._id}:`, imageUrls);
+          console.log(
+            `Processing ${imageUrls.length} images for product ${newProduct._id}:`,
+            imageUrls,
+          );
 
           // Create image records
           for (let imgIdx = 0; imgIdx < imageUrls.length; imgIdx++) {
             const imageUrl = imageUrls[imgIdx];
-            
+
             try {
               // Simple validation - check if URL is accessible (optional)
               const imageRecord = await ProductImage.create({
@@ -2504,7 +2692,10 @@ const bulkUploadProducts = async (req, res, next) => {
               });
               console.log(`Created image ${imgIdx + 1}: ${imageUrl}`);
             } catch (imgErr) {
-              console.error(`Failed to create image for ${newProduct._id}:`, imgErr.message);
+              console.error(
+                `Failed to create image for ${newProduct._id}:`,
+                imgErr.message,
+              );
               // Continue with other images even if one fails
             }
           }
@@ -2520,7 +2711,9 @@ const bulkUploadProducts = async (req, res, next) => {
       }
     }
 
-    console.log(`Bulk upload complete: ${results.created} created, ${results.failed} failed`);
+    console.log(
+      `Bulk upload complete: ${results.created} created, ${results.failed} failed`,
+    );
 
     sendJson(res, {
       message: `Bulk upload complete: ${results.created} created, ${results.failed} failed`,
@@ -2537,6 +2730,8 @@ const vendorController = {
   logout,
   vendorSignup,
   getVendorProfile,
+  getVendorSettings,
+  updateVendorSettings,
   getVendorAnalytics,
   getVendorProducts,
   submitProduct,
