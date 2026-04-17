@@ -4,15 +4,16 @@ import mongoose from 'mongoose';
 
 // Check if user has purchased the product
 const hasUserPurchasedProduct = async (customerId, productId) => {
-    const order = await Order.findOne({
+    const orders = await Order.find({
         customer_id: customerId,
         status: 'Delivered'
-    }).lean();
+    }).select('_id').lean();
 
-    if (!order) return false;
+    if (!orders || orders.length === 0) return false;
 
+    const orderIds = orders.map(o => o._id);
     const orderItem = await OrderItem.findOne({
-        order_id: order._id,
+        order_id: { $in: orderIds },
         product_id: productId
     }).lean();
 
@@ -47,18 +48,9 @@ export const createRating = async (req, res, next) => {
         }
 
         // SECOND: Verify user actually purchased this product (at least once)
-        // Check if user has any delivered order containing this product
-        const orderItem = await OrderItem.findOne({
-            product_id
-        }).populate({
-            path: 'order_id',
-            match: { 
-                customer_id, 
-                status: 'Delivered' 
-            }
-        });
-
-        if (!orderItem || !orderItem.order_id) {
+        const hasPurchased = await hasUserPurchasedProduct(customer_id, product_id);
+        
+        if (!hasPurchased) {
             return res.status(403).json({
                 success: false,
                 message: 'You can only rate products you have purchased and received'

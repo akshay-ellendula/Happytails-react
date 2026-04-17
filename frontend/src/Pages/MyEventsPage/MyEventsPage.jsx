@@ -7,7 +7,7 @@ import {
 import { axiosInstance } from "../../utils/axios";
 import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
-import Sidebar from "../../components/Sidebar";
+import Sidebar from "../ProfilePage/components/Sidebar";
 import Footer from "../../components/Footer";
 import jsPDF from "jspdf";
 
@@ -428,7 +428,7 @@ export default function MyEventsPage() {
       )}
 
       <div className="flex flex-col lg:flex-row gap-8 mx-4 md:mx-8 lg:mx-20 mt-12 mb-20 grow">
-        <Sidebar />
+        <Sidebar activePage="events" />
 
         <main className="flex-1">
           <section className="bg-white rounded-3xl shadow-2xl p-6 md:p-10 min-h-[600px] border-2 border-black">

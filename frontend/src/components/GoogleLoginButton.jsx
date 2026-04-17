@@ -7,9 +7,12 @@ const GoogleLoginButton = ({ role = 'customer', onSuccess, buttonText = 'Continu
     const handleGoogleLogin = () => {
         setLoading(true);
         
-        // Build the Google OAuth URL with role
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
-        const redirectUrl = `${backendUrl}/api/auth/google?role=${role}`;
+        // Build the Google OAuth URL safely without duplicating /api
+        let backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001/api';
+        if (!backendUrl.endsWith('/api')) {
+            backendUrl += '/api';
+        }
+        const redirectUrl = `${backendUrl}/auth/google?role=${role}`;
 
         console.log('Redirecting to:', redirectUrl);
         

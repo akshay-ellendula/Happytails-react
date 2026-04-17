@@ -1,12 +1,43 @@
 import React, { useEffect, useState } from "react";
 import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
-import Sidebar from "../../components/Sidebar";
+import Sidebar from "../ProfilePage/components/Sidebar";
 import Footer from "../../components/Footer";
 import { axiosInstance } from "../../utils/axios";
 import { useNavigate } from "react-router";
 import RatingModal from "../../components/RatingModal";
 import { toast } from "react-hot-toast";
+
+const PaginationControls = ({ currentPage, totalItems, itemsPerPage, onPageChange }) => {
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="flex justify-center items-center gap-4 mt-8">
+      <button 
+        onClick={() => {
+          onPageChange(currentPage - 1);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }} 
+        disabled={currentPage === 1}
+        className="px-4 py-2 border-2 border-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 font-semibold transition-colors bg-white text-black text-sm"
+      >
+        Previous
+      </button>
+      <span className="font-semibold text-md text-black">Page {currentPage} of {totalPages}</span>
+      <button 
+        onClick={() => {
+          onPageChange(currentPage + 1);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }} 
+        disabled={currentPage === totalPages}
+        className="px-4 py-2 border-2 border-black rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 font-semibold transition-colors bg-white text-black text-sm"
+      >
+        Next
+      </button>
+    </div>
+  );
+};
 
 export default function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
@@ -18,6 +49,10 @@ export default function MyOrdersPage() {
   const [selectedProductForRating, setSelectedProductForRating] = useState(null);
   const [selectedOrderForRating, setSelectedOrderForRating] = useState(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
+
+  const [currentOrdersPage, setCurrentOrdersPage] = useState(1);
+  const [previousOrdersPage, setPreviousOrdersPage] = useState(1);
+  const itemsPerPage = 4;
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -132,6 +167,7 @@ export default function MyOrdersPage() {
   };
 
   const renderOrderCard = (order) => {
+    if (!order.items || order.items.length === 0) return null;
     const item = order.items[0];
     let imageSrc = "";
 
@@ -319,6 +355,9 @@ export default function MyOrdersPage() {
   const currentOrders = orders.filter((o) => o.status !== "Delivered");
   const previousOrders = orders.filter((o) => o.status === "Delivered");
 
+  const paginatedCurrentOrders = currentOrders.slice((currentOrdersPage - 1) * itemsPerPage, currentOrdersPage * itemsPerPage);
+  const paginatedPreviousOrders = previousOrders.slice((previousOrdersPage - 1) * itemsPerPage, previousOrdersPage * itemsPerPage);
+
   return (
     <div className="bg-[#f2c737] font-outfit min-h-screen flex flex-col">
       <Header onMenuToggle={toggleMobileMenu} />
@@ -327,7 +366,7 @@ export default function MyOrdersPage() {
       )}
 
       <div className="flex flex-col lg:flex-row gap-8 mx-4 md:mx-8 lg:mx-20 mt-12 mb-20 grow">
-        <Sidebar />
+        <Sidebar activePage="orders" />
         <main className="flex-1 space-y-8">
           <section className="bg-white rounded-3xl shadow-2xl p-8 md:p-10 border-2 border-black">
             <h2 className="text-3xl md:text-4xl font-bold text-[#1a1a1a] mb-8">
@@ -337,7 +376,13 @@ export default function MyOrdersPage() {
               <p className="text-gray-500 text-lg">Loading orders...</p>
             ) : currentOrders.length > 0 ? (
               <div className="space-y-6">
-                {currentOrders.map((order) => renderOrderCard(order))}
+                {paginatedCurrentOrders.map((order) => renderOrderCard(order))}
+                <PaginationControls 
+                  currentPage={currentOrdersPage} 
+                  totalItems={currentOrders.length} 
+                  itemsPerPage={itemsPerPage} 
+                  onPageChange={setCurrentOrdersPage} 
+                />
               </div>
             ) : (
               <p className="text-gray-500 text-lg">No current orders.</p>
@@ -352,7 +397,13 @@ export default function MyOrdersPage() {
               <p className="text-gray-500 text-lg">Loading orders...</p>
             ) : previousOrders.length > 0 ? (
               <div className="space-y-6">
-                {previousOrders.map((order) => renderOrderCard(order))}
+                {paginatedPreviousOrders.map((order) => renderOrderCard(order))}
+                <PaginationControls 
+                  currentPage={previousOrdersPage} 
+                  totalItems={previousOrders.length} 
+                  itemsPerPage={itemsPerPage} 
+                  onPageChange={setPreviousOrdersPage} 
+                />
               </div>
             ) : (
               <p className="text-gray-500 text-lg">No previous orders.</p>
