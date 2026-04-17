@@ -1,4 +1,5 @@
 import Customer from "../models/customerModel.js";
+import { Product, ProductVariant, ProductImage } from "../models/productsModel.js";
 
 export const getCustomers = async (req, res, next) => {
   try {
@@ -156,3 +157,125 @@ export const changeActiveStatus = async (req, res, next) => {
     next(error);
   }
 };
+
+// ───────────────────────── WISHLIST ─────────────────────────
+
+export const getWishlist = async (req, res, next) => {
+  const { id } = req.params;
+  try {
+    if (req.user.role === "customer" && req.user.customerId !== id) {
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+    const customer = await Customer.findById(id).select("wishlist").lean();
+    if (!customer) return res.status(404).json({ success: false, message: "Customer not found" });
+
+    const wishlistIds = customer.wishlist || [];
+    if (wishlistIds.length === 0) {
+      return res.status(200).json({ success: true, wishlist: [] });
+    }
+
+    // Aggregate to get product details + primary image + cheapest variant price
+    const wishlistProducts = await Product.aggregate([
+      { $match: { _id: { $in: wishlistIds } } },
+      {
+        $lookup: {
+          from: "productvariants",
+          localField: "_id",
+          foreignField: "product_id",
+          as: "variants",
+        },
+      },
+      {
+        $lookup: {
+          from: "productimages",
+          localField: "_id",
+          foreignField: "product_id",
+          as: "images",
+        },
+      },
+      {
+        $addFields: {
+          primaryImage: {
+            $first: {
+              $filter: {
+                input: "$images",
+                as: "img",
+                cond: { $eq: ["$$img.is_primary", true] },
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          product_name: 1,
+          product_type: 1,
+          variants: {
+            $map: {
+              input: "$variants",
+              as: "v",
+              in: {
+                variant_id: { $toString: "$$v._id" },
+                size: "$$v.size",
+                color: "$$v.color",
+                regular_price: "$$v.regular_price",
+                sale_price: "$$v.sale_price",
+                stock_quantity: "$$v.stock_quantity",
+              },
+            },
+          },
+          image_data: { $ifNull: ["$primaryImage.image_data", null] },
+        },
+      },
+    ]);
+
+    res.status(200).json({ success: true, wishlist: wishlistProducts });
+  } catch (error) {
+    console.error("getWishlist error:", error);
+    next(error);
+  }
+};
+
+export const addToWishlist = async (req, res, next) => {
+  const { id } = req.params;
+  const { productId } = req.body;
+  try {
+    if (req.user.role === "customer" && req.user.customerId !== id) {
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+    if (!productId) return res.status(400).json({ success: false, message: "productId is required" });
+
+    const customer = await Customer.findById(id);
+    if (!customer) return res.status(404).json({ success: false, message: "Customer not found" });
+
+    // Avoid duplicates
+    const alreadyInList = customer.wishlist.some((wid) => wid.toString() === productId);
+    if (!alreadyInList) {
+      customer.wishlist.push(productId);
+      await customer.save();
+    }
+    res.status(200).json({ success: true, message: "Added to wishlist" });
+  } catch (error) {
+    console.error("addToWishlist error:", error);
+    next(error);
+  }
+};
+
+export const removeFromWishlist = async (req, res, next) => {
+  const { id, productId } = req.params;
+  try {
+    if (req.user.role === "customer" && req.user.customerId !== id) {
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+    const customer = await Customer.findById(id);
+    if (!customer) return res.status(404).json({ success: false, message: "Customer not found" });
+
+    customer.wishlist = customer.wishlist.filter((wid) => wid.toString() !== productId);
+    await customer.save();
+    res.status(200).json({ success: true, message: "Removed from wishlist" });
+  } catch (error) {
+    console.error("removeFromWishlist error:", error);
+    next(error);
+  }
+};

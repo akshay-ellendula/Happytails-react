@@ -52,7 +52,11 @@ const customerSchema = new mongoose.Schema({
     isGoogleLogin: {
         type: Boolean,
         default: false
-    }
+    },
+    wishlist: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product'
+    }]
 }, {
     timestamps: true,
 });

@@ -1,10 +1,10 @@
-// src/Pages/Accessory/ProductDetailPage.jsx
-
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import Footer from "../../components/Footer";
 import { axiosInstance } from "../../utils/axios";
 import { useCart } from "../../context/CartContext";
+import { useWishlist } from "../../context/WishlistContext";
+import { useAuth } from "../../hooks/useAuth";
 import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
 import RatingStars from "../../components/RatingStars";
@@ -50,6 +50,16 @@ const ProductDetailPage = () => {
   };
 
   const { openCart, addToCart } = useCart();
+  const { isWishlisted, toggleWishlist } = useWishlist();
+  const { isAuthenticated, user } = useAuth();
+
+  const productId = product?.id?.toString() || product?._id?.toString();
+  const wishlisted = isWishlisted(productId);
+
+  const handleWishlistToggle = () => {
+    if (!isAuthenticated || user?.role !== "customer") return;
+    if (product) toggleWishlist(product);
+  };
 
   // Fetch product details
   useEffect(() => {
@@ -519,17 +529,52 @@ const ProductDetailPage = () => {
                 </div>
               </div>
 
-              <button
-                id="addToCartBtn"
-                onClick={handleAddToCart}
-                disabled={!currentVariant || currentVariant.stock_quantity < 1}
-                className="w-full py-4 px-6 bg-gray-900 text-[#f2c737] font-bold text-lg rounded-lg hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
-              >
-                <ShoppingCart className="w-6 h-6" />
-                {currentVariant?.stock_quantity > 0
-                  ? "Add to Cart"
-                  : "Out of Stock"}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  id="addToCartBtn"
+                  onClick={handleAddToCart}
+                  disabled={!currentVariant || currentVariant.stock_quantity < 1}
+                  className="flex-1 py-4 px-6 bg-gray-900 text-[#f2c737] font-bold text-lg rounded-lg hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
+                >
+                  <ShoppingCart className="w-6 h-6" />
+                  {currentVariant?.stock_quantity > 0
+                    ? "Add to Cart"
+                    : "Out of Stock"}
+                </button>
+
+                {/* Wishlist toggle button */}
+                {isAuthenticated && user?.role === "customer" && (
+                  <button
+                    id="wishlistBtn"
+                    onClick={handleWishlistToggle}
+                    title={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+                    aria-label={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+                    style={{
+                      width: "3.5rem",
+                      flexShrink: 0,
+                      border: wishlisted ? "2px solid #e11d48" : "2px solid #d1d5db",
+                      borderRadius: "0.5rem",
+                      background: wishlisted ? "#fff0f3" : "white",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill={wishlisted ? "#e11d48" : "none"}
+                      stroke={wishlisted ? "#e11d48" : "#9ca3af"}
+                      strokeWidth="2"
+                      style={{ width: "1.6rem", height: "1.6rem", transition: "all 0.25s ease" }}
+                    >
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
 
               {showCartMessage && (
                 <div

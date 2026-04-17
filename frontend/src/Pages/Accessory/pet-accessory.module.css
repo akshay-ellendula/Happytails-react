@@ -684,3 +684,34 @@
   text-decoration: none;
   color: inherit;
 }
+
+/* ── Wishlist heart button on product card ── */
+.wishlist_btn {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 5;
+  background: rgba(0, 0, 0, 0.45);
+  border: none;
+  border-radius: 50%;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.product_card:hover .wishlist_btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.wishlist_btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: scale(1.15) !important;
+}

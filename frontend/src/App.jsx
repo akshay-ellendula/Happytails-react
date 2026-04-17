@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import { CartProvider, useCart } from "./context/CartContext";
+import { WishlistProvider } from "./context/WishlistContext";
 import ForgotPassword from "./Pages/Auth/ForgotPassword";
 import ResetPassword from "./Pages/Auth/ResetPassword";
 import { Provider } from "react-redux";
@@ -36,6 +37,7 @@ import MyOrdersPage from "./Pages/MyOrdersPage/MyOrdersPage";
 import PaymentPage from "./Pages/PaymentPage/PaymentPage";
 import MyEventsPage from "./Pages/MyEventsPage/MyEventsPage";
 import TrackOrderPage from "./Pages/TrackOrderPage/TrackOrderPage";
+import MyWishlistPage from "./Pages/MyWishlistPage/MyWishlistPage";
 
 // --- Pages: Admin ---
 import AdminLoginPage from "./Pages/AdminLogin/AdminLoginPage";
@@ -200,6 +202,14 @@ function AppRoutes() {
             <ProtectedRoute>
               {" "}
               <MyEventsPage />{" "}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my_wishlist"
+          element={
+            <ProtectedRoute>
+              <MyWishlistPage />
             </ProtectedRoute>
           }
         />
@@ -405,7 +415,9 @@ function App() {
     <Provider store={store}>
       <AuthProvider>
         <CartProvider>
-          <AppContent />
+          <WishlistProvider>
+            <AppContent />
+          </WishlistProvider>
         </CartProvider>
         <Toaster position="top-center" />
       </AuthProvider>
