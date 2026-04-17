@@ -6,6 +6,7 @@ import { Order, OrderItem } from '../models/orderModel.js';
 import Event from '../models/eventModel.js';
 import EventManager from '../models/eventManagerModel.js';
 import Ticket from '../models/ticketModel.js';
+import Review from '../models/reviewModel.js';
 import jwt from 'jsonwebtoken';
 // Generate JWT token
 const generateToken = (payload) => {
@@ -2783,6 +2784,44 @@ const getEventRevenue = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 };
+
+// GET: All reviews for a specific event (admin view)
+const getEventReviews = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid event ID' });
+        }
+
+        const reviews = await Review.find({ eventId: id })
+            .populate('customerId', 'userName profilePic')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const totalRatings = reviews.length;
+        const avgRating = totalRatings > 0
+            ? parseFloat((reviews.reduce((sum, r) => sum + r.rating, 0) / totalRatings).toFixed(1))
+            : 0;
+
+        res.json({
+            success: true,
+            reviews: reviews.map(r => ({
+                id: r._id.toString(),
+                customer: r.customerId?.userName || 'Anonymous',
+                customerPic: r.customerId?.profilePic || null,
+                rating: r.rating,
+                comment: r.comment,
+                date: r.createdAt
+            })),
+            avgRating,
+            totalRatings
+        });
+    } catch (err) {
+        console.error('Error fetching event reviews:', err);
+        next(err);
+    }
+};
+
 export {
     // admin-login.ejs
     logout,
@@ -2841,6 +2880,7 @@ export {
     updateEvent,
     getEventRevenue,
     getEventsWithRevenue,
+    getEventReviews,
 
     // admin-orders.ejs , admin-order-details.ejs
     getOrders,

@@ -55,6 +55,7 @@ import {
     updateEvent,
     getEventRevenue,
     getEventsWithRevenue,
+    getEventReviews,
 
     // admin-orders.ejs, admin-order-details.ejs
     getOrders,
@@ -166,6 +167,7 @@ router.get('/events/revenue', protectRoute(['admin']), getEventRevenue);
 router.get('/events/with-revenue', protectRoute(['admin']), getEventsWithRevenue);
 router.get('/events/:id', protectRoute(['admin']), getEvent);
 router.get('/events/:id/attendees', protectRoute(['admin']), getEventAttendees);
+router.get('/events/:id/reviews', protectRoute(['admin']), getEventReviews);
 router.put(
     '/events/:id',
     protectRoute(['admin']),

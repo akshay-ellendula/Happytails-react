@@ -7,6 +7,7 @@ import Loader from "./Components/Loader";
 import {
   fetchEventDetails,
   fetchEventAttendees,
+  fetchEventReviews,
   updateEvent,
   deleteEvent,
   clearSelectedEvent,
@@ -278,8 +279,12 @@ const EventDetails = () => {
   const {
     selected: event,
     attendees,
+    reviews,
+    avgRating,
+    totalRatings,
     loadingDetail,
     loadingAttendees,
+    loadingReviews,
     error,
   } = useSelector((state) => state.events);
 
@@ -289,6 +294,7 @@ const EventDetails = () => {
     if (id) {
       dispatch(fetchEventDetails(id));
       dispatch(fetchEventAttendees(id));
+      dispatch(fetchEventReviews(id));
     }
     return () => dispatch(clearSelectedEvent());
   }, [dispatch, id]);
@@ -483,13 +489,27 @@ const EventDetails = () => {
                   className="h-24 w-24 rounded-xl object-cover shadow-lg"
                 />
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-800 mb-1">
                     {event.title}
                   </h1>
-                  <p className="text-gray-600">
-                    {event.date_time
-                      ? new Date(event.date_time).toLocaleString()
-                      : "No date"}
+                  {/* Average Rating Badge */}
+                  {totalRatings > 0 ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center">
+                        {[1,2,3,4,5].map(s => (
+                          <svg key={s} className={`w-4 h-4 ${s <= Math.round(avgRating) ? 'text-amber-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                          </svg>
+                        ))}
+                      </div>
+                      <span className="text-sm font-bold text-amber-700">{avgRating.toFixed(1)}</span>
+                      <span className="text-xs text-gray-500">({totalRatings} {totalRatings === 1 ? 'review' : 'reviews'})</span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic mt-1">No reviews yet</p>
+                  )}
+                  <p className="text-gray-500 text-sm mt-1">
+                    {event.date_time ? new Date(event.date_time).toLocaleString() : "No date"}
                   </p>
                 </div>
               </div>
@@ -762,6 +782,74 @@ const EventDetails = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+
+          {/* ── Reviews Section ── */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mt-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xl font-bold text-gray-800">Customer Reviews</h3>
+              <div className="flex items-center gap-3">
+                {totalRatings > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 rounded-full border border-amber-200">
+                    <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    <span className="text-sm font-bold text-amber-700">{avgRating.toFixed(1)}</span>
+                    <span className="text-xs text-amber-600">avg</span>
+                  </div>
+                )}
+                <span className="px-3 py-1.5 bg-indigo-100 text-indigo-800 rounded-full text-sm font-semibold">
+                  {totalRatings} {totalRatings === 1 ? 'Review' : 'Reviews'}
+                </span>
+              </div>
+            </div>
+
+            {loadingReviews ? (
+              <div className="flex justify-center p-8"><Loader /></div>
+            ) : reviews.length === 0 ? (
+              <div className="text-center py-10">
+                <div className="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <p className="text-gray-500 text-sm">No reviews yet for this event</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {reviews.map((r) => (
+                  <div key={r.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        {/* Avatar */}
+                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                          {r.customer?.charAt(0)?.toUpperCase() || "A"}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800 text-sm">{r.customer}</p>
+                          <p className="text-xs text-gray-400">
+                            {r.date ? new Date(r.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : ""}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Star rating */}
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        {[1,2,3,4,5].map(s => (
+                          <svg key={s} className={`w-3.5 h-3.5 ${s <= r.rating ? 'text-amber-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                          </svg>
+                        ))}
+                        <span className="text-xs font-bold text-gray-600 ml-1">{r.rating}/5</span>
+                      </div>
+                    </div>
+                    {/* Comment */}
+                    <p className="text-gray-600 text-sm leading-relaxed bg-white rounded-lg p-3 border border-gray-100">
+                      "{r.comment}"
+                    </p>
+                  </div>
+                ))}
               </div>
             )}
           </div>

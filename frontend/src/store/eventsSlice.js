@@ -79,14 +79,34 @@ export const deleteEvent = createAsyncThunk(
   }
 );
 
+/* ---------------------- FETCH EVENT REVIEWS ---------------------- */
+export const fetchEventReviews = createAsyncThunk(
+  "events/fetchEventReviews",
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.get(`/admin/events/${id}/reviews`);
+      if (!res.data.success) {
+        throw new Error(res.data.message || "Failed to load reviews");
+      }
+      return { reviews: res.data.reviews, avgRating: res.data.avgRating, totalRatings: res.data.totalRatings };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message || "Failed to load reviews");
+    }
+  }
+);
+
 const eventsSlice = createSlice({
   name: "events",
   initialState: {
     selected: null,
     attendees: [],
+    reviews: [],
+    avgRating: 0,
+    totalRatings: 0,
 
     loadingDetail: false,
     loadingAttendees: false,
+    loadingReviews: false,
 
     error: null,
   },
@@ -95,6 +115,9 @@ const eventsSlice = createSlice({
     clearSelectedEvent(state) {
       state.selected = null;
       state.attendees = [];
+      state.reviews = [];
+      state.avgRating = 0;
+      state.totalRatings = 0;
       state.error = null;
     },
   },
@@ -146,6 +169,21 @@ const eventsSlice = createSlice({
         }
       })
       .addCase(deleteEvent.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      /* ---------------- Reviews ---------------- */
+      .addCase(fetchEventReviews.pending, (state) => {
+        state.loadingReviews = true;
+      })
+      .addCase(fetchEventReviews.fulfilled, (state, action) => {
+        state.loadingReviews = false;
+        state.reviews = action.payload.reviews || [];
+        state.avgRating = action.payload.avgRating || 0;
+        state.totalRatings = action.payload.totalRatings || 0;
+      })
+      .addCase(fetchEventReviews.rejected, (state, action) => {
+        state.loadingReviews = false;
         state.error = action.payload;
       });
   },
