@@ -108,7 +108,9 @@ const EditProduct = () => {
     Array.from(newFiles).forEach((f) => data.append("product_images", f));
 
     try {
-      await axiosInstance.put(`/vendors/products/${productId}`, data);
+      await axiosInstance.put(`/vendors/products/${productId}`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       toast.success("Product updated successfully");
       navigate("/shop/products");
     } catch (err) {

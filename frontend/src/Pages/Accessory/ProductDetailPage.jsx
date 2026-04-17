@@ -31,6 +31,7 @@ const ProductDetailPage = () => {
   const [selectedSize, setSelectedSize] = useState("default");
   const [selectedColor, setSelectedColor] = useState("default");
   const [quantity, setQuantity] = useState(1);
+  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
 
   const [cartMessage, setCartMessage] = useState({ text: "", type: "error" });
   const [showCartMessage, setShowCartMessage] = useState(false);
@@ -385,13 +386,50 @@ const ProductDetailPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             <div className="relative">
               <div className="lg:sticky lg:top-24">
-                <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white">
-                  <img
-                    src={product.image_data || "/images/default-product.jpg"}
-                    alt={product.product_name}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
+                {/* Build image list from product.images[] or fallback to image_data */}
+                {(() => {
+                  const imgs =
+                    product.images && product.images.length > 0
+                      ? product.images.map((img) => img.image_data)
+                      : [product.image_data || "/images/default-product.jpg"];
+                  const activeSrc = imgs[selectedImageIdx] || imgs[0];
+                  return (
+                    <>
+                      {/* Main image */}
+                      <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white mb-4">
+                        <img
+                          src={activeSrc}
+                          alt={product.product_name}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                          onError={(e) => { e.target.src = "/images/default-product.jpg"; }}
+                        />
+                      </div>
+                      {/* Thumbnail strip — only shown when there are multiple images */}
+                      {imgs.length > 1 && (
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                          {imgs.map((src, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setSelectedImageIdx(idx)}
+                              className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
+                                selectedImageIdx === idx
+                                  ? "border-gray-900 shadow-md scale-105"
+                                  : "border-transparent opacity-70 hover:opacity-100"
+                              }`}
+                            >
+                              <img
+                                src={src}
+                                alt={`View ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => { e.target.src = "/images/default-product.jpg"; }}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
 

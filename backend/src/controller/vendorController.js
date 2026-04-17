@@ -2383,34 +2383,70 @@ const bulkUploadProducts = async (req, res, next) => {
       return sendError(res, "CSV must have a header row and at least one data row", 400);
     }
 
-    // Parse header
-    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_"));
+    // Parse header (convert to lowercase for matching)
+    const headerLine = lines[0];
+    const headers = [];
+    let current = "";
+    let inQuotes = false;
+    
+    for (const ch of headerLine) {
+      if (ch === '"') { inQuotes = !inQuotes; }
+      else if (ch === ',' && !inQuotes) { 
+        headers.push(current.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_"));
+        current = ""; 
+      }
+      else { current += ch; }
+    }
+    headers.push(current.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_"));
 
     const results = { created: 0, failed: 0, errors: [] };
 
     for (let i = 1; i < lines.length; i++) {
       try {
-        // Simple CSV parse (handles quoted fields with commas)
+        // Advanced CSV parse (handles quoted fields with commas)
         const values = [];
         let current = "";
         let inQuotes = false;
-        for (const ch of lines[i]) {
-          if (ch === '"') { inQuotes = !inQuotes; }
-          else if (ch === ',' && !inQuotes) { values.push(current.trim()); current = ""; }
-          else { current += ch; }
+        let isQuotedField = false;
+        
+        for (let j = 0; j < lines[i].length; j++) {
+          const ch = lines[i][j];
+          const nextCh = lines[i][j + 1];
+          
+          if (ch === '"') {
+            if (inQuotes && nextCh === '"') {
+              // Escaped quote
+              current += '"';
+              j++; // Skip next quote
+            } else {
+              // Toggle quote state
+              inQuotes = !inQuotes;
+              isQuotedField = true;
+            }
+          } else if (ch === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = "";
+            isQuotedField = false;
+          } else {
+            current += ch;
+          }
         }
         values.push(current.trim());
 
         // Map headers to values
         const row = {};
-        headers.forEach((h, idx) => { row[h] = values[idx] || ""; });
+        headers.forEach((h, idx) => { 
+          row[h] = values[idx] ? values[idx].replace(/^"|"$/g, '') : ""; 
+        });
+
+        console.log(`Row ${i}: `, row);
 
         const productName = row.product_name || row.name || "";
         const category = row.product_category || row.category || "other";
 
         if (!productName) {
           results.failed++;
-          results.errors.push({ row: i + 1, error: "Missing product name" });
+          results.errors.push({ row: i + 1, error: "Missing product name", data: row });
           continue;
         }
 
@@ -2421,36 +2457,70 @@ const bulkUploadProducts = async (req, res, next) => {
           product_category: category,
           product_type: row.product_type || row.type || "",
           product_description: row.product_description || row.description || "",
-          stock_status: row.stock_status || "In Stock",
+          stock_status: "In Stock",
         });
 
+        console.log(`Created product: ${newProduct._id} - ${productName}`);
+
         // Create variant
+        const regularPrice = parseFloat(row.regular_price || row.price || 0) || 0;
+        const salePrice = row.sale_price ? parseFloat(row.sale_price) : null;
+        const stockQty = parseInt(row.stock_quantity || row.stock || 0) || 0;
+
         await ProductVariant.create({
           product_id: newProduct._id,
           size: row.size || null,
           color: row.color || null,
-          regular_price: parseFloat(row.regular_price || row.price || 0) || 0,
-          sale_price: row.sale_price ? parseFloat(row.sale_price) : null,
-          stock_quantity: parseInt(row.stock_quantity || row.stock || 0) || 0,
+          regular_price: regularPrice,
+          sale_price: salePrice,
+          stock_quantity: stockQty,
           sku: row.sku || null,
         });
 
-        // If image_url is provided, save it directly as the primary image (no Cloudinary needed)
-        const imageUrl = row.image_url || row.imageurl || row.image || "";
-        if (imageUrl && imageUrl.startsWith("http")) {
-          await ProductImage.create({
-            product_id: newProduct._id,
-            image_data: imageUrl,
-            is_primary: true,
-          });
+        console.log(`Created variant for: ${newProduct._id}`);
+
+        // Handle images: can be single URL or semicolon-separated URLs
+        const imageUrlsRaw = row.image_url || row.imageurl || row.image || "";
+        
+        if (imageUrlsRaw.trim().length > 0) {
+          // Split by semicolon for multiple images
+          const imageUrls = imageUrlsRaw
+            .split(';')
+            .map(url => url.trim())
+            .filter(url => url.length > 0 && (url.startsWith('http://') || url.startsWith('https://')));
+
+          console.log(`Processing ${imageUrls.length} images for product ${newProduct._id}:`, imageUrls);
+
+          // Create image records
+          for (let imgIdx = 0; imgIdx < imageUrls.length; imgIdx++) {
+            const imageUrl = imageUrls[imgIdx];
+            
+            try {
+              // Simple validation - check if URL is accessible (optional)
+              const imageRecord = await ProductImage.create({
+                product_id: newProduct._id,
+                image_data: imageUrl,
+                is_primary: imgIdx === 0, // First image is primary
+              });
+              console.log(`Created image ${imgIdx + 1}: ${imageUrl}`);
+            } catch (imgErr) {
+              console.error(`Failed to create image for ${newProduct._id}:`, imgErr.message);
+              // Continue with other images even if one fails
+            }
+          }
+        } else {
+          console.log(`No image URL provided for product ${newProduct._id}`);
         }
 
         results.created++;
       } catch (rowErr) {
+        console.error(`Error processing row ${i}:`, rowErr);
         results.failed++;
         results.errors.push({ row: i + 1, error: rowErr.message });
       }
     }
+
+    console.log(`Bulk upload complete: ${results.created} created, ${results.failed} failed`);
 
     sendJson(res, {
       message: `Bulk upload complete: ${results.created} created, ${results.failed} failed`,

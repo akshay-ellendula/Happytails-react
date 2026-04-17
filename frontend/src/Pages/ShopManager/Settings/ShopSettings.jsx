@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   Settings,
   Bell,
@@ -270,12 +271,12 @@ const ShopSettings = () => {
                 Update your account password
               </p>
             </div>
-            <a
-              href="/shop/profile"
+            <Link
+              to="/shop/profile"
               className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700 transition-colors"
             >
               Go to Profile
-            </a>
+            </Link>
           </div>
         </div>
       </div>

@@ -159,7 +159,13 @@ const getPetAccessories = async (req, res, next) => {
                             }
                         }
                     },
-                    image_data: '$primaryImage.image_data', 
+                    image_data: '$primaryImage.image_data',
+                    images: {
+                        $map: {
+                            input: '$images', as: 'img',
+                            in: { image_data: '$$img.image_data', is_primary: '$$img.is_primary' }
+                        }
+                    },
                     created_at: 1, 
                     _id: 0 
                 } },
@@ -222,8 +228,10 @@ const getProduct = async (req, res, next) => {
 
         const variants = await ProductVariant.find({ product_id: productId })
             .select('id size color regular_price sale_price stock_quantity');
-        const image = await ProductImage.findOne({ product_id: productId, is_primary: true })
-            .select('image_data');
+        const images = await ProductImage.find({ product_id: productId })
+            .select('image_data is_primary')
+            .lean();
+        const primaryImage = images.find(img => img.is_primary) || images[0];
 
         const productData = {
             id: product._id.toString(),
@@ -239,7 +247,8 @@ const getProduct = async (req, res, next) => {
                 sale_price: v.sale_price,
                 stock_quantity: v.stock_quantity
             })),
-            image_data: image ? image.image_data : null
+            images: images,                                    // all images for gallery
+            image_data: primaryImage ? primaryImage.image_data : null  // primary for cart/listing backward compat
         };
 
         return res.json({
@@ -602,7 +611,6 @@ const reorder = async (req, res, next) => {
     }
 };
 
-// Add to productController.js
 const getProductWithRatings = async (req, res, next) => {
     try {
         const productId = req.params.id;
@@ -618,8 +626,10 @@ const getProductWithRatings = async (req, res, next) => {
 
         const variants = await ProductVariant.find({ product_id: productId })
             .select('id size color regular_price sale_price stock_quantity');
-        const image = await ProductImage.findOne({ product_id: productId, is_primary: true })
-            .select('image_data');
+        const images = await ProductImage.find({ product_id: productId })
+            .select('image_data is_primary')
+            .lean();
+        const primaryImage = images.find(img => img.is_primary) || images[0];
 
         const productData = {
             id: product._id.toString(),
@@ -637,7 +647,8 @@ const getProductWithRatings = async (req, res, next) => {
                 sale_price: v.sale_price,
                 stock_quantity: v.stock_quantity
             })),
-            image_data: image ? image.image_data : null
+            images: images,                                    // all images for gallery
+            image_data: primaryImage ? primaryImage.image_data : null  // primary for cart/listing backward compat
         };
 
         return res.json({
