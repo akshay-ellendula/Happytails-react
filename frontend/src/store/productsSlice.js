@@ -95,16 +95,36 @@ export const deleteProduct = createAsyncThunk(
   }
 );
 
+/* ---------------------- FETCH PRODUCT RATINGS ---------------------- */
+export const fetchProductRatings = createAsyncThunk(
+  "products/fetchProductRatings",
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.get(`/admin/products/${id}/ratings`);
+      if (!res.data.success) {
+        throw new Error(res.data.message || "Failed to load ratings");
+      }
+      return { ratings: res.data.ratings, avgRating: res.data.avgRating, totalRatings: res.data.totalRatings };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message || "Failed to load ratings");
+    }
+  }
+);
+
 const productsSlice = createSlice({
   name: "products",
   initialState: {
     selected: null,
     metrics: null,
     customers: [],
+    ratings: [],
+    avgRating: 0,
+    totalRatings: 0,
 
     loadingDetail: false,
     loadingMetrics: false,
     loadingCustomers: false,
+    loadingRatings: false,
 
     error: null,
   },
@@ -114,6 +134,9 @@ const productsSlice = createSlice({
       state.selected = null;
       state.metrics = null;
       state.customers = [];
+      state.ratings = [];
+      state.avgRating = 0;
+      state.totalRatings = 0;
       state.error = null;
     },
   },
@@ -179,6 +202,21 @@ const productsSlice = createSlice({
         }
       })
       .addCase(deleteProduct.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      /* ---------------- Ratings ---------------- */
+      .addCase(fetchProductRatings.pending, (state) => {
+        state.loadingRatings = true;
+      })
+      .addCase(fetchProductRatings.fulfilled, (state, action) => {
+        state.loadingRatings = false;
+        state.ratings = action.payload.ratings || [];
+        state.avgRating = action.payload.avgRating || 0;
+        state.totalRatings = action.payload.totalRatings || 0;
+      })
+      .addCase(fetchProductRatings.rejected, (state, action) => {
+        state.loadingRatings = false;
         state.error = action.payload;
       });
   },

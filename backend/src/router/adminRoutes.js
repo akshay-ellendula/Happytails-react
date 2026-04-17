@@ -21,6 +21,7 @@ import {
     getProductData,
     getProductCustomers,
     getProductsWithRevenue,
+    getProductRatings,
 
     // admin-shop-manager.ejs, admin-sm-details.ejs
     getVendors,
@@ -128,6 +129,7 @@ router.post(
 router.get('/products/:id', protectRoute(['admin']), getProduct);
 router.get('/products/:id/data', protectRoute(['admin']), getProductData);
 router.get('/products/:id/customers', protectRoute(['admin']), getProductCustomers);
+router.get('/products/:id/ratings', protectRoute(['admin']), getProductRatings);
 router.put(
     '/products/:id',
     protectRoute(['admin']),

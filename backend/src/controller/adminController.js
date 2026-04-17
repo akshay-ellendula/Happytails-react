@@ -7,6 +7,7 @@ import Event from '../models/eventModel.js';
 import EventManager from '../models/eventManagerModel.js';
 import Ticket from '../models/ticketModel.js';
 import Review from '../models/reviewModel.js';
+import Rating from '../models/ratingModel.js';
 import jwt from 'jsonwebtoken';
 // Generate JWT token
 const generateToken = (payload) => {
@@ -2785,6 +2786,45 @@ const getEventRevenue = async (req, res) => {
     }
 };
 
+// GET: All ratings/reviews for a specific product (admin view)
+const getProductRatings = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: 'Invalid product ID' });
+        }
+
+        const ratings = await Rating.find({ product_id: id, status: 'approved' })
+            .populate('customer_id', 'userName profilePic')
+            .sort({ created_at: -1 })
+            .lean();
+
+        const totalRatings = ratings.length;
+        const avgRating = totalRatings > 0
+            ? parseFloat((ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings).toFixed(1))
+            : 0;
+
+        res.json({
+            success: true,
+            ratings: ratings.map(r => ({
+                id: r._id.toString(),
+                customer: r.customer_id?.userName || 'Anonymous',
+                customerPic: r.customer_id?.profilePic || null,
+                rating: r.rating,
+                title: r.title || '',
+                review: r.review || '',
+                isVerifiedPurchase: r.isVerifiedPurchase,
+                date: r.created_at
+            })),
+            avgRating,
+            totalRatings
+        });
+    } catch (err) {
+        console.error('Error fetching product ratings:', err);
+        next(err);
+    }
+};
+
 // GET: All reviews for a specific event (admin view)
 const getEventReviews = async (req, res, next) => {
     try {
@@ -2846,6 +2886,7 @@ export {
     getProductData,
     getProductCustomers,
     getProductsWithRevenue,
+    getProductRatings,
 
     // admin-shop-manager.ejs, admin-sm-details.ejs
     getVendors,

@@ -8,6 +8,7 @@ import {
   fetchProductDetails,
   fetchProductMetrics,
   fetchProductCustomers,
+  fetchProductRatings,
   updateProduct,
   deleteProduct,
   clearSelectedProduct,
@@ -162,9 +163,13 @@ const ProductDetails = () => {
     selected: product,
     metrics,
     customers,
+    ratings,
+    avgRating,
+    totalRatings,
     loadingDetail,
     loadingMetrics,
     loadingCustomers,
+    loadingRatings,
     error,
   } = useSelector((state) => state.products);
 
@@ -175,6 +180,7 @@ const ProductDetails = () => {
       dispatch(fetchProductDetails(id));
       dispatch(fetchProductMetrics(id));
       dispatch(fetchProductCustomers(id));
+      dispatch(fetchProductRatings(id));
     }
 
     return () => {
@@ -329,8 +335,24 @@ const ProductDetails = () => {
                   className="h-24 w-24 rounded-xl object-cover shadow-lg"
                 />
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800 mb-2">{product.product_name}</h1>
-                  <p className="text-gray-600">{product.product_category}</p>
+                  <h1 className="text-3xl font-bold text-gray-800 mb-1">{product.product_name}</h1>
+                  {/* Avg Rating Badge */}
+                  {totalRatings > 0 ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center">
+                        {[1,2,3,4,5].map(s => (
+                          <svg key={s} className={`w-4 h-4 ${s <= Math.round(avgRating) ? 'text-amber-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                          </svg>
+                        ))}
+                      </div>
+                      <span className="text-sm font-bold text-amber-700">{avgRating.toFixed(1)}</span>
+                      <span className="text-xs text-gray-500">({totalRatings} {totalRatings === 1 ? 'rating' : 'ratings'})</span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic mt-1">No ratings yet</p>
+                  )}
+                  <p className="text-gray-600 text-sm mt-1">{product.product_category}</p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -504,6 +526,81 @@ const ProductDetails = () => {
                   </svg>
                 </div>
                 <p className="text-gray-600">No purchase history available</p>
+              </div>
+            )}
+          </div>
+
+          {/* Customer Ratings */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mt-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-xl font-bold text-gray-800">Customer Ratings</h3>
+              <div className="flex items-center gap-3">
+                {totalRatings > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 rounded-full border border-amber-200">
+                    <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    <span className="text-sm font-bold text-amber-700">{avgRating.toFixed(1)}</span>
+                    <span className="text-xs text-amber-600">avg</span>
+                  </div>
+                )}
+                <span className="px-3 py-1.5 bg-indigo-100 text-indigo-800 rounded-full text-sm font-semibold">
+                  {totalRatings} {totalRatings === 1 ? 'Rating' : 'Ratings'}
+                </span>
+              </div>
+            </div>
+
+            {loadingRatings ? (
+              <div className="flex justify-center p-8"><Loader /></div>
+            ) : ratings.length === 0 ? (
+              <div className="text-center py-10">
+                <div className="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </div>
+                <p className="text-gray-500 text-sm">No ratings yet for this product</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {ratings.map((r) => (
+                  <div key={r.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                          {r.customer?.charAt(0)?.toUpperCase() || 'A'}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-gray-800 text-sm">{r.customer}</p>
+                            {r.isVerifiedPurchase && (
+                              <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">✓ Verified</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-400">
+                            {r.date ? new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        {[1,2,3,4,5].map(s => (
+                          <svg key={s} className={`w-3.5 h-3.5 ${s <= r.rating ? 'text-amber-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                          </svg>
+                        ))}
+                        <span className="text-xs font-bold text-gray-600 ml-1">{r.rating}/5</span>
+                      </div>
+                    </div>
+                    {r.title && (
+                      <p className="text-sm font-semibold text-gray-800 mb-1">{r.title}</p>
+                    )}
+                    {r.review && (
+                      <p className="text-gray-600 text-sm leading-relaxed bg-white rounded-lg p-3 border border-gray-100">
+                        "{r.review}"
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
