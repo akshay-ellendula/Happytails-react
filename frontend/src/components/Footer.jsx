@@ -87,9 +87,18 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-700 pt-6 sm:pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-white text-xs sm:text-sm text-center sm:text-left">
-            © 2025 HappyTails. All rights reserved.
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="text-white text-xs sm:text-sm text-center sm:text-left">
+              © 2025 HappyTails. All rights reserved.
+            </p>
+            <Link
+              to="/admin/login"
+              className="text-gray-600 hover:text-gray-400 text-xs transition-colors duration-200 select-none"
+              title="Admin Access"
+            >
+              Admin
+            </Link>
+          </div>
           <div className="flex space-x-4 sm:space-x-6">
             <a href="#" className="text-white hover:text-[#f2c737] transition">
               <Twitter className="w-5 h-5 sm:w-6 sm:h-6" />
