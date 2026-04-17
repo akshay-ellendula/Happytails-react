@@ -11,66 +11,66 @@ import { Provider } from "react-redux";
 import { store } from "./store/store";
 
 // --- Pages: Public & General ---
-import HomePage from "./pages/Home/HomePage";
-import NotFound from "./pages/NotFoundPage/NotFound";
-import ReviewPage from './pages/ReviewPage/ReviewPage';
+import HomePage from "./Pages/Home/HomePage";
+import NotFound from "./Pages/NotFoundPage/NotFound";
+import ReviewPage from './Pages/ReviewPage/ReviewPage';
 
 // --- Pages: Auth ---
-import AuthPage from "./pages/Auth/Authpage";
-import ServiceProviderLogin from "./pages/Auth/ServiceProviderLogin";
+import AuthPage from "./Pages/Auth/Authpage";
+import ServiceProviderLogin from "./Pages/Auth/ServiceProviderLogin";
 
 // --- Pages: Products & Accessories ---
-import ProductAccessoryPageWrapper from "./pages/Accessory/ProductAccessoryPageWrapper";
-import ProductDetailPage from "./pages/Accessory/ProductDetailPage";
-import CartSidebar from "./pages/Accessory/components/CartSidebar";
-import CheckoutPage from "./pages/Checkout/CheckoutPage";
+import ProductAccessoryPageWrapper from "./Pages/Accessory/ProductAccessoryPageWrapper";
+import ProductDetailPage from "./Pages/Accessory/ProductDetailPage";
+import CartSidebar from "./Pages/Accessory/components/CartSidebar";
+import CheckoutPage from "./Pages/Checkout/CheckoutPage";
 
 // --- Pages: Events & Booking ---
-import EventsPage from "./pages/Events/EventsPage";
-import EventDetailPage from "./pages/EventDeatils/EventDetailPage";
-import BookingPage from "./pages/BookingPage/BookingPage";
-import PartnerRegistration from "./pages/PartnerRegistration/PartnerRegistrationPage";
+import EventsPage from "./Pages/Events/EventsPage";
+import EventDetailPage from "./Pages/EventDeatils/EventDetailPage";
+import BookingPage from "./Pages/BookingPage/BookingPage";
+import PartnerRegistration from "./Pages/PartnerRegistration/PartnerRegistrationPage";
 
 // --- Pages: Customer Private ---
-import ProfilePage from "./pages/ProfilePage/ProfilePage";
-import MyOrdersPage from "./pages/MyOrdersPage/MyOrdersPage";
-import PaymentPage from "./pages/PaymentPage/PaymentPage";
-import MyEventsPage from "./pages/MyEventsPage/MyEventsPage";
-import TrackOrderPage from "./pages/TrackOrderPage/TrackOrderPage";
-import MyWishlistPage from "./pages/MyWishlistPage/MyWishlistPage";
+import ProfilePage from "./Pages/ProfilePage/ProfilePage";
+import MyOrdersPage from "./Pages/MyOrdersPage/MyOrdersPage";
+import PaymentPage from "./Pages/PaymentPage/PaymentPage";
+import MyEventsPage from "./Pages/MyEventsPage/MyEventsPage";
+import TrackOrderPage from "./Pages/TrackOrderPage/TrackOrderPage";
+import MyWishlistPage from "./Pages/MyWishlistPage/MyWishlistPage";
 
 // --- Pages: Admin ---
-import AdminLoginPage from "./pages/AdminLogin/AdminLoginPage";
-import Dashboard from "./pages/Admin/Dashboard";
-import Users from "./pages/Admin/Users";
-import UserDetails from "./pages/Admin/UserDetails";
-import EventManagers from "./pages/Admin/EventManagers";
-import Events from "./pages/Admin/Events";
-import Products from "./pages/Admin/Products";
-import Orders from "./pages/Admin/Orders";
-import Vendors from "./pages/Admin/Vendors";
-import VendorDetails from "./pages/Admin/VendorDetails";
-import EventManagerDetails from "./pages/Admin/EventManagerDetails";
-import EventDetails from "./pages/Admin/EventDetails";
-import ProductDetails from "./pages/Admin/ProductDetails";
-import OrderDetails from "./pages/Admin/OrderDetails";
+import AdminLoginPage from "./Pages/AdminLogin/AdminLoginPage";
+import Dashboard from "./Pages/Admin/Dashboard";
+import Users from "./Pages/Admin/Users";
+import UserDetails from "./Pages/Admin/UserDetails";
+import EventManagers from "./Pages/Admin/EventManagers";
+import Events from "./Pages/Admin/Events";
+import Products from "./Pages/Admin/Products";
+import Orders from "./Pages/Admin/Orders";
+import Vendors from "./Pages/Admin/Vendors";
+import VendorDetails from "./Pages/Admin/VendorDetails";
+import EventManagerDetails from "./Pages/Admin/EventManagerDetails";
+import EventDetails from "./Pages/Admin/EventDetails";
+import ProductDetails from "./Pages/Admin/ProductDetails";
+import OrderDetails from "./Pages/Admin/OrderDetails";
 
 // --- Pages: Service Providers ---
-import EventManagerPage from "./pages/EventManager/EventManagerPage";
-import ShopManagerLayout from "./pages/ShopManager/Layout/ShopManagerLayout";
-import ShopDashboard from "./pages/ShopManager/Dashboard/ShopDashboard";
-import ProductList from "./pages/ShopManager/Products/ProductList";
-import AddProduct from "./pages/ShopManager/Products/AddProduct";
-import EditProduct from "./pages/ShopManager/Products/EditProduct";
-import ViewAllProducts from "./pages/ShopManager/Products/ViewAllProducts";
-import OrderList from "./pages/ShopManager/Orders/OrderList";
-import ManagerOrderDetails from "./pages/ShopManager/Orders/ManagerOrderDetails";
-import CustomerList from "./pages/ShopManager/Customers/CustomerList";
-import CustomerDetails from "./pages/ShopManager/Customers/CustomerDetails";
-import ViewAllCustomers from "./pages/ShopManager/Customers/ViewAllCustomers";
-import ShopAnalytics from "./pages/ShopManager/Analytics/ShopAnalytics";
-import ShopProfile from "./pages/ShopManager/Profile/ShopProfile";
-import ShopSettings from "./pages/ShopManager/Settings/ShopSettings";
+import EventManagerPage from "./Pages/EventManager/EventManagerPage";
+import ShopManagerLayout from "./Pages/ShopManager/Layout/ShopManagerLayout";
+import ShopDashboard from "./Pages/ShopManager/Dashboard/ShopDashboard";
+import ProductList from "./Pages/ShopManager/Products/ProductList";
+import AddProduct from "./Pages/ShopManager/Products/AddProduct";
+import EditProduct from "./Pages/ShopManager/Products/EditProduct";
+import ViewAllProducts from "./Pages/ShopManager/Products/ViewAllProducts";
+import OrderList from "./Pages/ShopManager/Orders/OrderList";
+import ManagerOrderDetails from "./Pages/ShopManager/Orders/ManagerOrderDetails";
+import CustomerList from "./Pages/ShopManager/Customers/CustomerList";
+import CustomerDetails from "./Pages/ShopManager/Customers/CustomerDetails";
+import ViewAllCustomers from "./Pages/ShopManager/Customers/ViewAllCustomers";
+import ShopAnalytics from "./Pages/ShopManager/Analytics/ShopAnalytics";
+import ShopProfile from "./Pages/ShopManager/Profile/ShopProfile";
+import ShopSettings from "./Pages/ShopManager/Settings/ShopSettings";
 
 // --- Components ---
 import RoleBasedRoute from "./components/RoleBasedRoute";
@@ -95,7 +95,7 @@ const GoogleLoginHandler = () => {
   const [searchParams] = useSearchParams();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const googleSuccess = searchParams.get('google_login_success');
     const googleError = searchParams.get('error');
@@ -106,7 +106,7 @@ const GoogleLoginHandler = () => {
       import('react-hot-toast').then(({ toast }) => {
         toast.success('Google login successful! Welcome to Happy Tails!');
       });
-      
+
       // Wait a moment to ensure user state is updated, then redirect
       setTimeout(() => {
         if (user) {
@@ -117,21 +117,21 @@ const GoogleLoginHandler = () => {
           navigate('/');
         }
       }, 1000);
-      
+
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-    
+
     if (googleError === 'google_auth_failed') {
       console.error('Google login failed:', errorDetails);
       import('react-hot-toast').then(({ toast }) => {
         toast.error(`Google login failed: ${errorDetails || 'Please try again'}`);
       });
-      
+
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-    
+
     // Check if there's any error from Google
     if (searchParams.get('error') === 'access_denied') {
       import('react-hot-toast').then(({ toast }) => {
@@ -139,7 +139,7 @@ const GoogleLoginHandler = () => {
       });
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-    
+
     // Check for other error types
     if (searchParams.get('error') && searchParams.get('error') !== 'google_auth_failed') {
       console.error('OAuth error:', searchParams.get('error'));
@@ -148,7 +148,7 @@ const GoogleLoginHandler = () => {
       });
     }
   }, [searchParams, user, navigate]);
-  
+
   return null;
 };
 
