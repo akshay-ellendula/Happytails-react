@@ -12,7 +12,8 @@ import CreateEvent from "./CreateEvent.jsx";
 import EditEvent from "./EditEvent.jsx";
 import EventDetailsView from "./EventDetailsView.jsx";
 import EventPublicPreview from "./EventPublicPreview.jsx";
-import Reviews from "./Reviews.jsx"; // <-- IMPORT REVIEWS
+import Reviews from "./Reviews.jsx"; 
+import EmailLogs from "./EmailLogs.jsx"; // <-- IMPORT EMAIL LOGS
 
 // Icons
 import {
@@ -23,7 +24,8 @@ import {
   Settings as SettingsIcon,
   User,
   LogOut,
-  Star // <-- IMPORT STAR ICON FOR REVIEWS
+  Star,
+  Mail // <-- IMPORT MAIL ICON
 } from "lucide-react";
 
 // Lazy load components - MUST BE DEFINED OUTSIDE THE COMPONENT
@@ -93,6 +95,11 @@ const EventManagerPages = () => {
       id: "reviews",
       label: "Reviews",
       icon: Star, // <-- NEW REVIEWS TAB
+    },
+    {
+      id: "emailLogs",
+      label: "Email Logs",
+      icon: Mail, 
     },
     {
       id: "analytics",
@@ -169,6 +176,8 @@ const EventManagerPages = () => {
         );
       case "reviews": // <-- NEW CASE FOR REVIEWS
         return <Reviews />;
+      case "emailLogs":
+        return <EmailLogs />;
       case "analytics":
         return <Analytics />;
       case "settings":

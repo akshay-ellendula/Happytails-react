@@ -114,6 +114,12 @@ const sendReviewEmails = async () => {
                     subject: `How was ${event.title}? Leave a review!`,
                     message: message
                 });
+                
+                // Track that the email was successfully sent
+                ticket.isReviewEmailSent = true;
+                ticket.reviewEmailSentAt = new Date();
+                await ticket.save();
+                
                 console.log(`Successfully sent email to ${ticket.contactEmail}`);
             }
         }

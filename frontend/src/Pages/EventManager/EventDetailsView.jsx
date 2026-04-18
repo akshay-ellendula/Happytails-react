@@ -20,16 +20,14 @@ const EventDetailsView = ({ event, setCurrentPage }) => {
       try {
         const [attendeesRes, reviewsRes] = await Promise.allSettled([
           axiosInstance.get(`/eventManagers/events/attendees/${event._id}`),
-          axiosInstance.get(`/reviews/manager`)
+          axiosInstance.get(`/review/event/${event._id}`)
         ]);
 
         if (attendeesRes.status === 'fulfilled') {
           setAttendees(attendeesRes.value.data.attendees || []);
         }
         if (reviewsRes.status === 'fulfilled') {
-      setReviews(reviewsRes.value.data.reviews
-            .filter(r => r.eventId?._id === event._id || r.eventId === event._id)
-            || []);
+          setReviews(reviewsRes.value.data.reviews || []);
         }
       } catch (err) {
         console.error("Error fetching data:", err);

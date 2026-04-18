@@ -84,6 +84,14 @@ const ticketSchema = new mongoose.Schema({
     reviewTokenExpires: {
         type: Date,
         default: null
+    },
+    isReviewEmailSent: {
+        type: Boolean,
+        default: false
+    },
+    reviewEmailSentAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true,

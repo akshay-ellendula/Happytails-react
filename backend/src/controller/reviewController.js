@@ -127,3 +127,170 @@ export const getEventManagerReviews = async (req, res, next) => {
         next(error);
     }
 };
+
+// GET /api/review/event/:eventId
+// @access Event Manager
+export const getEventReviews = async (req, res, next) => {
+    try {
+        const { eventId } = req.params;
+        const currentManagerId = req.user.eventManagerId;
+
+        // Verify the event belongs to this manager
+        const event = await Event.findOne({ _id: eventId, eventManagerId: currentManagerId });
+        if (!event) {
+             return res.status(403).json({ message: "You are not authorized to view reviews for this event." });
+        }
+
+        const reviews = await Review.find({ eventId })
+            .populate('customerId', 'userName name email profilePic')
+            .populate('eventId', 'title')
+            .sort({ createdAt: -1 });
+
+        const totalReviews = reviews.length;
+        const averageRating = totalReviews > 0 
+            ? (reviews.reduce((sum, rev) => sum + rev.rating, 0) / totalReviews).toFixed(1)
+            : 0;
+
+        res.status(200).json({
+            stats: { totalReviews, averageRating },
+            reviews
+        });
+
+    } catch (error) {
+        console.error("Error fetching event reviews:", error);
+        next(error);
+    }
+};
+
+// GET /api/review/manager/analytics
+// @access Event Manager
+export const getEventManagerAnalytics = async (req, res, next) => {
+    try {
+        const eventManagerId = req.user.eventManagerId;
+
+        // 1. Find all events for this manager
+        const events = await Event.find({ eventManagerId });
+        const eventIds = events.map(event => event._id);
+
+        if (eventIds.length === 0) {
+            return res.status(200).json({ deepAnalysis: [], emailLogs: [] });
+        }
+
+        // 2. Fetch all successful tickets for these events to provide deep analysis
+        const tickets = await Ticket.find({ eventId: { $in: eventIds }, status: true })
+            .populate('eventId', 'title category venue location date_time')
+            .populate('customerId', 'userName email profilePic')
+            .sort({ purchaseDate: -1 });
+
+        console.log(`[Analytics] Found ${tickets.length} tickets`);
+        if (tickets.length > 0) {
+            const sample = tickets[0];
+            console.log('[Analytics] Sample ticket.eventId fields:', JSON.stringify({
+                title: sample.eventId?.title,
+                category: sample.eventId?.category,
+                venue: sample.eventId?.venue,
+                location: sample.eventId?.location,
+                date_time: sample.eventId?.date_time,
+            }));
+            console.log('[Analytics] Sample ticket fields:', JSON.stringify({
+                contactPhone: sample.contactPhone,
+                contactEmail: sample.contactEmail,
+                price: sample.price,
+                numberOfTickets: sample.numberOfTickets,
+                petName: sample.petName,
+            }));
+        }
+
+        // 3. Fetch all reviews for these events to link to tickets
+        const reviews = await Review.find({ eventId: { $in: eventIds } });
+        const reviewMap = new Map();
+        reviews.forEach(r => reviewMap.set(r.ticketId.toString(), r));
+        console.log(`[Analytics] Found ${reviews.length} reviews, mapped by ticketId`);
+
+        // Build the email logs based on tickets
+        const emailLogsMap = new Map();
+
+        const deepAnalysis = tickets.map(ticket => {
+            // Populate email logs
+            if (ticket.isReviewEmailSent && ticket.reviewEmailSentAt) {
+                const eventIdStr = ticket.eventId._id.toString();
+                // Group by exact date (YYYY-MM-DD) to represent a daily "batch"
+                const dateKey = new Date(ticket.reviewEmailSentAt).toISOString().split('T')[0];
+                const logKey = `${eventIdStr}_${dateKey}`;
+                
+                if (!emailLogsMap.has(logKey)) {
+                    emailLogsMap.set(logKey, {
+                        id: logKey,
+                        eventId: ticket.eventId._id,
+                        eventTitle: ticket.eventId.title,
+                        sentDate: ticket.reviewEmailSentAt,
+                        dateString: dateKey,
+                        emailsSent: 0,
+                        recipients: []
+                    });
+                }
+                const log = emailLogsMap.get(logKey);
+                log.emailsSent += 1;
+                log.recipients.push({
+                    ticketId: ticket.ticketId,
+                    customerName: ticket.contactName || ticket.customerId?.userName,
+                    customerEmail: ticket.contactEmail || ticket.customerId?.email,
+                    hasReviewed: ticket.isReviewed
+                });
+            }
+
+            const reviewData = reviewMap.get(ticket._id.toString());
+
+            return {
+                ticketId: ticket.ticketId,
+                eventId: ticket.eventId._id,
+                eventTitle: ticket.eventId.title,
+                customerId: ticket.customerId?._id,
+                customerName: ticket.contactName || ticket.customerId?.userName,
+                customerEmail: ticket.contactEmail || ticket.customerId?.email,
+                profilePic: ticket.customerId?.profilePic,
+                isReviewed: ticket.isReviewed,
+                isEmailSent: ticket.isReviewEmailSent,
+                emailSentAt: ticket.reviewEmailSentAt,
+                purchaseDate: ticket.purchaseDate,
+                numberOfTickets: ticket.numberOfTickets,
+                // New comprehensive details
+                eventDetails: {
+                    title: ticket.eventId.title,
+                    category: ticket.eventId.category,
+                    venue: ticket.eventId.venue,
+                    location: ticket.eventId.location,
+                    date_time: ticket.eventId.date_time,
+                },
+                ticketDetails: {
+                    contactPhone: ticket.contactPhone,
+                    contactEmail: ticket.contactEmail,
+                    price: ticket.price,
+                    status: ticket.status,
+                    petName: ticket.petName,
+                    petBreed: ticket.petBreed,
+                    petAge: ticket.petAge,
+                },
+                // End new details
+                reviewData: reviewData ? {
+                    rating: reviewData.rating,
+                    comment: reviewData.comment,
+                    createdAt: reviewData.createdAt
+                } : null
+            };
+        });
+
+        // Convert Map to Array and sort by date descending
+        const emailLogs = Array.from(emailLogsMap.values())
+             .sort((a, b) => new Date(b.sentDate) - new Date(a.sentDate));
+
+        res.status(200).json({
+            deepAnalysis,
+            emailLogs
+        });
+
+    } catch (error) {
+        console.error("Error fetching review analytics:", error);
+        next(error);
+    }
+};
