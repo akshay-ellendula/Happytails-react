@@ -11,6 +11,7 @@ import Settings from "./Settings";
 import CreateEvent from "./CreateEvent.jsx";
 import EditEvent from "./EditEvent.jsx";
 import EventDetailsView from "./EventDetailsView.jsx";
+import EventPublicPreview from "./EventPublicPreview.jsx";
 import Reviews from "./Reviews.jsx"; // <-- IMPORT REVIEWS
 
 // Icons
@@ -188,23 +189,35 @@ const EventManagerPages = () => {
             setCurrentPage={handlePageChange} 
           />
         );
+      case "event-public-preview":
+        return (
+          <EventPublicPreview 
+            event={currentEvent} 
+            setCurrentPage={handlePageChange} 
+          />
+        );
       default:
         return <Dashboard setCurrentPage={handlePageChange} />;
     }
   };
 
   return (
-    <div className="h-screen flex bg-gray-50">
-      {/* Dynamic Sidebar */}
-      <div className="bg-[#1a1a1a] text-white w-64 p-4 flex flex-col transition-all duration-300 shadow-[4px_0_15px_rgba(0,0,0,0.1)] z-10">
-        <div className="flex items-center justify-between mb-8 px-2">
-          <div className="flex items-center space-x-3">
-            <span className="text-2xl drop-shadow-[1px_1px_0px_rgba(255,255,255,0.3)]">🐾</span>
-            <h1 className="text-xl font-bold tracking-wide text-[#f2c737]">Happy Tails</h1>
+    <div className="h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100 flex overflow-hidden">
+      {/* Dynamic Sidebar matched to Admin UI */}
+      <div className="w-64 h-full flex-shrink-0 bg-gradient-to-b from-yellow-400 to-yellow-500 shadow-2xl flex flex-col z-20 border-r border-yellow-600 transition-all duration-300 relative">
+        <div className="p-6 pb-2">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="bg-white p-2 rounded-xl shadow-sm">
+               <span className="text-2xl drop-shadow-sm">🐾</span>
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-gray-900 tracking-tight">Happy Tails</h1>
+              <p className="text-xs font-bold text-yellow-800 uppercase tracking-wider">Event Manager</p>
+            </div>
           </div>
         </div>
 
-        <nav className="flex-1">
+        <nav className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
           <ul className="space-y-2">
             {sidebarItems.map((item) => {
               const isActive = item.activeMatches
@@ -215,20 +228,21 @@ const EventManagerPages = () => {
                 <li key={item.id}>
                   <button
                     onClick={() => handlePageChange(item.id)}
-                    className={`w-full text-left flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 group ${
+                    className={`w-full text-left flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-300 group ${
                       isActive
-                        ? "bg-[#effe8b]/20 border-l-4 border-[#effe8b] text-white font-bold"
-                        : "text-gray-400 hover:bg-gray-800 hover:text-white font-medium"
+                        ? "bg-gradient-to-r from-white to-yellow-50 text-yellow-800 shadow-md font-bold"
+                        : "text-yellow-900 hover:bg-yellow-300 hover:text-black font-semibold"
                     }`}
                   >
                     <item.icon
-                      className={`w-5 h-5 transition-colors ${
-                        isActive
-                          ? "text-[#effe8b]"
-                          : "text-gray-400 group-hover:text-white"
+                      className={`w-5 h-5 transition-transform duration-200 ${
+                        isActive ? "text-yellow-600 scale-110" : "text-yellow-800 group-hover:scale-110"
                       }`}
                     />
                     <span>{item.label}</span>
+                    {isActive && (
+                      <div className="ml-auto w-2 h-2 rounded-full bg-yellow-600 shadow-[0_0_8px_rgba(202,138,4,0.8)]"></div>
+                    )}
                   </button>
                 </li>
               );
@@ -237,9 +251,9 @@ const EventManagerPages = () => {
         </nav>
 
         {/* Dynamic User Profile Footer */}
-        <div className="pt-4 border-t border-gray-800">
-          <div className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-800 transition-colors">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-700 border-2 border-[#effe8b] overflow-hidden">
+        <div className="p-4 border-t border-yellow-500/30 bg-yellow-400 mt-auto">
+          <div className="flex items-center space-x-3 px-3 py-3 rounded-2xl bg-white/40 backdrop-blur-sm border border-white/50 shadow-sm hover:bg-white/60 transition-colors">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center bg-white border-2 border-yellow-200 shadow-sm overflow-hidden flex-shrink-0">
               {profile.profilePic ? (
                 <img
                   src={profile.profilePic}
@@ -247,31 +261,31 @@ const EventManagerPages = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <User className="w-5 h-5 text-gray-300" />
+                <User className="w-5 h-5 text-gray-400" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm text-white truncate" title={profile.name}>
+              <p className="font-bold text-sm text-gray-900 truncate" title={profile.name}>
                 {profile.name}
               </p>
-              <p className="text-xs text-gray-400 truncate" title={profile.email}>
+              <p className="text-[11px] font-medium text-gray-700 truncate" title={profile.email}>
                 {profile.email}
               </p>
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 hover:bg-red-900/30 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
+              className="p-2 hover:bg-red-500 hover:text-white text-red-600 rounded-xl transition-colors shadow-sm bg-white/80 backdrop-blur-sm flex-shrink-0"
               title="Logout"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-auto bg-gray-50">{renderPage()}</div>
+      <div className="flex-1 flex flex-col h-full overflow-hidden w-full relative">
+        <div className="flex-1 h-full overflow-y-auto bg-gray-50/50">{renderPage()}</div>
       </div>
     </div>
   );

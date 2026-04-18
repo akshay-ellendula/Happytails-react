@@ -8,6 +8,7 @@ import {
 const Dashboard = ({ setCurrentPage }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(true);
   
   // State for dynamic data
   const [metrics, setMetrics] = useState({
@@ -132,6 +133,13 @@ const Dashboard = ({ setCurrentPage }) => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowWelcome(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // --- Metric Cards Configuration ---
   const metricCards = [
     {
@@ -168,39 +176,58 @@ const Dashboard = ({ setCurrentPage }) => {
 
   return (
     <>
-      <header className="bg-white shadow-sm p-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-[#1a1a1a]">
-              Event Manager Dashboard
-            </h1>
-            <p className="text-gray-600">Overview of your performance</p>
-          </div>
-          <button
-            onClick={() => setCurrentPage("create-event")}
-            className="bg-[#1a1a1a] text-white px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 flex items-center gap-2"
-          >
-            <i className="fas fa-plus"></i>
-            <span>Create Event</span>
-          </button>
+      <header className="bg-white shadow-sm p-6 sticky top-0 z-20 flex justify-between items-center border-b border-gray-100">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Event Manager Dashboard
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">Overview of your performance</p>
         </div>
+        <button
+          onClick={() => setCurrentPage("create-event")}
+          className="bg-gray-800 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-gray-900 transition-colors flex items-center gap-2 shadow-sm"
+        >
+          <span>Create Event</span>
+        </button>
       </header>
 
-      <div className="p-6">
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {metricCards.map((metric, i) => (
-            <div key={i} className="bg-white p-5 rounded-xl shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-10 h-10 ${metric.bgColor} rounded-lg flex items-center justify-center text-xl`}>
-                  <span>{metric.icon}</span>
-                </div>
-                <span className="text-sm text-gray-600 font-medium">{metric.change}</span>
+      <main className="p-6">
+        {/* Welcome Banner matched to Admin */}
+        {showWelcome && (
+          <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 border border-yellow-200 shadow-lg animate-fade-out">
+            <div className="flex items-center">
+              <div className="h-16 w-16 rounded-full bg-yellow-500 flex items-center justify-center text-white text-2xl mr-4">
+                👋
               </div>
-              <h3 className="text-2xl font-bold text-[#1a1a1a]">{metric.value}</h3>
-              <p className="text-gray-600 text-sm">{metric.title}</p>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800 mb-1">Welcome back, Event Manager!</h1>
+                <p className="text-gray-600">Here's what's happening with your events today.</p>
+              </div>
             </div>
-          ))}
+          </div>
+        )}
+
+        {/* Key Metrics matched to Admin */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {metricCards.map((metric, i) => {
+            const borderColors = ['border-yellow-500', 'border-orange-500', 'border-amber-500', 'border-green-500'];
+            const iconColors = ['text-yellow-600 bg-yellow-100', 'text-orange-600 bg-orange-100', 'text-amber-600 bg-amber-100', 'text-green-600 bg-green-100'];
+            
+            return (
+              <div key={i} className={`bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 ${borderColors[i % 4]}`}>
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-sm text-gray-600 uppercase tracking-wider">{metric.title}</h3>
+                    <p className="text-3xl font-bold text-gray-800 mt-2">{metric.value}</p>
+                    {metric.title === "Total Revenue" && <p className="text-xs text-gray-500 mt-1">(Gross)</p>}
+                  </div>
+                  <div className={`h-12 w-12 rounded-lg flex items-center justify-center text-xl ${iconColors[i % 4]}`}>
+                    {metric.icon}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Charts Section */}
@@ -324,7 +351,7 @@ const Dashboard = ({ setCurrentPage }) => {
             </div>
         </div>
 
-      </div>
+      </main>
     </>
   );
 };

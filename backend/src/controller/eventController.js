@@ -344,8 +344,8 @@ export const updateEvent = async (req, res, next) => {
 
         await event.save();
 
-        // Invalidate cached event data for this event and listings
-        await invalidateCache('cache:/api/events');
+        // Invalidate cache in the background (don't block the response)
+        invalidateCache('cache:/api/events').catch(() => {});
 
         res.status(200).json({
             success: true,

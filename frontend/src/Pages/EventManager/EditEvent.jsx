@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { ArrowLeft, Save, Trash2, Loader2, XCircle } from "lucide-react"; // <-- Added XCircle icon
+import { ArrowLeft, Save, Trash2, Loader2, XCircle } from "lucide-react";
 import { axiosInstance } from '../../utils/axios.js';
+import toast from 'react-hot-toast';
 
 const EditEvent = ({ setCurrentPage, eventData }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState("Saving...");
   
   const [formData, setFormData] = useState({
     title: eventData?.title || "",
@@ -46,28 +48,60 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const data = new FormData();
-    
-    Object.keys(formData).forEach(key => {
-      if (key !== 'thumbnail' && key !== 'banner') {
-        data.append(key, formData[key]);
-      }
-    });
-
-    if (formData.thumbnail) data.append('thumbnail', formData.thumbnail);
-    if (formData.banner) data.append('banner', formData.banner);
+    const hasNewImages = formData.thumbnail || formData.banner;
 
     try {
-        await axiosInstance.put(`/events/${eventData._id}`, data, {
-            headers: { "Content-Type": "multipart/form-data" }
+      let updatedEvent;
+
+      if (hasNewImages) {
+        // Slow path: multipart (Cloudinary upload involved)
+        setLoadingMsg("Uploading images... this may take a moment ☁️");
+        const data = new FormData();
+        Object.keys(formData).forEach(key => {
+          if (key !== 'thumbnail' && key !== 'banner') data.append(key, formData[key]);
         });
-        alert('Event updated successfully!');
-        setCurrentPage("events");
+        if (formData.thumbnail) data.append('thumbnail', formData.thumbnail);
+        if (formData.banner) data.append('banner', formData.banner);
+
+        const res = await axiosInstance.put(`/events/${eventData._id}`, data, {
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: 90000 // 90s for Cloudinary uploads on slow servers
+        });
+        updatedEvent = res.data?.event || res.data;
+      } else {
+        // Fast path: plain JSON, no file upload
+        setLoadingMsg("Saving changes... ⏳");
+        const jsonPayload = {
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          language: formData.language,
+          date_time: formData.date_time,
+          duration: formData.duration,
+          venue: formData.venue,
+          location: formData.location,
+          total_tickets: formData.total_tickets,
+          ticketPrice: formData.ticketPrice,
+          ageLimit: formData.ageLimit,
+        };
+        const res = await axiosInstance.put(`/events/${eventData._id}`, jsonPayload, {
+          timeout: 60000  // 60s — allow for Render cold starts
+        });
+        updatedEvent = res.data?.event || res.data;
+      }
+
+      toast.success('Event updated successfully!');
+      setCurrentPage("event-details", updatedEvent, "event");
     } catch (error) {
         console.error("Update error:", error);
-        alert(error.response?.data?.message || "Failed to update event");
+        if (error.code === 'ECONNABORTED') {
+          toast.error("The server is taking too long (possible cold start). Please try again in a moment.");
+        } else {
+          toast.error(error.response?.data?.message || "Failed to update event.");
+        }
     } finally {
         setIsLoading(false);
+        setLoadingMsg("Saving...");
     }
   };
 
@@ -80,11 +114,11 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
     if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
         try {
             await axiosInstance.delete(`/events/${eventData._id}`);
-            alert('Event deleted successfully!');
+            toast.success('Event deleted successfully!');
             setCurrentPage("events");
         } catch (error) {
             console.error("Delete error:", error);
-            alert(error.response?.data?.message || "Failed to delete event. If tickets exist, try cancelling instead.");
+            toast.error(error.response?.data?.message || "Failed to delete event.");
         }
     }
   };
@@ -104,17 +138,20 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
     try {
       setIsLoading(true);
       await axiosInstance.put(`/events/${eventData._id}/cancel`, { reason });
-      alert("Event cancelled successfully. Emails have been sent to ticket holders and partial refunds initiated.");
+      toast.success('Event cancelled. Emails sent to all ticket holders.');
       setCurrentPage("events");
     } catch (err) {
       console.error("Error cancelling event:", err);
-      alert(err.response?.data?.message || "Failed to cancel event");
+      toast.error(err.response?.data?.message || "Failed to cancel event");
     } finally {
       setIsLoading(false);
     }
   };
 
   if (!eventData) return <div>No Event Data Found</div>;
+
+  const isEventCompleted = new Date(eventData.date_time) < new Date();
+  const isEventCancelled = eventData.isCancelled;
 
   return (
     <>
@@ -279,14 +316,16 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
                 >
                   <Trash2 className="w-4 h-4" /> Delete
                 </button>
-                <button 
-                  type="button" 
-                  onClick={handleCancelEvent}
-                  className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded text-sm font-medium hover:bg-red-100 flex items-center gap-2"
-                  title="Cancels event, refunds tickets, and notifies attendees"
-                >
-                  <XCircle className="w-4 h-4" /> Cancel & Refund
-                </button>
+                {!isEventCompleted && !isEventCancelled && (
+                  <button 
+                    type="button" 
+                    onClick={handleCancelEvent}
+                    className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded text-sm font-medium hover:bg-red-100 flex items-center gap-2"
+                    title="Cancels event, refunds tickets, and notifies attendees"
+                  >
+                    <XCircle className="w-4 h-4" /> Cancel & Refund
+                  </button>
+                )}
               </div>
 
               {/* Save/Cancel Actions (Right) */}
@@ -299,8 +338,14 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
                     disabled={isLoading}
                     className="px-4 py-2 bg-[#1a1a1a] text-white rounded text-sm font-medium hover:bg-opacity-90 flex items-center gap-2"
                 >
-                  {isLoading ? <Loader2 className="animate-spin w-4 h-4"/> : <Save className="w-4 h-4" />}
-                  Update Event
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="animate-spin w-4 h-4" />
+                      {loadingMsg}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2"><Save className="w-4 h-4" /> Update Event</span>
+                  )}
                 </button>
               </div>
             </div>
