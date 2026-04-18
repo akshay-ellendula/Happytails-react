@@ -45,6 +45,7 @@ const ProductList = () => {
   const [csvRawText, setCsvRawText] = useState("");
   const [csvUploading, setCsvUploading] = useState(false);
   const [searchDebounce, setSearchDebounce] = useState("");
+  const [showFilters, setShowFilters] = useState(true);
   const [previewProduct, setPreviewProduct] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [hoveredProductId, setHoveredProductId] = useState(null);
@@ -117,6 +118,14 @@ const ProductList = () => {
       ...prev,
       [name]: name === "petType" ? value.toLowerCase() : value,
     }));
+  }, []);
+
+  const clearAllFilters = useCallback(() => {
+    setFilters({
+      category: "All Categories",
+      sort: "newest",
+      petType: "all",
+    });
   }, []);
 
   const getCategoryColor = useCallback((category) => {
@@ -285,6 +294,14 @@ const ProductList = () => {
     }),
     [products, LOW_STOCK],
   );
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.category !== "All Categories") count += 1;
+    if (filters.sort !== "newest") count += 1;
+    if (filters.petType !== "all") count += 1;
+    return count;
+  }, [filters]);
 
   // Bulk delete
   const handleBulkDelete = useCallback(async () => {
@@ -642,8 +659,22 @@ const ProductList = () => {
                 className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400"
               />
               <div className="flex gap-2">
-                <button className="p-2 bg-gray-100 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setShowFilters((prev) => !prev)}
+                  className={`relative p-2 rounded-lg transition-colors ${
+                    showFilters
+                      ? "bg-blue-100 text-blue-600"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  }`}
+                  title={showFilters ? "Hide filters" : "Show filters"}
+                >
                   <Filter className="text-gray-400" size={20} />
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] leading-5 font-bold text-center">
+                      {activeFilterCount}
+                    </span>
+                  )}
                 </button>
                 <div className="flex border-l border-gray-200 pl-2">
                   <button
@@ -671,48 +702,62 @@ const ProductList = () => {
             </div>
           </div>
 
-          <select
-            name="category"
-            value={filters.category}
-            onChange={handleFilterChange}
-            className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
-          >
-            <option value="All Categories">All Categories</option>
-            <option value="food">🍖 Food & Treats</option>
-            <option value="toys">🎾 Toys & Play</option>
-            <option value="grooming">✂️ Grooming</option>
-            <option value="beds">🛏️ Beds & Furniture</option>
-            <option value="accessories">🎀 Accessories</option>
-            <option value="healthcare">💊 Healthcare</option>
-            <option value="training">🏅 Training</option>
-            <option value="carriers">🧳 Carriers & Travel</option>
-          </select>
+          {showFilters && (
+            <select
+              name="category"
+              value={filters.category}
+              onChange={handleFilterChange}
+              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+            >
+              <option value="All Categories">All Categories</option>
+              <option value="food">🍖 Food & Treats</option>
+              <option value="toys">🎾 Toys & Play</option>
+              <option value="grooming">✂️ Grooming</option>
+              <option value="beds">🛏️ Beds & Furniture</option>
+              <option value="accessories">🎀 Accessories</option>
+              <option value="healthcare">💊 Healthcare</option>
+              <option value="training">🏅 Training</option>
+              <option value="carriers">🧳 Carriers & Travel</option>
+            </select>
+          )}
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <select
-            name="sort"
-            value={filters.sort}
-            onChange={handleFilterChange}
-            className="p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white min-w-[180px]"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="price_asc">Price: Low to High</option>
-            <option value="price_desc">Price: High to Low</option>
-          </select>
-          <select
-            name="petType"
-            value={filters.petType}
-            onChange={handleFilterChange}
-            className="p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white min-w-[160px]"
-          >
-            <option value="all">🐾 All Pets</option>
-            <option value="dog">🐶 Dog</option>
-            <option value="cat">🐱 Cat</option>
-            <option value="both">🐶🐱 Both</option>
-          </select>
-        </div>
+        {showFilters && (
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              name="sort"
+              value={filters.sort}
+              onChange={handleFilterChange}
+              className="p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white min-w-[180px]"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+            </select>
+            <select
+              name="petType"
+              value={filters.petType}
+              onChange={handleFilterChange}
+              className="p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white min-w-[160px]"
+            >
+              <option value="all">🐾 All Pets</option>
+              <option value="dog">🐶 Dog</option>
+              <option value="cat">🐱 Cat</option>
+              <option value="both">🐶🐱 Both</option>
+            </select>
+
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="px-4 py-2.5 text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Bulk Action Bar */}
