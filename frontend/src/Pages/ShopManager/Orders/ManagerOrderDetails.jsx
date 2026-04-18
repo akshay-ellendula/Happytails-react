@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import jsPDF from "jspdf";
+import lastAutoTable from "jspdf-autotable";
 
 const ManagerOrderDetails = () => {
   const { orderId } = useParams();
@@ -109,236 +110,261 @@ const ManagerOrderDetails = () => {
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
 
-      const subtotal = Number(order.subtotal || 0);
-      const platformFee = Number(order.platform_charge || 0);
-      const total = Number(order.total || subtotal + platformFee);
-      const items = Array.isArray(order.items) ? order.items : [];
+      const subtotal = Number(order?.subtotal || 0);
+      const platformFee = Number(order?.platform_charge || subtotal * 0.04);
+      const finalTotal = Number(order?.total || subtotal + platformFee);
+      const items = Array.isArray(order?.items) ? order.items : [];
+      const primary = [26, 26, 26];
 
-      doc.setFillColor(26, 26, 26);
-      doc.rect(0, 0, pageWidth, 28, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      const orderNumber = order.id?.slice(-6).toUpperCase() || orderId;
-      const orderDate = safeFormatDate(order.order_date, {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      const orderDate = order?.order_date
+        ? new Date(order.order_date).toLocaleDateString("en-IN", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+        : "-";
+
       const customerName =
-        order.customer?.name || order.customer_name || "Guest Customer";
-      const customerEmail = order.customer?.email || "-";
-      const customerPhone = order.customer?.phone || "-";
-      const addressParts = [
-        order.shipping?.address?.houseNumber,
-        order.shipping?.address?.streetNo,
-        order.shipping?.address?.city,
-        order.shipping?.address?.pincode,
-      ].filter(Boolean);
-      const addressText = addressParts.length ? addressParts.join(", ") : "-";
+        order?.customer?.name || order?.customer_name || "Guest Customer";
+      const customerEmail = order?.customer?.email || "No email";
+      const customerPhone = order?.customer?.phone || "No phone";
+
+      const shippingAddress = [
+        order?.shipping?.address?.houseNumber,
+        order?.shipping?.address?.streetNo,
+        order?.shipping?.address?.city,
+        order?.shipping?.address?.pincode,
+      ]
+        .filter((part) => part && String(part).trim().length > 0)
+        .join(", ");
+
+      let yPos = 15;
+
       // === HEADER ===
       doc.setFillColor(26, 26, 26);
-      doc.rect(0, 0, pageWidth, 34, "F");
-
-      doc.setFillColor(255, 254, 139);
-      doc.circle(18, 17, 7, "F");
+      doc.rect(0, 0, pageWidth, 30, "F");
 
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("HAPPY TAILS", 30, 14);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.text("Shop Manager Invoice", 30, 19);
-      doc.setFontSize(8.5);
-      doc.text(`ORDER #${orderNumber}`, pageWidth - 15, 12, { align: "right" });
-      doc.text(orderDate, pageWidth - 15, 18, { align: "right" });
-
-      // status badge
-      doc.setFillColor(255, 254, 139);
-      doc.roundedRect(pageWidth - 52, 22, 37, 8, 2, 2, "F");
-      doc.setTextColor(26, 26, 26);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(7.5);
-      doc.text(order.status || "-", pageWidth - 33.5, 27.5, {
-        align: "center",
-      });
-
-      let y = 42;
-      doc.setTextColor(26, 26, 26);
-      doc.setFont("helvetica", "bold");
       doc.setFontSize(18);
-      doc.text("ORDER RECEIPT", 15, y);
-
-      y += 7;
-      doc.setFontSize(9.5);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(90, 90, 90);
-      doc.text(`Placed: ${orderDate}`, 15, y);
-      doc.text(`Payment: Paid`, 95, y);
-      doc.text(`Status: ${order.status || "-"}`, 155, y);
-
-      // === INFO CARDS ===
-      y += 8;
-      doc.setFillColor(248, 249, 250);
-      doc.roundedRect(15, y, 88, 36, 3, 3, "F");
-      doc.setFillColor(248, 249, 250);
-      doc.roundedRect(107, y, 88, 36, 3, 3, "F");
-
-      doc.setTextColor(26, 26, 26);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9.5);
-      doc.text("BILL TO", 20, y + 6);
-      doc.text("SHIP TO", 112, y + 6);
-
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(60, 60, 60);
-      doc.setFontSize(8.3);
-      doc.text(customerName, 20, y + 13);
-      doc.text(customerEmail, 20, y + 18);
-      doc.text(customerPhone, 20, y + 23);
-
-      const addressWrapped = doc.splitTextToSize(addressText, 72);
-      doc.text(addressWrapped, 112, y + 13);
-      doc.setTextColor(26, 26, 26);
-      doc.setFont("helvetica", "bold");
-      doc.text("Delivery: Standard", 112, y + 29);
-
-      y += 44;
-
-      // === ITEMS LIST ===
-      const itemLeft = 15;
-      const itemRight = pageWidth - 15;
-      const itemWidth = 112;
-      const qtyX = 146;
-      const amountX = 190;
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9.5);
-      doc.setTextColor(26, 26, 26);
-      doc.text("Item", itemLeft, y);
-      doc.text("Qty", qtyX, y, { align: "center" });
-      doc.text("Amount", amountX, y, { align: "right" });
-
-      y += 4;
-
-      items.forEach((item, index) => {
-        const price = Number(item.price || 0);
-        const quantity = Number(item.quantity || 0);
-        const amount = price * quantity;
-        const nameLines = doc.splitTextToSize(
-          item.product_name || "Product",
-          itemWidth,
-        );
-        const lineCount = Math.max(1, nameLines.length);
-        const rowHeight = Math.max(10, lineCount * 4.2 + 4);
-
-        doc.setFillColor(index % 2 === 0 ? 250 : 255, 255, 255);
-        doc.roundedRect(
-          itemLeft,
-          y - 1,
-          itemRight - itemLeft,
-          rowHeight,
-          2,
-          2,
-          "F",
-        );
-        doc.setDrawColor(235, 235, 235);
-        doc.roundedRect(
-          itemLeft,
-          y - 1,
-          itemRight - itemLeft,
-          rowHeight,
-          2,
-          2,
-          "S",
-        );
-
-        doc.setTextColor(26, 26, 26);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9);
-        doc.text(nameLines, itemLeft + 3, y + 3);
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.text(String(quantity), qtyX, y + 4, { align: "center" });
-        doc.setFont("helvetica", "bold");
-        doc.text(`₹${amount.toFixed(2)}`, amountX, y + 4, { align: "right" });
-
-        doc.setTextColor(140, 140, 140);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7.5);
-        doc.text(`Unit: ₹${price.toFixed(2)}`, amountX, y + 8, {
-          align: "right",
-        });
-
-        y += rowHeight + 4;
-      });
-
-      // === SUMMARY ===
-      y += 4;
-      doc.setDrawColor(220, 220, 220);
-      doc.line(15, y, pageWidth - 15, y);
-      y += 8;
-
-      doc.setFillColor(255, 254, 139);
-      doc.roundedRect(120, y - 2, 75, 25, 3, 3, "F");
+      doc.text("HAPPY TAILS", 15, 12);
 
       doc.setFontSize(9);
-      doc.text(
-        order.customer?.name || order.customer_name || "Guest Customer",
-        20,
-        y + 13,
-      );
       doc.setFont("helvetica", "normal");
-      doc.text("Subtotal", 135, y + 4);
-      doc.text("Platform Fee", 135, y + 9.5);
-      doc.text("Total", 135, y + 17);
+      doc.text("Pet Care & Supplies", 15, 18);
 
-      doc.setFont("helvetica", "bold");
-      doc.text(`₹${subtotal.toFixed(2)}`, 188, y + 4, { align: "right" });
-      doc.text(`₹${platformFee.toFixed(2)}`, 188, y + 9.5, { align: "right" });
-      doc.setFontSize(10.5);
-      doc.text(`₹${total.toFixed(2)}`, 188, y + 17, { align: "right" });
-
-      y += 32;
-
-      // === POLICY + FOOTER ===
-      doc.setFillColor(248, 249, 250);
-      doc.roundedRect(15, y, pageWidth - 30, 20, 3, 3, "F");
-      doc.setTextColor(100, 100, 100);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.8);
-      doc.text(
-        "Returns accepted within 14 days of delivery. Keep this receipt for support or exchange requests.",
-        20,
-        y + 8,
-      );
-      doc.text(
-        "Generated electronically by Happy Tails",
-        pageWidth / 2,
-        y + 15,
-        { align: "center" },
-      );
-
-      doc.setTextColor(150, 150, 150);
+      doc.setTextColor(200, 200, 200);
       doc.setFontSize(8);
+      doc.text("support@happytails.com | +91 98765 43210", pageWidth - 15, 12, {
+        align: "right",
+      });
+      doc.text("www.happytails.com", pageWidth - 15, 18, { align: "right" });
+
+      yPos = 40;
+
+      // === RECEIPT TITLE ===
+      doc.setFillColor(255, 254, 139);
+      doc.rect(0, yPos - 8, pageWidth, 14, "F");
+
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("ORDER RECEIPT", 15, yPos);
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
       doc.text(
-        "Thank you for shopping with Happy Tails 🐾",
-        pageWidth / 2,
-        pageHeight - 10,
+        `#${order?.id || order?._id || orderId}`,
+        pageWidth - 15,
+        yPos - 3,
         {
-          align: "center",
+          align: "right",
         },
       );
 
-      const fileName = `Happytails_Receipt_${orderNumber}.pdf`;
-      const blob = doc.output("blob");
-      const downloadUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = fileName;
-      link.click();
-      URL.revokeObjectURL(downloadUrl);
+      yPos += 12;
+
+      // === ORDER INFO & DATES ===
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      doc.setFont("helvetica", "bold");
+      doc.text("Order Information:", 15, yPos);
+
+      doc.setFont("helvetica", "normal");
+      yPos += 6;
+
+      doc.text(`Date: ${orderDate}`, 15, yPos);
+      doc.text(`Status: ${order?.status || "-"}`, 100, yPos);
+
+      yPos += 8;
+
+      // === CUSTOMER DETAILS BOX ===
+      doc.setFillColor(243, 244, 246);
+      doc.rect(15, yPos, pageWidth - 30, 32, "F");
+
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("BILL TO:", 20, yPos + 5);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60, 60, 60);
+      doc.setFontSize(8);
+      let custY = yPos + 11;
+
+      doc.text(customerName, 20, custY);
+      custY += 5;
+      doc.text(customerEmail, 20, custY);
+      custY += 5;
+      doc.text(customerPhone, 20, custY);
+      custY += 5;
+
+      if (shippingAddress) {
+        const splitAddr = doc.splitTextToSize(shippingAddress, pageWidth - 50);
+        if (splitAddr[0]) doc.text(splitAddr[0], 20, custY);
+      }
+
+      yPos += 38;
+
+      // === ITEMS TABLE ===
+      const tableColumn = [
+        "Item Name",
+        "Size/Color",
+        "Qty",
+        "Unit Price",
+        "Total",
+      ];
+      const tableRows = [];
+
+      items.forEach((item) => {
+        const variant = item?.size ? item.size : "-";
+        const color = item?.color ? item.color : "";
+        const sizeColor = `${variant}${color ? " / " + color : ""}`;
+        const price = Number(item?.price || 0);
+        const qty = Number(item?.quantity || 0);
+        const itemTotal = price * qty;
+
+        tableRows.push([
+          item?.product_name || "Product",
+          sizeColor,
+          qty.toString(),
+          `Rs. ${price.toFixed(2)}`,
+          `Rs. ${itemTotal.toFixed(2)}`,
+        ]);
+      });
+
+      lastAutoTable(doc, {
+        startY: yPos,
+        head: [tableColumn],
+        body: tableRows,
+        theme: "grid",
+        headStyles: {
+          fillColor: primary,
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          halign: "center",
+          cellPadding: 4,
+          fontSize: 8,
+          lineColor: [200, 200, 200],
+        },
+        bodyStyles: {
+          textColor: [60, 60, 60],
+          cellPadding: 3,
+          fontSize: 8,
+          lineColor: [230, 230, 230],
+        },
+        alternateRowStyles: {
+          fillColor: [250, 250, 250],
+        },
+        columnStyles: {
+          0: { cellWidth: 50, halign: "left" },
+          1: { cellWidth: 30, halign: "center" },
+          2: { cellWidth: 15, halign: "center" },
+          3: { cellWidth: 35, halign: "right" },
+          4: { cellWidth: 35, halign: "right", fontStyle: "bold" },
+        },
+        margin: { left: 15, right: 15 },
+      });
+
+      yPos = doc.lastAutoTable.finalY + 10;
+
+      // === BILLING SUMMARY ===
+      const summaryLeft = pageWidth / 2 + 10;
+      doc.setFontSize(8);
+      doc.setTextColor(80, 80, 80);
+      doc.setFont("helvetica", "normal");
+
+      doc.text("Subtotal:", summaryLeft, yPos);
+      doc.text(`Rs. ${subtotal.toFixed(2)}`, pageWidth - 15, yPos, {
+        align: "right",
+      });
+
+      yPos += 6;
+      doc.text("Delivery Fee:", summaryLeft, yPos);
+      doc.text("FREE", pageWidth - 15, yPos, { align: "right" });
+
+      yPos += 6;
+      doc.text("Platform Charge (4%):", summaryLeft, yPos);
+      doc.text(`Rs. ${platformFee.toFixed(2)}`, pageWidth - 15, yPos, {
+        align: "right",
+      });
+
+      // === TOTAL BOX ===
+      yPos += 8;
+      doc.setFillColor(255, 254, 139);
+      doc.rect(summaryLeft - 5, yPos - 4, pageWidth - summaryLeft, 12, "F");
+
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("GRAND TOTAL:", summaryLeft, yPos + 4);
+      doc.text(`Rs. ${finalTotal.toFixed(2)}`, pageWidth - 15, yPos + 4, {
+        align: "right",
+      });
+
+      // === FOOTER ===
+      yPos = pageHeight - 45;
+
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(15, yPos, pageWidth - 15, yPos);
+
+      yPos += 8;
+      doc.setFontSize(8);
+      doc.setTextColor(26, 26, 26);
+      doc.setFont("helvetica", "bold");
+      doc.text("RETURN & REFUND POLICY", 15, yPos);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.setFontSize(7);
+      yPos += 5;
+
+      const policies = [
+        "• Returns accepted within 14 days of delivery",
+        "• Items must be unused and in original packaging",
+        "• Include this receipt with your return",
+        "• Platform charges are non-refundable",
+      ];
+
+      policies.forEach((policy) => {
+        doc.text(policy, 15, yPos);
+        yPos += 4;
+      });
+
+      // === THANK YOU ===
+      yPos = pageHeight - 8;
+      doc.setTextColor(150, 150, 150);
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.text(
+        "Thank you for shopping with Happy Tails! 🐾",
+        pageWidth / 2,
+        yPos,
+        { align: "center" },
+      );
+
+      doc.save(`Happytails_Receipt_${order?.id || order?._id || orderId}.pdf`);
       toast.success("Receipt downloaded successfully");
     } catch (error) {
       console.error("Error generating receipt:", error);
