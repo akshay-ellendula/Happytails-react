@@ -174,7 +174,39 @@ export const AuthProvider = ({ children }) => {
     }
   }, [fetchFullUserProfile]);
 
-  // 7. Memoize context value to prevent unnecessary re-renders of consuming components
+  // 8. Auto Logout on 401 Unauthorized Interceptor
+  useEffect(() => {
+    const responseInterceptor = axiosInstance.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401) {
+          const isVerifyRoute = error.config && error.config.url && error.config.url.includes('/auth/verify');
+          const isSigninRoute = error.config && error.config.url && (error.config.url.includes('signin') || error.config.url.includes('signup'));
+          
+          // If the user's token expires while they are authenticated, log them out
+          if (!isVerifyRoute && !isSigninRoute && isAuthenticated) {
+            import('react-hot-toast').then(({ toast }) => {
+              toast.error('Login session completed. Auto logging out...');
+            });
+            
+            setIsAuthenticated(false);
+            setUser(null);
+            
+            setTimeout(() => {
+              window.location.href = '/login';
+            }, 1000);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axiosInstance.interceptors.response.eject(responseInterceptor);
+    };
+  }, [isAuthenticated]);
+
+  // 9. Memoize context value to prevent unnecessary re-renders of consuming components
   const value = useMemo(() => ({
     isAuthenticated,
     loading,

@@ -13,6 +13,7 @@ export const configureGoogleStrategy = () => {
                 clientSecret: process.env.GOOGLE_CLIENT_SECRET,
                 callbackURL: process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback',
                 passReqToCallback: true,
+                proxy: true, // IMPORTANT: Allows HTTPS callback URLs when deployed on Render/Vercel
             },
             async (req, accessToken, refreshToken, profile, done) => {
                 try {
