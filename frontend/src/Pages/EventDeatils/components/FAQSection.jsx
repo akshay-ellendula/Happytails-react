@@ -12,17 +12,16 @@ const FAQSection = () => {
       question: "Can I get a refund?",
       answer: "All ticket sales are final and non-refundable."
     },
-
   ];
 
   return (
     <div>
-      <h3 className="text-xl font-bold text-[#1a1a1a] mb-4">Frequently Asked Questions</h3>
+      <h3 className="text-xl font-bold text-white mb-4">Frequently Asked Questions</h3>
       <div className="space-y-3">
         {faqs.map((faq, index) => (
-          <div key={index} className="p-4 bg-[#effe8b] rounded-xl">
-            <p className="font-semibold text-[#1a1a1a]">{faq.question}</p>
-            <p className="text-[#1a1a1a] text-sm mt-1">{faq.answer}</p>
+          <div key={index} className="p-4 bg-[#111] rounded-xl">
+            <p className="font-semibold text-white mb-1">{faq.question}</p>
+            <p className="text-white/50 text-sm">{faq.answer}</p>
           </div>
         ))}
       </div>

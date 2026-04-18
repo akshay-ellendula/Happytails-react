@@ -6,13 +6,13 @@ import HeroBanner from './components/HeroBanner';
 import CategoriesSection from './components/CategoriesSection';
 import EventsSection from './components/EventsSection';
 import Footer from '../../components/Footer';
-import { MapPin } from "lucide-react";
+import { MapPin, Loader2 } from "lucide-react";
 
 const EventsPage = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [events, setEvents] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('all'); // NEW: State for filter
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -44,7 +44,6 @@ const EventsPage = () => {
           date: formatDate(event.date_time),
           title: event.title,
           venue: event.venue,
-          // FIX: Pass price as a clean number to handle the Rupee symbol properly in the card
           price: event.ticketPrice || 0, 
           category: event.category || 'general',
           total_tickets: event.total_tickets,
@@ -53,10 +52,9 @@ const EventsPage = () => {
         
         setEvents(transformedEvents);
 
-        // NEW: Create category list and prepend "ALL"
         const uniqueCategories = [...new Set(eventsData.map(event => event.category))].filter(Boolean);
         const categoryData = [
-          { name: 'ALL EVENTS', type: 'all', emoji: '🌟' }, // Default 'All' option
+          { name: 'ALL EVENTS', type: 'all', emoji: '🌟' },
           ...uniqueCategories.map(category => ({
             name: category.toUpperCase(),
             type: category.toLowerCase(),
@@ -108,7 +106,7 @@ const EventsPage = () => {
     return emojiMap[category.toLowerCase()] || '🎉';
   };
 
-  // NEW: Filter events based on selected category and location
+  // Filter events based on selected category and location
   const filteredEvents = events.filter(event => {
     const matchCategory = selectedCategory === 'all' || event.category.toLowerCase() === selectedCategory.toLowerCase();
     const matchLocation = selectedLocation === 'all' || event.location === selectedLocation;
@@ -117,10 +115,54 @@ const EventsPage = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#f2c737] min-h-screen flex flex-col">
+      <div className="bg-[#050505] min-h-screen flex flex-col font-outfit">
         <Header onMenuToggle={toggleMobileMenu} />
-        <div className="flex-grow flex justify-center items-center">
-          <div className="text-xl font-bold text-[#1a1a1a]">Loading events...</div>
+        <div className="flex-grow">
+          {/* Skeleton Hero Banner */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="bg-[#111] rounded-2xl p-8 lg:p-14 flex flex-col lg:flex-row items-center gap-10 animate-pulse">
+              <div className="flex-1 space-y-4 w-full">
+                <div className="h-4 w-32 bg-white/10 rounded-full" />
+                <div className="h-10 w-3/4 bg-white/10 rounded-xl" />
+                <div className="h-10 w-1/2 bg-white/10 rounded-xl" />
+                <div className="h-4 w-48 bg-white/10 rounded-full" />
+                <div className="h-5 w-24 bg-white/10 rounded-full" />
+                <div className="h-12 w-36 bg-white/10 rounded-xl mt-4" />
+              </div>
+              <div className="w-full max-w-[340px] aspect-[4/5] bg-white/5 rounded-2xl flex-shrink-0" />
+            </div>
+          </div>
+
+          {/* Skeleton Categories */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 animate-pulse">
+            <div className="h-7 w-48 bg-white/10 rounded-lg mb-6" />
+            <div className="flex gap-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="w-24 h-20 bg-[#111] rounded-xl" />
+              ))}
+            </div>
+          </div>
+
+          {/* Skeleton Event Cards */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-pulse">
+            <div className="h-7 w-40 bg-white/10 rounded-lg mb-6" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-[#111] rounded-2xl overflow-hidden">
+                  <div className="h-56 bg-white/5" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-5 w-3/4 bg-white/10 rounded-lg" />
+                    <div className="h-3 w-1/2 bg-white/5 rounded-full" />
+                    <div className="h-3 w-2/3 bg-white/5 rounded-full" />
+                    <div className="flex justify-between items-center pt-2">
+                      <div className="h-5 w-16 bg-white/10 rounded-full" />
+                      <div className="h-9 w-24 bg-white/10 rounded-lg" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
         <Footer />
       </div>
@@ -129,10 +171,10 @@ const EventsPage = () => {
 
   if (error) {
     return (
-      <div className="bg-[#f2c737] min-h-screen flex flex-col">
+      <div className="bg-[#050505] min-h-screen flex flex-col font-outfit">
         <Header onMenuToggle={toggleMobileMenu} />
         <div className="flex-grow flex justify-center items-center">
-          <div className="text-xl text-red-600 font-bold bg-white px-6 py-3 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl">{error}</div>
+          <div className="text-red-400 font-medium bg-red-500/10 border border-red-500/20 px-6 py-4 rounded-xl">{error}</div>
         </div>
         <Footer />
       </div>
@@ -140,7 +182,7 @@ const EventsPage = () => {
   }
 
   return (
-    <div className="bg-[#f2c737] min-h-screen">
+    <div className="bg-[#050505] min-h-screen font-outfit">
       <Header onMenuToggle={toggleMobileMenu} />
       {isMobileMenuOpen && (
         <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
@@ -151,19 +193,19 @@ const EventsPage = () => {
           <HeroBanner events={events} />
 
           {/* Location Filter */}
-          <section className="bg-[#f2c737] pt-12 pb-4">
+          <section className="bg-[#050505] pt-12 pb-4">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#111] p-6 rounded-2xl">
                 <div className="flex items-center gap-3">
-                  <div className="bg-red-100 p-2 rounded-xl border border-red-200">
-                    <MapPin className="text-red-500 w-6 h-6" />
+                  <div className="w-10 h-10 bg-[#f2c737]/10 rounded-lg flex items-center justify-center">
+                    <MapPin className="text-[#f2c737] w-5 h-5" />
                   </div>
-                  <h2 className="text-xl font-bold text-[#1a1a1a]">Filter by Location</h2>
+                  <h2 className="text-lg font-semibold text-white">Filter by Location</h2>
                 </div>
                 <select 
                   value={selectedLocation}
                   onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="w-full sm:w-64 px-4 py-3 bg-gray-50 border-2 border-black rounded-xl font-bold text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#f2c737] cursor-pointer hover:bg-gray-100 transition-colors"
+                  className="w-full sm:w-64 px-4 py-3 bg-[#050505] border border-white/20 rounded-xl font-medium text-white focus:outline-none focus:border-white/50 cursor-pointer appearance-none transition-colors"
                 >
                   <option value="all">Everywhere</option>
                   {locations.map((loc, idx) => (
@@ -181,27 +223,18 @@ const EventsPage = () => {
               onSelectCategory={setSelectedCategory} 
             />
           )}
-          {/* Pass the filtered events to the section */}
           <EventsSection events={filteredEvents} /> 
         </>
       ) : (
         <div className="flex-grow flex flex-col justify-center items-center px-4 py-24">
-          <div className="bg-white p-12 md:p-16 rounded-[2.5rem] border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] max-w-3xl w-full text-center relative overflow-hidden">
-             {/* Decorative element */}
-             <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#f2c737] rounded-full border-4 border-black opacity-50 hidden sm:block"></div>
-             
-             <div className="inline-block bg-[#1a1a1a] p-5 rounded-3xl border-4 border-black shadow-[6px_6px_0px_0px_#f2c737] mb-8 rotate-3 cursor-default hover:rotate-6 transition-transform">
-               <span className="text-6xl" role="img" aria-label="dog emoji">🐶</span>
-             </div>
-             
-             <h2 className="text-4xl md:text-5xl font-black text-[#1a1a1a] mb-6 tracking-tight uppercase">
-                It's Too Quiet Here!
-             </h2>
-             
-             <p className="text-xl md:text-2xl font-bold text-gray-600 mb-0 leading-relaxed">
-                We are currently cooking up some amazing new events for you and your furry friends. 
-                <br className="hidden md:block"/> Check back again very soon!
-             </p>
+          <div className="text-center max-w-lg">
+            <div className="text-6xl mb-6">🐶</div>
+            <h2 className="text-3xl font-bold text-white mb-4">
+              It's Too Quiet Here!
+            </h2>
+            <p className="text-white/50 text-lg leading-relaxed">
+              We are currently cooking up some amazing new events for you and your furry friends. Check back again very soon!
+            </p>
           </div>
         </div>
       )}

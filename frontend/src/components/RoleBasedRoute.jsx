@@ -9,8 +9,12 @@ const RoleBasedRoute = ({ children, allowedRoles }) => {
 
   if (loading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#effe8b]">
-        <Loader2 className="w-10 h-10 animate-spin text-[#1a1a1a]" />
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center font-outfit relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#f2c737]/10 blur-[80px] rounded-full pointer-events-none" />
+        <div className="relative flex flex-col items-center z-10">
+          <Loader2 className="w-16 h-16 animate-spin text-[#f2c737] mb-6" />
+          <div className="text-lg font-black tracking-widest uppercase text-white/80 animate-pulse">Establishing Link...</div>
+        </div>
       </div>
     );
   }

@@ -15,6 +15,13 @@ import HomePage from "./Pages/Home/HomePage";
 import NotFound from "./Pages/NotFoundPage/NotFound";
 import ReviewPage from './Pages/ReviewPage/ReviewPage';
 
+// --- Pages: Static / Footer ---
+import AboutPage from "./Pages/Static/AboutPage";
+import TermsPage from "./Pages/Static/TermsPage";
+import PrivacyPage from "./Pages/Static/PrivacyPage";
+import ContactPage from "./Pages/Static/ContactPage";
+import FAQPage from "./Pages/Static/FAQPage";
+
 // --- Pages: Auth ---
 import AuthPage from "./Pages/Auth/Authpage";
 import ServiceProviderLogin from "./Pages/Auth/ServiceProviderLogin";
@@ -81,8 +88,12 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="bg-[#effe8b] min-h-screen flex items-center justify-center">
-        <div className="text-xl font-bold">Loading...</div>
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center font-outfit relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#f2c737]/10 blur-[80px] rounded-full pointer-events-none" />
+        <div className="relative flex flex-col items-center z-10">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-r-2 border-[#f2c737] mb-6"></div>
+          <div className="text-lg font-black tracking-widest uppercase text-white/80 animate-pulse">Establishing Link...</div>
+        </div>
       </div>
     );
   }
@@ -165,6 +176,13 @@ function AppRoutes() {
         <Route path="/event/:id" element={<EventDetailPage />} />
         <Route path="/partnerRegistrataion" element={<PartnerRegistration />} />
         <Route path="/review/:ticketId/:token" element={<ReviewPage />} />
+
+        {/* --- Static / Footer Pages --- */}
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/faq" element={<FAQPage />} />
 
         {/* --- Auth Routes --- */}
         <Route path="/login" element={<AuthPage />} />

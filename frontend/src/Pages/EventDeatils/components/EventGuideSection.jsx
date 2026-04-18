@@ -3,42 +3,42 @@ import { Languages, Clock, User, Navigation } from 'lucide-react';
 const EventGuideSection = ({ event }) => {
   return (
     <div>
-      <h2 className="text-2xl font-bold text-[#1a1a1a] mb-6">Event Guide</h2>
+      <h2 className="text-2xl font-bold text-white mb-6">Event Guide</h2>
 
       {/* Event Details */}
-      <div className="space-y-4 mb-8">
-        <div className="flex items-center p-4 bg-[#effe8b] rounded-xl">
-          <Languages className="w-5 h-5 mr-4 text-[#1a1a1a]" />
+      <div className="space-y-3 mb-8">
+        <div className="flex items-center p-4 bg-[#111] rounded-xl">
+          <Languages className="w-5 h-5 mr-4 text-[#f2c737]" />
           <div>
-            <p className="text-sm text-[#1a1a1a]">Language</p>
-            <p className="font-semibold text-[#1a1a1a]">{event.language}</p>
+            <p className="text-sm text-white/40">Language</p>
+            <p className="font-medium text-white">{event.language}</p>
           </div>
         </div>
-        <div className="flex items-center p-4 bg-[#effe8b] rounded-xl">
-          <Clock className="w-5 h-5 mr-4 text-[#1a1a1a]" />
+        <div className="flex items-center p-4 bg-[#111] rounded-xl">
+          <Clock className="w-5 h-5 mr-4 text-[#f2c737]" />
           <div>
-            <p className="text-sm text-[#1a1a1a]">Duration</p>
-            <p className="font-semibold text-[#1a1a1a]">{event.duration}</p>
+            <p className="text-sm text-white/40">Duration</p>
+            <p className="font-medium text-white">{event.duration}</p>
           </div>
         </div>
-        <div className="flex items-center p-4 bg-[#effe8b] rounded-xl">
-          <User className="w-5 h-5 mr-4 text-[#1a1a1a]" />
+        <div className="flex items-center p-4 bg-[#111] rounded-xl">
+          <User className="w-5 h-5 mr-4 text-[#f2c737]" />
           <div>
-            <p className="text-sm text-[#1a1a1a]">Age Limit</p>
-            <p className="font-semibold text-[#1a1a1a]">{event.ageLimit}</p>
+            <p className="text-sm text-white/40">Age Limit</p>
+            <p className="font-medium text-white">{event.ageLimit}</p>
           </div>
         </div>
       </div>
 
       {/* Divider */}
-      <div className="border-t border-gray-300 my-8"></div>
+      <div className="border-t border-white/10 my-8"></div>
 
       {/* Venue */}
       <div>
-        <h3 className="text-xl font-bold text-[#1a1a1a] mb-4">Venue</h3>
-        <div className="p-4 bg-[#effe8b] rounded-xl">
-          <p className="font-bold text-[#1a1a1a] mb-2">{event.venue}</p>
-          <p className="text-[#1a1a1a] text-sm mb-4">{event.location}</p>
+        <h3 className="text-xl font-bold text-white mb-4">Venue</h3>
+        <div className="p-4 bg-[#111] rounded-xl">
+          <p className="font-semibold text-white mb-1">{event.venue}</p>
+          <p className="text-white/40 text-sm">{event.location}</p>
         </div>
       </div>
     </div>

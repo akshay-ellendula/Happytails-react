@@ -13,43 +13,36 @@ const HeroSection = ({ event, onBookTickets }) => {
     });
   };
 
-  // --- LOGIC UPDATES START ---
-  
-  // 1. Check if event is sold out
   const ticketsLeft = event.total_tickets - event.tickets_sold;
   const isSoldOut = ticketsLeft === 0;
 
-  // 2. Check if event date has passed (Booking Closed)
   const eventDate = new Date(event.date_time);
   const currentDate = new Date();
   const isExpired = eventDate < currentDate;
 
-  // --- LOGIC UPDATES END ---
-
   return (
-    <section className="bg-white py-8">
+    <section className="bg-[#050505] py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row gap-12 items-start">
           
           {/* Event Image */}
           <div className="lg:w-7/12">
-            <div className="rounded-3xl shadow-2xl overflow-hidden h-[400px] relative">
+            <div className="rounded-2xl overflow-hidden h-[400px] relative">
               <img 
                 src={event.images?.banner || event.images?.thumbnail} 
                 alt={event.title}
                 className="w-full h-full object-cover"
               />
               
-              {/* Overlays for status */}
               {isSoldOut ? (
-                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                  <span className="bg-red-600 text-white px-6 py-3 rounded-full font-bold text-lg">
+                <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                  <span className="bg-red-500 text-white px-6 py-3 rounded-lg font-bold text-lg">
                     SOLD OUT
                   </span>
                 </div>
               ) : (
                 ticketsLeft < 10 && (
-                  <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                  <div className="absolute top-4 right-4 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold">
                     Only {ticketsLeft} left!
                   </div>
                 )
@@ -60,27 +53,27 @@ const HeroSection = ({ event, onBookTickets }) => {
           {/* Event Details */}
           <div className="lg:w-5/12">
             <div className="mb-4">
-              <span className="bg-gray-100 text-[#1a1a1a] px-3 py-1 rounded-full text-sm font-semibold">
+              <span className="bg-white/10 text-white/70 px-3 py-1 rounded-lg text-sm font-medium">
                 {event.category}
               </span>
             </div>
             
-            <h1 className="text-3xl lg:text-4xl font-bold text-[#1a1a1a] mb-4 leading-tight">
+            <h1 className="text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight">
               {event.title}
             </h1>
             
             <div className="space-y-3 mb-6">
-              <div className="flex items-center text-[#1a1a1a]">
-                <Calendar className="w-5 h-5 mr-3 text-[#1a1a1a]" />
+              <div className="flex items-center text-white/60">
+                <Calendar className="w-5 h-5 mr-3 text-[#f2c737]" />
                 <span className="font-medium">{formatDate(event.date_time)}</span>
               </div>
-              <div className="flex items-center text-[#1a1a1a]">
-                <MapPin className="w-5 h-5 mr-3 text-[#1a1a1a]" />
+              <div className="flex items-center text-white/60">
+                <MapPin className="w-5 h-5 mr-3 text-[#f2c737]" />
                 <span className="font-medium">{event.venue}</span>
               </div>
               
               {!isSoldOut && !isExpired && ticketsLeft > 0 && (
-                <div className="flex items-center text-green-600">
+                <div className="flex items-center text-emerald-400">
                   <span className="text-sm font-semibold">
                     {ticketsLeft} tickets available
                   </span>
@@ -88,25 +81,24 @@ const HeroSection = ({ event, onBookTickets }) => {
               )}
             </div>
 
-            <div className="bg-[#effe8b] rounded-2xl p-6 mb-6">
-              <div className="flex items-center justify-between">
+            <div className="bg-[#111] rounded-2xl p-6 mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm text-[#1a1a1a] mb-1">Starts from</p>
-                  <p className="text-2xl font-bold text-[#1a1a1a]">
+                  <p className="text-sm text-white/40 mb-1">Starts from</p>
+                  <p className="text-2xl font-bold text-[#f2c737]">
                     {event.ticketPrice === 0 ? 'Free Entry' : `₹${event.ticketPrice} onwards`}
                   </p>
                 </div>
                 
-                {/* Updated Button Logic */}
                 <button 
                   onClick={onBookTickets}
                   disabled={isSoldOut || isExpired}
-                  className={`font-bold px-8 py-3 rounded-full transition transform hover:scale-105 ${
+                  className={`font-semibold px-6 sm:px-8 py-3 rounded-xl transition-colors w-full sm:w-auto text-center flex-shrink-0 ${
                     isExpired
-                        ? 'bg-gray-400 text-white cursor-not-allowed' // Style for Expired
+                        ? 'bg-white/10 text-white/30 cursor-not-allowed'
                         : isSoldOut 
-                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed' // Style for Sold Out
-                            : 'bg-[#1a1a1a] text-white hover:bg-gray-800' // Style for Active
+                            ? 'bg-white/10 text-white/30 cursor-not-allowed'
+                            : 'bg-[#f2c737] text-black hover:bg-white'
                   }`}
                 >
                   {isExpired 
@@ -118,16 +110,15 @@ const HeroSection = ({ event, onBookTickets }) => {
                 </button>
               </div>
 
-              {/* Progress bar only if active and low stock */}
               {!isSoldOut && !isExpired && ticketsLeft > 0 && ticketsLeft <= 20 && (
                 <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-white/10 rounded-full h-1.5">
                     <div 
-                      className="bg-green-500 h-2 rounded-full transition-all" 
+                      className="bg-[#f2c737] h-1.5 rounded-full transition-all" 
                       style={{ width: `${(ticketsLeft / event.total_tickets) * 100}%` }}
                     ></div>
                   </div>
-                  <p className="text-xs text-gray-600 mt-2 text-center">
+                  <p className="text-xs text-white/30 mt-2 text-center">
                     Hurry! Only {ticketsLeft} tickets left
                   </p>
                 </div>

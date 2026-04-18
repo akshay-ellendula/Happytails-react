@@ -15,11 +15,11 @@ import {
   ArrowLeft,
   ShoppingCart,
   Package,
-  Star,
   ThumbsUp,
   User,
   ChevronDown,
   ChevronUp,
+  Star
 } from "lucide-react";
 
 const ProductDetailPage = () => {
@@ -37,7 +37,7 @@ const ProductDetailPage = () => {
   const [showCartMessage, setShowCartMessage] = useState(false);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+
   // Rating states
   const [ratings, setRatings] = useState([]);
   const [ratingSummary, setRatingSummary] = useState(null);
@@ -71,8 +71,6 @@ const ProductDetailPage = () => {
 
         const response = await axiosInstance.get(`/products/getProduct/${id}`);
 
-        console.log("API Response (Detail Page):", response.data);
-
         if (response.data.success) {
           setProduct(response.data.product);
           const variants = response.data.product?.variants || [];
@@ -96,7 +94,6 @@ const ProductDetailPage = () => {
           err.response?.data?.message ||
           `Network error: ${err.message}. Could not fetch product details.`;
         setError(message);
-        console.error("Fetch product error:", err.response?.data || err);
       } finally {
         setLoading(false);
       }
@@ -227,37 +224,29 @@ const ProductDetailPage = () => {
   }, [product, selectedSize, selectedColor, availableSizes]);
 
   const priceDisplay = useMemo(() => {
-    if (!currentVariant) return "Price unavailable";
-    if (
-      currentVariant.sale_price !== null &&
-      currentVariant.sale_price < currentVariant.regular_price
-    ) {
+    if (!currentVariant) return <span className="text-white/50">Price unavailable</span>;
+
+    if (currentVariant.sale_price !== null && currentVariant.sale_price < currentVariant.regular_price) {
       return (
-        <div className="flex items-baseline gap-3">
-          <span className="text-3xl font-bold text-gray-900">
+        <div className="flex items-end gap-4">
+          <span className="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[#f2c737]">
             ₹{currentVariant.sale_price.toFixed(2)}
           </span>
-          <span className="text-xl text-gray-400 line-through">
+          <span className="text-2xl text-white/40 line-through mb-1">
             ₹{currentVariant.regular_price.toFixed(2)}
           </span>
-          <span className="px-2 py-1 bg-red-500 text-white text-sm font-semibold rounded">
-            SAVE{" "}
-            {Math.round(
-              ((currentVariant.regular_price - currentVariant.sale_price) /
-                currentVariant.regular_price) *
-                100
-            )}
-            %
+          <span className="px-3 py-1 bg-red-500/90 text-white text-sm font-black rounded-lg shadow-lg border border-red-400/30 mb-2">
+            SAVE {Math.round(((currentVariant.regular_price - currentVariant.sale_price) / currentVariant.regular_price) * 100)}%
           </span>
         </div>
       );
     }
     return currentVariant.regular_price !== null ? (
-      <span className="text-3xl font-bold text-gray-900">
+      <span className="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[#f2c737]">
         ₹{currentVariant.regular_price.toFixed(2)}
       </span>
     ) : (
-      "Price unavailable"
+      <span className="text-white/50">Price unavailable</span>
     );
   }, [currentVariant]);
 
@@ -284,21 +273,15 @@ const ProductDetailPage = () => {
     const hasColors = product.variants.some((v) => v.color !== null);
 
     if (hasSizes && selectedSize === "default") {
-      displayMessage("Please select a size.");
+      displayMessage("Please select a precise size fitting.");
       return;
     }
-    if (
-      hasColors &&
-      availableColors.length > 0 &&
-      selectedColor === "default"
-    ) {
-      displayMessage("Please select a color.");
+    if (hasColors && availableColors.length > 0 && selectedColor === "default") {
+      displayMessage("Please precisely select a color finish.");
       return;
     }
     if (!currentVariant) {
-      displayMessage(
-        "Could not determine the product variant. Please try again."
-      );
+      displayMessage("Could not determine the product variant. Please try again.");
       return;
     }
 
@@ -313,15 +296,11 @@ const ProductDetailPage = () => {
 
   if (loading) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "#f2c737" }}
-      >
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-xl font-semibold text-gray-700">
-            Loading product details...
-          </p>
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center font-outfit">
+        <div className="relative flex flex-col items-center">
+          <div className="absolute inset-0 bg-[#f2c737]/20 blur-3xl rounded-full" />
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#f2c737] z-10 mb-4"></div>
+          <p className="text-xl font-semibold text-white/70 z-10 tracking-widest uppercase">Fetching details...</p>
         </div>
       </div>
     );
@@ -329,12 +308,10 @@ const ProductDetailPage = () => {
 
   if (error) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center p-5"
-        style={{ backgroundColor: "#f2c737" }}
-      >
-        <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg shadow-lg max-w-md">
-          <p className="text-red-800 font-semibold text-lg">Error: {error}</p>
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-5 font-outfit">
+        <div className="bg-[#1a1a1a] border border-red-500/30 p-8 rounded-3xl shadow-2xl max-w-md text-center">
+          <p className="text-red-400 font-bold text-xl">{error}</p>
+          <Link to="/pet_accessory" className="mt-6 inline-block text-white/50 hover:text-[#f2c737] transition-colors">Return to Shop</Link>
         </div>
       </div>
     );
@@ -342,13 +319,8 @@ const ProductDetailPage = () => {
 
   if (!product)
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "#f2c737" }}
-      >
-        <p className="text-xl font-semibold text-gray-700">
-          Product not found.
-        </p>
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center font-outfit">
+        <p className="text-2xl font-black text-white/50 tracking-widest uppercase">Product not found.</p>
       </div>
     );
 
@@ -357,71 +329,68 @@ const ProductDetailPage = () => {
   const isColorDisabled = showSizeSelector && selectedSize === "default";
 
   return (
-    <>
-      <Header onMenuToggle={toggleMobileMenu} />
-      {isMobileMenuOpen && (
-        <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
-      )}
+    <div className="bg-[#050505] min-h-screen text-white font-outfit selection:bg-[#f2c737] selection:text-black flex flex-col relative">
 
-      <div
-        className="min-h-screen font-['Outfit',sans-serif]"
-        style={{ backgroundColor: "#f2c737" }}
-      >
-        <div
-          className="sticky top-0 z-10"
-          style={{ backgroundColor: "#f2c737" }}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <Link
-              to="/pet_accessory"
-              className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 font-semibold transition-colors group"
-            >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span>Back to Accessories</span>
-            </Link>
-          </div>
+      {/* Ambient Lighting */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-b from-[#f2c737]/10 to-transparent blur-[120px] -translate-y-1/2" />
+        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-t from-orange-500/5 to-transparent blur-[100px] translate-y-1/2" />
+      </div>
+
+      <div className="relative z-10 flex-grow">
+        <Header onMenuToggle={toggleMobileMenu} />
+        {isMobileMenuOpen && (
+          <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+        )}
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-4">
+         
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 lg:pt-12 pb-8 lg:pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 lg:pb-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+
+            {/* Image Gallery */}
             <div className="relative">
-              <div className="lg:sticky lg:top-24">
-                {/* Build image list from product.images[] or fallback to image_data */}
+              <div className="lg:sticky lg:top-32">
                 {(() => {
                   const imgs =
                     product.images && product.images.length > 0
                       ? product.images.map((img) => img.image_data)
-                      : [product.image_data || "/images/default-product.jpg"];
+                      : [product.image_data || "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80"];
                   const activeSrc = imgs[selectedImageIdx] || imgs[0];
                   return (
                     <>
-                      {/* Main image */}
-                      <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white mb-4">
+                      {/* Main image container */}
+                      <div className="bg-white rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5 mb-4 relative h-[350px] sm:h-[450px] lg:h-[500px]">
+                        {/* Inner shadow to frame without padding */}
+                        <div className="absolute inset-0 shadow-[inset_0_-10px_30px_rgba(0,0,0,0.05)] pointer-events-none z-0" />
+
                         <img
                           src={activeSrc}
                           alt={product.product_name}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                          onError={(e) => { e.target.src = "/images/default-product.jpg"; }}
+                          className="w-full h-full object-contain filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.15)] mix-blend-darken relative z-10 p-4 transition-transform duration-700 ease-out"
+                          onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80"; }}
                         />
                       </div>
-                      {/* Thumbnail strip — only shown when there are multiple images */}
+
+                      {/* Thumbnail strip */}
                       {imgs.length > 1 && (
-                        <div className="flex gap-2 overflow-x-auto pb-1">
+                        <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
                           {imgs.map((src, idx) => (
                             <button
                               key={idx}
                               onClick={() => setSelectedImageIdx(idx)}
-                              className={`flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${
-                                selectedImageIdx === idx
-                                  ? "border-gray-900 shadow-md scale-105"
-                                  : "border-transparent opacity-70 hover:opacity-100"
-                              }`}
+                              className={`flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all duration-300 relative bg-white ${selectedImageIdx === idx
+                                ? "border-[#f2c737] shadow-[0_0_20px_rgba(242,199,55,0.3)] scale-105"
+                                : "border-white/10 opacity-60 hover:opacity-100 hover:border-white/30"
+                                }`}
                             >
                               <img
                                 src={src}
                                 alt={`View ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => { e.target.src = "/images/default-product.jpg"; }}
+                                className="w-full h-full object-contain mix-blend-darken p-2"
+                                onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80"; }}
                               />
                             </button>
                           ))}
@@ -433,151 +402,163 @@ const ProductDetailPage = () => {
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
+            {/* Product Information */}
+            <div className="space-y-6 lg:pt-0">
+
+              <div className="space-y-3">
+                <div className="inline-flex px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[#f2c737] uppercase tracking-widest text-xs font-bold">
+                  Boutique Edition
+                </div>
+                <h1 className="text-4xl lg:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-200 to-gray-500 leading-tight">
                   {product.product_name}
                 </h1>
-                {/* Rating Display */}
+
                 {ratingSummary && ratingSummary.totalRatings > 0 && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <RatingStars rating={ratingSummary.averageRating} readonly size="sm" />
-                    <span className="text-sm text-gray-600">
-                      {ratingSummary.averageRating} out of 5
+                  <div className="flex items-center gap-3 mt-4">
+                    <RatingStars rating={ratingSummary.averageRating} readonly size="md" />
+                    <span className="text-white/80 font-bold">
+                      {ratingSummary.averageRating.toFixed(1)}
                     </span>
-                    <span className="text-sm text-gray-500">
-                      ({ratingSummary.totalRatings} reviews)
+                    <span className="text-white/40">
+                      {ratingSummary.totalRatings} Reviews
                     </span>
                   </div>
                 )}
               </div>
 
-              <div className="py-4 border-y border-gray-200">
+              <div className="py-6 border-y border-white/10">
                 {priceDisplay}
               </div>
 
-              {showSizeSelector && (
-                <div className="space-y-3">
-                  <label
-                    htmlFor="size"
-                    className="block text-sm font-semibold text-gray-700 uppercase tracking-wide"
-                  >
-                    Select Size
-                  </label>
-                  <select
-                    name="size"
-                    id="size"
-                    value={selectedSize}
-                    onChange={handleSizeChange}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-semibold focus:outline-none focus:border-gray-900 bg-white"
-                  >
-                    <option
-                      value="default"
-                      disabled={availableSizes.length === 1}
-                    >
-                      Select Size
-                    </option>
-                    {availableSizes.map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {showColorSelector && (
-                <div className="space-y-3">
-                  <label
-                    htmlFor="color"
-                    className="block text-sm font-semibold text-gray-700 uppercase tracking-wide"
-                  >
-                    Select Color{" "}
-                    {isColorDisabled && (
-                      <span className="text-gray-400 normal-case">
-                        (Select size first)
-                      </span>
-                    )}
-                  </label>
-                  <select
-                    name="color"
-                    id="color"
-                    value={selectedColor}
-                    onChange={handleColorChange}
-                    disabled={isColorDisabled}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg font-semibold focus:outline-none focus:border-gray-900 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option
-                      value="default"
-                      disabled={
-                        availableColors.length === 1 && !isColorDisabled
-                      }
-                    >
-                      {isColorDisabled ? "Select size first" : "Select Color"}
-                    </option>
-                    {!isColorDisabled &&
-                      availableColors.map((color) => (
-                        <option key={color} value={color}>
-                          {color}
+              {/* Form Controls */}
+              {(showSizeSelector || showColorSelector) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white/5 backdrop-blur-xl border border-white/5 p-6 rounded-3xl">
+                  {showSizeSelector && (
+                    <div className="space-y-3">
+                      <label
+                        htmlFor="size"
+                        className="block text-xs font-bold text-white/50 uppercase tracking-widest"
+                      >
+                        Dimensions
+                      </label>
+                      <select
+                        name="size"
+                        id="size"
+                        value={selectedSize}
+                        onChange={handleSizeChange}
+                        className="w-full px-5 py-4 border border-white/10 rounded-xl font-bold bg-[#1a1a1a] text-white focus:outline-none focus:border-[#f2c737] transition-colors appearance-none cursor-pointer"
+                      >
+                        <option value="default" disabled={availableSizes.length === 1}>
+                          Select Dimension
                         </option>
-                      ))}
-                  </select>
+                        {availableSizes.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {showColorSelector && (
+                    <div className="space-y-3">
+                      <label
+                        htmlFor="color"
+                        className="block text-xs font-bold text-white/50 uppercase tracking-widest flex items-center gap-2"
+                      >
+                        Finish
+                        {isColorDisabled && (
+                          <span className="text-red-400/80 normal-case italic">
+                            (Requires dimension)
+                          </span>
+                        )}
+                      </label>
+                      <select
+                        name="color"
+                        id="color"
+                        value={selectedColor}
+                        onChange={handleColorChange}
+                        disabled={isColorDisabled}
+                        className={`w-full px-5 py-4 border border-white/10 rounded-xl font-bold bg-[#1a1a1a] text-white focus:outline-none focus:border-[#f2c737] transition-colors appearance-none cursor-pointer ${isColorDisabled ? 'opacity-50' : ''}`}
+                      >
+                        <option
+                          value="default"
+                          disabled={availableColors.length === 1 && !isColorDisabled}
+                        >
+                          {isColorDisabled ? "Awaiting Dimension..." : "Select Finish"}
+                        </option>
+                        {!isColorDisabled &&
+                          availableColors.map((color) => (
+                            <option key={color} value={color}>
+                              {color}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <div className="space-y-3">
+              {/* Quantity & Stock Level */}
+              <div className="space-y-4">
                 <label
                   htmlFor="quantity"
-                  className="block text-sm font-semibold text-gray-700 uppercase tracking-wide"
+                  className="block text-xs font-bold text-white/50 uppercase tracking-widest"
                 >
                   Quantity
                 </label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="number"
-                    id="quantity"
-                    name="quantity"
-                    value={quantity}
-                    min="1"
-                    max={currentVariant?.stock_quantity ?? 1}
-                    onChange={(e) =>
-                      setQuantity(Math.max(1, parseInt(e.target.value) || 1))
-                    }
-                    className="w-24 px-4 py-3 border-2 border-gray-300 rounded-lg font-semibold text-center focus:outline-none focus:border-gray-900"
-                    aria-label="Quantity"
-                  />
+                <div className="flex items-center gap-6">
+                  <div className="relative">
+                    <input
+                      type="number"
+                      id="quantity"
+                      name="quantity"
+                      value={quantity}
+                      min="1"
+                      max={currentVariant?.stock_quantity ?? 1}
+                      onChange={(e) =>
+                        setQuantity(Math.max(1, parseInt(e.target.value) || 1))
+                      }
+                      className="w-28 px-4 py-4 border border-white/10 bg-[#1a1a1a] rounded-xl font-bold text-center text-white focus:outline-none focus:border-[#f2c737] transition-colors"
+                      aria-label="Quantity"
+                    />
+                  </div>
+
                   {currentVariant && (
-                    <div className="flex items-center gap-2">
-                      <Package className="w-5 h-5 text-gray-500" />
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/5">
+                      <Package className={`w-5 h-5 ${currentVariant.stock_quantity > 0 ? 'text-[#f2c737]' : 'text-red-500'}`} />
                       <span
-                        className={`font-medium ${
-                          currentVariant.stock_quantity > 10
-                            ? "text-green-600"
-                            : currentVariant.stock_quantity > 0
-                            ? "text-orange-600"
-                            : "text-red-600"
-                        }`}
+                        className={`font-bold tracking-wide uppercase text-sm ${currentVariant.stock_quantity > 10
+                          ? "text-emerald-400"
+                          : currentVariant.stock_quantity > 0
+                            ? "text-[#f2c737]"
+                            : "text-red-500"
+                          }`}
                       >
                         {currentVariant.stock_quantity > 0
-                          ? `${currentVariant.stock_quantity} in stock`
-                          : "Out of stock"}
+                          ? `${currentVariant.stock_quantity} verified in stock`
+                          : "Temporarily Unvailable"}
                       </span>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              {/* Actions */}
+              <div className="flex gap-4 pt-4">
                 <button
                   id="addToCartBtn"
                   onClick={handleAddToCart}
                   disabled={!currentVariant || currentVariant.stock_quantity < 1}
-                  className="flex-1 py-4 px-6 bg-gray-900 text-[#f2c737] font-bold text-lg rounded-lg hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
+                  className="group relative flex-1 h-16 bg-[#f2c737] text-black font-black text-xl rounded-2xl hover:scale-[1.02] transition-all duration-300 disabled:bg-gray-800 disabled:text-gray-500 disabled:scale-100 shadow-[0_10px_40px_rgba(242,199,55,0.2)] hover:shadow-[0_15px_50px_rgba(242,199,55,0.4)] disabled:shadow-none overflow-hidden"
                 >
-                  <ShoppingCart className="w-6 h-6" />
-                  {currentVariant?.stock_quantity > 0
-                    ? "Add to Cart"
-                    : "Out of Stock"}
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out" />
+                  <span className="relative z-10 flex items-center justify-center gap-3">
+                    <ShoppingCart strokeWidth={2.5} className="w-6 h-6" />
+                    {currentVariant?.stock_quantity > 0
+                      ? "Acquire Now"
+                      : "Out of Stock"}
+                  </span>
                 </button>
 
                 {/* Wishlist toggle button */}
@@ -585,27 +566,18 @@ const ProductDetailPage = () => {
                   <button
                     id="wishlistBtn"
                     onClick={handleWishlistToggle}
-                    title={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
-                    aria-label={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
-                    style={{
-                      width: "3.5rem",
-                      flexShrink: 0,
-                      border: wishlisted ? "2px solid #e11d48" : "2px solid #d1d5db",
-                      borderRadius: "0.5rem",
-                      background: wishlisted ? "#fff0f3" : "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
+                    title={wishlisted ? "Remove from Vault" : "Add to Vault"}
+                    className={`flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center border transition-all duration-300 ${wishlisted
+                      ? "bg-[#e11d48]/20 border-[#e11d48] shadow-[0_0_20px_rgba(225,29,72,0.3)]"
+                      : "bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10"
+                      }`}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
                       fill={wishlisted ? "#e11d48" : "none"}
                       stroke={wishlisted ? "#e11d48" : "#9ca3af"}
-                      strokeWidth="2"
+                      strokeWidth="2.5"
                       style={{ width: "1.6rem", height: "1.6rem", transition: "all 0.25s ease" }}
                     >
                       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -616,11 +588,10 @@ const ProductDetailPage = () => {
 
               {showCartMessage && (
                 <div
-                  className={`p-4 rounded-lg font-semibold ${
-                    cartMessage.type === "success"
-                      ? "bg-green-50 text-green-800 border border-green-200"
-                      : "bg-red-50 text-red-800 border border-red-200"
-                  }`}
+                  className={`p-4 rounded-xl font-bold backdrop-blur-md animate-fade-in-up ${cartMessage.type === "success"
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                    : "bg-red-500/10 text-red-400 border border-red-500/30"
+                    }`}
                   role="alert"
                 >
                   {cartMessage.text}
@@ -628,117 +599,121 @@ const ProductDetailPage = () => {
               )}
 
               {product.product_description && (
-                <div className="pt-6 border-t border-gray-200">
-                  <h4 className="text-xl font-bold text-gray-900 mb-3">
-                    Product Description
+                <div className="pt-6">
+                  <h4 className="text-lg font-black text-white mb-3 uppercase tracking-widest">
+                    The Blueprint
                   </h4>
-                  <p className="text-gray-700 leading-relaxed">
-                    {product.product_description}
-                  </p>
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/5 p-5 rounded-2xl">
+                    <p className="text-white/60 leading-relax font-medium text-base lg:text-lg">
+                      {product.product_description}
+                    </p>
+                  </div>
                 </div>
               )}
 
               {/* Ratings Section */}
               {ratingSummary && ratingSummary.totalRatings > 0 && (
-                <div className="pt-6 border-t border-gray-200">
+                <div className="pt-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-xl font-bold text-gray-900">
-                      Customer Reviews
+                    <h4 className="text-xl font-black text-white uppercase tracking-widest">
+                      Patron Insights
                     </h4>
                     <button
                       onClick={() => setShowAllRatings(!showAllRatings)}
-                      className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+                      className="text-sm font-bold text-[#f2c737] hover:text-white flex items-center gap-2 px-4 py-2 rounded-lg bg-[#f2c737]/10 hover:bg-[#f2c737]/20 transition-colors"
                     >
                       {showAllRatings ? (
-                        <>Show Less <ChevronUp className="w-4 h-4" /></>
+                        <>Collapse <ChevronUp className="w-4 h-4" /></>
                       ) : (
-                        <>Show All Reviews <ChevronDown className="w-4 h-4" /></>
+                        <>Expand <ChevronDown className="w-4 h-4" /></>
                       )}
                     </button>
                   </div>
 
-                  {/* Rating Summary */}
-                  <div className="flex items-center gap-6 mb-6 p-4 bg-gray-50 rounded-lg">
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-gray-900">
+                  {/* Rating Summary Block */}
+                  <div className="flex flex-col md:flex-row items-center gap-8 mb-8 p-8 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-sm shadow-xl">
+                    <div className="text-center md:border-r border-white/10 md:pr-8">
+                      <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[#f2c737] mb-2">
                         {ratingSummary.averageRating}
                       </div>
-                      <RatingStars rating={ratingSummary.averageRating} readonly size="sm" />
-                      <div className="text-sm text-gray-500 mt-1">
-                        Based on {ratingSummary.totalRatings} reviews
+                      <RatingStars rating={ratingSummary.averageRating} readonly size="md" />
+                      <div className="text-sm font-bold tracking-widest uppercase text-white/40 mt-3">
+                        {ratingSummary.totalRatings} Total
                       </div>
                     </div>
 
-                    <div className="flex-1 space-y-1">
+                    <div className="flex-1 w-full space-y-2">
                       {[5, 4, 3, 2, 1].map(star => {
                         const count = ratingSummary.distribution[star] || 0;
                         const percentage = ratingSummary.totalRatings > 0
                           ? (count / ratingSummary.totalRatings) * 100
                           : 0;
                         return (
-                          <div key={star} className="flex items-center gap-2">
-                            <div className="w-12 text-sm text-gray-600">{star} ★</div>
-                            <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div key={star} className="flex items-center gap-4">
+                            <div className="w-12 text-sm font-bold text-white/70 flex items-center gap-1">{star} <Star size={12} className="fill-[#f2c737] text-[#f2c737]" /></div>
+                            <div className="flex-1 h-2 bg-black rounded-full overflow-hidden border border-white/5">
                               <div
-                                className="h-full bg-yellow-400 rounded-full"
+                                className="h-full bg-gradient-to-r from-[#f2c737] to-amber-500 rounded-full"
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
-                            <div className="w-12 text-sm text-gray-500">{count}</div>
+                            <div className="w-8 text-sm font-bold text-white/40 text-right">{count}</div>
                           </div>
                         );
                       })}
                     </div>
                   </div>
 
-                  {/* Individual Ratings - Only show when expanded */}
+                  {/* Individual Ratings Container */}
                   {(showAllRatings || ratings.length > 0) && showAllRatings && (
-                    <div className="space-y-6 mt-6">
+                    <div className="space-y-6">
                       {ratings.length === 0 && !ratingsLoading && (
-                        <p className="text-gray-500 text-center py-4">
-                          No reviews yet. Be the first to review this product!
+                        <p className="text-white/40 text-center py-8 font-bold italic">
+                          Awaiting the first critique.
                         </p>
                       )}
-                      
+
                       {ratings.map((rating) => (
-                        <div key={rating._id} className="border-b border-gray-200 pb-6">
-                          <div className="flex items-start justify-between mb-2">
+                        <div key={rating._id} className="p-6 rounded-2xl bg-[#111] border border-white/5 transition-colors hover:border-white/10">
+                          <div className="flex items-start justify-between mb-4">
                             <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                                  <User className="w-4 h-4 text-gray-500" />
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center">
+                                  <User className="w-5 h-5 text-white/40" />
                                 </div>
-                                <span className="font-semibold text-gray-900">
-                                  {rating.customer_id?.userName || 'Anonymous'}
-                                </span>
-                                {rating.isVerifiedPurchase && (
-                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                    Verified Purchase
+                                <div className="flex flex-col">
+                                  <span className="font-bold text-white tracking-wide">
+                                    {rating.customer_id?.userName || 'Anonymous Client'}
                                   </span>
-                                )}
+                                  {rating.isVerifiedPurchase && (
+                                    <span className="text-[10px] uppercase tracking-widest font-bold text-emerald-400 mt-0.5">
+                                      Verified Patron
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <RatingStars rating={rating.rating} readonly size="sm" />
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-xs font-bold tracking-widest text-white/30 uppercase">
                               {new Date(rating.created_at).toLocaleDateString()}
                             </div>
                           </div>
 
                           {rating.title && (
-                            <h5 className="font-semibold text-gray-900 mt-2">
-                              {rating.title}
+                            <h5 className="font-black text-xl text-white mt-4 tracking-wide">
+                              "{rating.title}"
                             </h5>
                           )}
 
                           {rating.review && (
-                            <p className="text-gray-700 mt-2">
+                            <p className="text-white/60 mt-2 leading-relaxed text-lg">
                               {rating.review}
                             </p>
                           )}
 
                           <button
                             onClick={() => handleMarkHelpful(rating._id)}
-                            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mt-3 transition-colors"
+                            className="flex items-center gap-2 text-sm font-bold text-white/40 hover:text-[#f2c737] mt-5 transition-colors bg-white/5 px-4 py-2 rounded-lg"
                           >
                             <ThumbsUp className="w-4 h-4" />
                             <span>Helpful ({rating.helpful_count})</span>
@@ -750,9 +725,9 @@ const ProductDetailPage = () => {
                         <button
                           onClick={loadMoreRatings}
                           disabled={ratingsLoading}
-                          className="w-full py-2 text-center text-[#1a1a1a] font-semibold hover:underline transition-all"
+                          className="w-full py-4 text-center text-white/50 border border-white/10 bg-white/5 font-bold uppercase tracking-widest rounded-xl hover:bg-white/10 hover:text-white transition-all mt-4"
                         >
-                          {ratingsLoading ? 'Loading...' : 'Load More Reviews'}
+                          {ratingsLoading ? 'Fetching Details...' : 'Load Extended Critique'}
                         </button>
                       )}
                     </div>
@@ -760,30 +735,25 @@ const ProductDetailPage = () => {
 
                   {/* Show preview when collapsed */}
                   {!showAllRatings && ratings.length > 0 && (
-                    <div className="space-y-4 mt-4">
+                    <div className="space-y-4">
                       {ratings.slice(0, 2).map((rating) => (
-                        <div key={rating._id} className="border-b border-gray-200 pb-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                                  <User className="w-3 h-3 text-gray-500" />
-                                </div>
-                                <span className="font-semibold text-gray-900 text-sm">
-                                  {rating.customer_id?.userName || 'Anonymous'}
-                                </span>
-                                {rating.isVerifiedPurchase && (
-                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                    Verified
-                                  </span>
-                                )}
+                        <div key={rating._id} className="p-5 rounded-2xl bg-[#111] border border-white/5 transition-colors hover:border-white/10">
+                          <div className="flex items-center gap-4 mb-2">
+                            <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center">
+                              <User className="w-4 h-4 text-white/40" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-white text-sm">
+                                {rating.customer_id?.userName || 'Anonymous Client'}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <RatingStars rating={rating.rating} readonly size="sm" />
                               </div>
-                              <RatingStars rating={rating.rating} readonly size="sm" />
                             </div>
                           </div>
                           {rating.title && (
-                            <p className="font-medium text-gray-900 text-sm mt-1">
-                              {rating.title}
+                            <p className="font-black text-white italic mt-3 text-lg leading-snug">
+                              "{rating.title}"
                             </p>
                           )}
                         </div>
@@ -793,34 +763,31 @@ const ProductDetailPage = () => {
                 </div>
               )}
 
-              <div className="pt-6 border-t border-gray-200">
-                <h4 className="text-xl font-bold text-gray-900 mb-4">
-                  Share This Product
+              <div className="pt-10">
+                <h4 className="text-sm font-bold text-white/40 uppercase tracking-widest mb-4">
+                  Broadcast to Network
                 </h4>
                 <div className="flex gap-4">
                   <a
                     href="#"
                     aria-label="Share on Facebook"
-                    title="Share on Facebook"
-                    className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/50 hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2] transition-colors"
                   >
-                    <Facebook className="w-6 h-6" />
+                    <Facebook className="w-5 h-5" />
                   </a>
                   <a
                     href="#"
                     aria-label="Share on Instagram"
-                    title="Share on Instagram"
-                    className="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 text-white hover:opacity-90 transition-opacity shadow-md hover:shadow-lg"
+                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/50 hover:bg-gradient-to-tr hover:from-[#f09433] hover:via-[#dc2743] hover:to-[#bc1888] hover:text-white hover:border-transparent transition-all"
                   >
-                    <Instagram className="w-6 h-6" />
+                    <Instagram className="w-5 h-5" />
                   </a>
                   <a
                     href="#"
                     aria-label="Share on Twitter"
-                    title="Share on Twitter"
-                    className="w-12 h-12 flex items-center justify-center rounded-full bg-sky-500 text-white hover:bg-sky-600 transition-colors shadow-md hover:shadow-lg"
+                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white/50 hover:bg-[#1DA1F2] hover:text-white hover:border-[#1DA1F2] transition-colors"
                   >
-                    <Twitter className="w-6 h-6" />
+                    <Twitter className="w-5 h-5" />
                   </a>
                 </div>
               </div>
@@ -829,8 +796,10 @@ const ProductDetailPage = () => {
         </div>
       </div>
 
-      <Footer />
-    </>
+      <div className="relative z-10 border-t border-white/10">
+        <Footer />
+      </div>
+    </div>
   );
 };
 

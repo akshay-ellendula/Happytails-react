@@ -11,66 +11,66 @@ const EventCard = ({ event }) => {
   const isSoldOut = ticketsLeft === 0;
   
   return (
-    <div className="bg-white rounded-2xl overflow-hidden hover:transform hover:scale-105 transition cursor-pointer border-2 border-transparent shadow-md hover:shadow-xl">
+    <div className="bg-[#111] rounded-2xl overflow-hidden hover:scale-[1.02] transition-all cursor-pointer group">
       <div
-        className="h-64 flex items-center justify-center bg-gray-100 overflow-hidden relative"
+        className="h-56 overflow-hidden relative"
         onClick={handleBookClick}
       >
         <img
           src={event.img}
           alt={event.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         {isSoldOut && (
-          <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-            <span className="bg-red-600 text-white px-4 py-2 rounded-full font-bold text-sm">
+          <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+            <span className="bg-red-500 text-white px-4 py-2 rounded-lg font-bold text-sm">
               SOLD OUT
             </span>
           </div>
         )}
         {!isSoldOut && ticketsLeft < 10 && (
-          <div className="absolute top-3 right-3 bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+          <div className="absolute top-3 right-3 bg-orange-500 text-white px-2.5 py-1 rounded-lg text-xs font-bold">
             {ticketsLeft} left
           </div>
         )}
       </div>
       <div className="p-5">
-        <h3 className="text-[#1a1a1a] font-bold text-lg mb-2">{event.title}</h3>
-        <p className="text-[#1a1a1a] text-sm mb-2">{event.date}</p>
-        <p className="text-[#1a1a1a] text-sm font-semibold mb-3">
+        <h3 className="text-white font-semibold text-lg mb-2 group-hover:text-[#f2c737] transition-colors">{event.title}</h3>
+        <p className="text-white/40 text-sm mb-1">{event.date}</p>
+        <p className="text-white/60 text-sm font-medium mb-4">
           {event.venue}
         </p>
         <div className="flex justify-between items-center">
-          <span className="text-[#1a1a1a] font-bold">
-            {event.price === 0 ? "Free Entry" : `₹${event.price} onwards`}
+          <span className="text-[#f2c737] font-bold">
+            {event.price === 0 ? "Free Entry" : `₹${event.price}`}
           </span>
           <button
             onClick={handleBookClick}
             disabled={isSoldOut}
-            className={`font-bold px-4 py-2 rounded-full text-sm transition ${
+            className={`font-semibold px-4 py-2 rounded-lg text-sm transition-colors ${
               isSoldOut
-                ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                : "bg-[#f2c737] text-[#1a1a1a] hover:bg-black hover:text-white"
+                ? "bg-white/10 text-white/30 cursor-not-allowed"
+                : "bg-[#f2c737] text-black hover:bg-white"
             }`}
           >
             {isSoldOut
               ? "Sold Out"
               : event.price === 0
-              ? "Register Now"
-              : "Book tickets"}
+              ? "Register"
+              : "Book Now"}
           </button>
         </div>
         {!isSoldOut && ticketsLeft > 0 && ticketsLeft <= 20 && (
-          <div className="mt-2">
-            <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="mt-3">
+            <div className="w-full bg-white/10 rounded-full h-1.5">
               <div
-                className="bg-[#f2c737] h-2 rounded-full"
+                className="bg-[#f2c737] h-1.5 rounded-full"
                 style={{
                   width: `${(ticketsLeft / event.total_tickets) * 100}%`,
                 }}
               ></div>
             </div>
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs text-white/30 mt-1.5">
               Only {ticketsLeft} tickets left
             </p>
           </div>

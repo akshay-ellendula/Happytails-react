@@ -9,6 +9,7 @@ import Ticket from '../models/ticketModel.js';
 import Review from '../models/reviewModel.js';
 import Rating from '../models/ratingModel.js';
 import jwt from 'jsonwebtoken';
+import uploadToCloudinary from '../utils/cloudinaryUploader.js';
 // Generate JWT token
 const generateToken = (payload) => {
     return jwt.sign(payload, process.env.JWT_SECRET_KEY, { expiresIn: '7d' });
@@ -1914,8 +1915,12 @@ const updateEventManager = async (req, res) => {
         };
 
         if (req.file) {
-            // Save as base64 (since your model expects string)
-            updates.profilePic = req.file.buffer.toString("base64");
+            try {
+                updates.profilePic = await uploadToCloudinary(req.file, 'event-manager-profiles');
+            } catch (err) {
+                console.error("Cloudinary upload failed:", err);
+                return res.status(500).json({ success: false, message: "Image upload failed" });
+            }
         }
 
         const manager = await EventManager.findByIdAndUpdate(

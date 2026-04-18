@@ -33,14 +33,7 @@ const MobileMenu = ({ onClose }) => {
         >
           Pet Shop
         </Link>
-        <div className="relative mt-4">
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full pl-10 pr-4 py-3 border-2 border-black text-[#1a1a1a] rounded-full text-sm bg-white"
-          />
-          <Search className="absolute left-3 top-3 h-5 w-5 text-black" />
-        </div>
+
         {isAuthenticated ? (
           <button
             onClick={handleLogout}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { axiosInstance } from "../../utils/axios";
 import { ArrowLeft, CreditCard, Calendar, Lock } from "lucide-react";
@@ -20,13 +20,14 @@ import {
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
+// Stripe config tailored to the luxurious dark theme
 const ELEMENT_STYLE = {
   style: {
     base: {
       fontSize: "16px",
-      color: "#1a1a1a",
+      color: "#ffffff",
       fontFamily: "Outfit, sans-serif",
-      "::placeholder": { color: "#9ca3af" },
+      "::placeholder": { color: "rgba(255,255,255,0.2)" },
       lineHeight: "24px",
     },
     invalid: { color: "#ef4444", iconColor: "#ef4444" },
@@ -48,7 +49,7 @@ const CheckoutForm = () => {
 
     if (response.data.success) {
       clearCart();
-      toast.success("Payment successful! Redirecting to your orders...");
+      toast.success("Payment successful! Directed to Vault...");
       navigate(response.data.redirectUrl || "/my_orders");
       return;
     }
@@ -115,88 +116,102 @@ const CheckoutForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      
       {/* Card Number */}
       <div>
-        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-          <CreditCard size={16} />
-          Card Number
+        <label className="flex items-center gap-2 text-xs font-bold text-white/40 uppercase tracking-widest mb-3">
+          <CreditCard size={14} />
+          Primary Vector
         </label>
-        <div className="border-2 border-gray-200 rounded-xl px-4 py-4 focus-within:border-[#c8cc70] transition-all bg-white">
-          <CardNumberElement options={{ ...ELEMENT_STYLE, showIcon: true }} />
+        <div className="border border-white/20 rounded-lg px-4 py-4 bg-transparent outline-none transition-colors hover:border-white/30 focus-within:border-[#f2c737] shadow-inner">
+          <CardNumberElement options={{ ...ELEMENT_STYLE, showIcon: true, iconStyle: 'solid' }} />
         </div>
       </div>
 
       {/* Expiry & CVC Row */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-6">
         <div>
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <Calendar size={16} />
-            Expiry Date
+          <label className="flex items-center gap-2 text-xs font-bold text-white/40 uppercase tracking-widest mb-3">
+            <Calendar size={14} />
+            Lifespan
           </label>
-          <div className="border-2 border-gray-200 rounded-xl px-4 py-4 focus-within:border-[#c8cc70] transition-all bg-white">
+          <div className="border border-white/20 rounded-lg px-4 py-4 bg-transparent transition-colors hover:border-white/30 focus-within:border-[#f2c737] shadow-inner">
             <CardExpiryElement options={ELEMENT_STYLE} />
           </div>
         </div>
         <div>
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-            <Lock size={16} />
-            CVC
+          <label className="flex items-center gap-2 text-xs font-bold text-white/40 uppercase tracking-widest mb-3">
+            <Lock size={14} />
+            CCV Array
           </label>
-          <div className="border-2 border-gray-200 rounded-xl px-4 py-4 focus-within:border-[#c8cc70] transition-all bg-white">
+          <div className="border border-white/20 rounded-lg px-4 py-4 bg-transparent transition-colors hover:border-white/30 focus-within:border-[#f2c737] shadow-inner">
             <CardCvcElement options={ELEMENT_STYLE} />
           </div>
         </div>
       </div>
 
-      <p className="text-xs text-gray-400 text-center pt-1">
-        Test card: 4242 4242 4242 4242 · Any future date · Any 3-digit CVV
+      <p className="text-[10px] text-white/30 uppercase tracking-widest text-center pt-2">
+        Dev Gateway: 4242 4242 4242 4242 · Any future date · Any 3-digit CVV
       </p>
 
-      <button
-        type="submit"
-        disabled={isProcessing || !clientSecret}
-        className={`w-full cursor-pointer rounded-xl text-sm font-bold px-8 py-4 uppercase tracking-wider transition-all hover:shadow-xl hover:-translate-y-1 active:scale-95 focus:outline-none focus:ring-4 focus:ring-opacity-50 border-2 border-black ${isProcessing || !clientSecret
-            ? "bg-gray-400 text-gray-800 cursor-not-allowed"
-            : "bg-[#1a1a1a] text-white hover:bg-gray-800 focus:ring-[#1a1a1a]"
-          }`}
-      >
-        {isProcessing ? "Processing..." : "Pay Securely"}
-      </button>
+      <div className="col-span-2 pt-6">
+          <button
+            type="submit"
+            disabled={isProcessing || !clientSecret}
+            className={`group w-full relative h-14 rounded-lg flex items-center justify-center font-black tracking-widest uppercase text-base transition-all duration-300 overflow-hidden ${isProcessing || !clientSecret
+                ? "bg-white/10 text-white/30 cursor-not-allowed shadow-none"
+                : "bg-[#f2c737] text-black shadow-[0_5px_20px_rgba(242,199,55,0.15)] hover:shadow-[0_10px_30px_rgba(242,199,55,0.3)] hover:scale-[1.01]"
+              }`}
+          >
+              {!isProcessing && clientSecret && (
+                <div className="absolute inset-0 bg-white/30 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out" />
+              )}
+              <span className="relative z-10 flex items-center gap-2">
+                {isProcessing ? "Transacting..." : <><Lock size={16} /> Finalize Authorization</>}
+              </span>
+          </button>
+      </div>
     </form>
   );
 };
 
 const PaymentPage = () => {
-  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   return (
-    <div className="bg-[#effe8b] min-h-screen flex flex-col font-outfit">
+    <div className="bg-[#050505] min-h-screen flex flex-col font-outfit text-white relative overflow-hidden">
+      
+       {/* Ambient Lighting */ }
+      <div className="absolute inset-0 z-0 pointer-events-none">
+         <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-t from-[#f2c737]/10 to-transparent blur-[120px] translate-y-1/2" />
+         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full bg-gradient-to-b from-[#f2c737]/5 to-transparent blur-[100px]" />
+      </div>
+
       <Header onMenuToggle={toggleMobileMenu} />
       {isMobileMenuOpen && (
-        <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
+         <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
       )}
 
-      <div className="grow flex items-center justify-center py-12 px-4">
-        <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-md border-4 border-black">
-          <button
-            onClick={() => navigate("/pet_accessory")}
-            className="absolute top-6 left-6 flex items-center gap-2 text-gray-600 hover:text-black transition-colors"
-          >
-            <ArrowLeft size={20} />
-            Back to Shop
-          </button>
-
-          <div className="px-8 sm:px-12 py-16 text-center">
-            <h1 className="text-3xl sm:text-4xl font-bold text-[#1a1a1a] mb-6">
-              Secure Payment
+      <div className="grow flex items-center justify-center py-12 px-6 relative z-10">
+        <div className="w-full max-w-lg">
+          
+          <div className="mb-8">
+            <Link
+              to="/checkout"
+              className="inline-flex items-center gap-2 text-white/40 hover:text-[#f2c737] transition-colors font-bold uppercase tracking-widest text-xs mb-6"
+            >
+              <ArrowLeft size={16} /> Modify Manifest
+            </Link>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-widest uppercase border-b border-white/10 pb-4">
+              Gateway
             </h1>
+          </div>
 
-            <p className="mb-6 rounded-xl border border-dashed border-black/20 bg-[#effe8b]/40 px-4 py-3 text-sm text-gray-700">
-              Stripe test mode is enabled. Use test card `4242 4242 4242 4242`
-              with any future expiry date and any 3-digit CVV.
+          <div className="bg-transparent mt-8">
+            <p className="mb-8 border border-white/10 bg-white/5 rounded-lg px-4 py-3 text-xs uppercase tracking-widest font-bold text-white/60">
+              Stripe development pipeline active.
             </p>
 
             {stripePromise ? (
@@ -204,15 +219,17 @@ const PaymentPage = () => {
                 <CheckoutForm />
               </Elements>
             ) : (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-5 text-sm text-red-700">
-                Add `VITE_STRIPE_PUBLISHABLE_KEY` in `frontend/.env` to load the Stripe test form.
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-5 text-sm font-bold tracking-widest uppercase text-red-500 mt-6">
+                Missing `VITE_STRIPE_PUBLISHABLE_KEY` in environment config.
               </div>
             )}
           </div>
         </div>
       </div>
 
-      <Footer />
+      <div className="border-t border-white/10 relative z-10 w-full">
+         <Footer />
+      </div>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import Customer from "../models/customerModel.js";
 import { Product, ProductVariant, ProductImage } from "../models/productsModel.js";
+import uploadToCloudinary from "../utils/cloudinaryUploader.js";
 
 export const getCustomers = async (req, res, next) => {
   try {
@@ -63,9 +64,12 @@ export const putCustomer = async (req, res, next) => {
 
     if (req.file) {
       console.log("File received:", req.file.originalname, req.file.size, "bytes");
-      const b64 = req.file.buffer.toString("base64");
-      const dataUrl = `data:${req.file.mimetype};base64,${b64}`;
-      profilePicUrl = dataUrl;
+      try {
+        profilePicUrl = await uploadToCloudinary(req.file, 'customer-profiles');
+      } catch (err) {
+        console.error("Cloudinary upload failed:", err);
+        return res.status(500).json({ success: false, message: "Image upload failed" });
+      }
     }
 
     customer.userName = userName;

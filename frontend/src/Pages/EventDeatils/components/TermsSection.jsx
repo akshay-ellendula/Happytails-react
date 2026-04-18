@@ -13,14 +13,14 @@ const TermsSection = () => {
 
   return (
     <div>
-      <h3 className="text-xl font-bold text-[#1a1a1a] mb-4">
+      <h3 className="text-xl font-bold text-white mb-4">
         Terms & Conditions
       </h3>
-      <div className="bg-[#effe8b] rounded-xl p-4 max-h-80 overflow-y-auto">
-        <ul className="space-y-3 text-sm text-[#1a1a1a]">
+      <div className="bg-[#111] rounded-xl p-4 max-h-80 overflow-y-auto">
+        <ul className="space-y-3 text-sm text-white/50">
           {terms.map((term, index) => (
             <li key={index} className="flex items-start">
-              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-3"></span>
+              <span className="w-1.5 h-1.5 bg-[#f2c737] rounded-full mt-1.5 mr-3 flex-shrink-0"></span>
               {term}
             </li>
           ))}

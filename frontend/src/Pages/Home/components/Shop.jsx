@@ -137,7 +137,7 @@ const Shop = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="p-5">
                     <div className="flex items-center gap-1 mb-2">
                       {[...Array(5)].map((_, i) => (
@@ -176,9 +176,8 @@ const Shop = () => {
               <button
                 key={i}
                 onClick={() => setOffset(i * 3)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i === Math.floor(offset / 3) ? 'w-8 bg-[#f2c737]' : 'w-2 bg-white/20 hover:bg-white/40'
-                }`}
+                className={`h-2 rounded-full transition-all duration-300 ${i === Math.floor(offset / 3) ? 'w-8 bg-[#f2c737]' : 'w-2 bg-white/20 hover:bg-white/40'
+                  }`}
               />
             ))}
           </div>

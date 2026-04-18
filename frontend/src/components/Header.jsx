@@ -12,56 +12,49 @@ const Header = ({ onMenuToggle }) => {
   };
 
   return (
-    <header className="bg-[#f2c737] border-b-2 border-black sticky top-0 z-50">
+    <header className="bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/5 sticky top-0 z-50 font-outfit">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
+
           <div className="flex items-center space-x-4 sm:space-x-14">
-            <div className="flex items-center space-x-4 sm:space-x-10">
-              <Link
-                to="/"
-                className="text-2xl sm:text-3xl font-bold text-[#1a1a1a]"
-              >
-                🐾 HappyTails
-              </Link>
-            </div>
-            <nav className="hidden md:flex space-x-8 lg:space-x-28 text-sm lg:text-base font-semibold">
+            <Link
+              to="/"
+              className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2"
+            >
+              🐾 HappyTails
+            </Link>
+
+            <nav className="hidden md:flex space-x-8 lg:space-x-16 text-sm lg:text-base font-medium">
               <Link
                 to="/events"
-                className="text-[#1a1a1a] hover:text-[#1a1a1a]/70 transition"
+                className="text-white/70 hover:text-white transition-colors"
               >
                 Pet Events
               </Link>
               <Link
                 to="/pet_accessory"
-                className="text-[#1a1a1a] hover:text-[#1a1a1a]/70 transition"
+                className="text-white/70 hover:text-white transition-colors"
               >
                 Pet Shop
               </Link>
             </nav>
           </div>
+
           <div className="flex items-center space-x-4">
-            <div className="relative hidden lg:block">
-              <input
-                type="text"
-                placeholder="Search pet events, activities..."
-                className="w-72 pl-10 pr-4 py-2.5 border-2 border-black text-[#1a1a1a] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1a1a] bg-white"
-              />
-              <Search className="absolute left-3 top-3 h-5 w-5 text-black" />
-            </div>
-            <button className="md:hidden p-2" onClick={onMenuToggle}>
-              <Menu className="w-6 h-6 text-[#1a1a1a]" />
+            <button className="md:hidden p-2 text-white/80" onClick={onMenuToggle}>
+              <Menu className="w-6 h-6 border-b-2" />
             </button>
 
             <button
               onClick={openCart}
-              className="hidden sm:flex p-2 text-[#1a1a1a] hover:text-[#1a1a1a]/70 transition"
+              className="hidden sm:flex p-2 text-white/80 hover:text-white transition-colors"
               title="View Cart"
             >
               <ShoppingCart className="w-6 h-6" />
             </button>
 
             {isAuthenticated ? (
-              <div className="hidden sm:flex items-center space-x-4">
+              <div className="hidden sm:flex items-center space-x-4 ml-2">
                 <Link
                   to="/profile"
                   className="flex items-center space-x-2"
@@ -71,10 +64,10 @@ const Header = ({ onMenuToggle }) => {
                     <img
                       src={user.profilePic}
                       alt="Profile"
-                      className="w-10 h-10 rounded-full border-2 border-black object-cover"
+                      className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-[#f2c737] rounded-full items-center justify-center text-[#1a1a1a] font-bold border border-black flex">
+                    <div className="w-10 h-10 bg-[#f2c737] rounded-full items-center justify-center text-black font-semibold flex">
                       {user?.userName
                         ? user.userName.charAt(0).toUpperCase()
                         : "U"}
@@ -83,7 +76,7 @@ const Header = ({ onMenuToggle }) => {
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 px-3 py-2 text-[#1a1a1a] hover:text-[#1a1a1a]/70 transition"
+                  className="flex items-center space-x-2 px-3 py-2 text-white/60 hover:text-white transition-colors text-sm font-medium"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />
@@ -91,16 +84,16 @@ const Header = ({ onMenuToggle }) => {
                 </button>
               </div>
             ) : (
-              <div className="hidden sm:flex space-x-4">
+              <div className="hidden sm:flex items-center space-x-4 ml-2">
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-[#1a1a1a] font-semibold hover:text-[#1a1a1a]/70 transition"
+                  className="px-4 py-2 text-white/80 font-medium hover:text-white transition-colors text-sm"
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="px-4 py-2 bg-[#1a1a1a] text-white rounded-full font-semibold hover:bg-[#1a1a1a]/80 transition border border-black"
+                  className="px-5 py-2.5 bg-[#f2c737] text-black rounded-lg font-semibold text-sm hover:bg-white hover:text-black transition-colors"
                 >
                   Sign Up
                 </Link>

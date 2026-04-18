@@ -62,11 +62,26 @@ const EventDetailPage = () => {
   // 3. LOADING STATE
   if (loading) {
     return (
-      <div className="bg-[#effe8b] min-h-screen">
-        {/* Optional: Pass toggleMobileMenu here too if you want the menu to work while loading */}
-        <Header onMenuToggle={toggleMobileMenu} /> 
-        <div className="flex justify-center items-center h-150">
-          <div className="text-xl">Loading event details...</div>
+      <div className="bg-[#050505] min-h-screen font-outfit">
+        <Header onMenuToggle={toggleMobileMenu} />
+        {/* Skeleton Hero */}
+        <div className="animate-pulse">
+          <div className="h-[400px] bg-[#111] w-full" />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="h-8 w-48 bg-white/10 rounded-lg" />
+                <div className="h-4 w-full bg-white/5 rounded-full" />
+                <div className="h-4 w-5/6 bg-white/5 rounded-full" />
+                <div className="h-4 w-3/4 bg-white/5 rounded-full" />
+                <div className="h-4 w-2/3 bg-white/5 rounded-full" />
+              </div>
+              <div className="space-y-4">
+                <div className="h-40 bg-[#111] rounded-2xl" />
+                <div className="h-40 bg-[#111] rounded-2xl" />
+              </div>
+            </div>
+          </div>
         </div>
         <Footer />
       </div>
@@ -76,10 +91,14 @@ const EventDetailPage = () => {
   // 4. ERROR STATE
   if (!event) {
     return (
-      <div className="bg-[#effe8b] min-h-screen">
+      <div className="bg-[#050505] min-h-screen font-outfit">
         <Header onMenuToggle={toggleMobileMenu} />
-        <div className="flex justify-center items-center h-150">
-          <div className="text-xl text-red-500">Event not found</div>
+        <div className="flex justify-center items-center py-40">
+          <div className="text-center">
+            <div className="text-5xl mb-4">🐾</div>
+            <h2 className="text-2xl font-bold text-white mb-2">Event not found</h2>
+            <p className="text-white/40">This event may have been removed or the link is incorrect.</p>
+          </div>
         </div>
         <Footer />
       </div>
@@ -88,13 +107,13 @@ const EventDetailPage = () => {
 
   // 5. MAIN RENDER
   return (
-    <div className="bg-[#effe8b] min-h-screen">
+    <div className="bg-[#050505] min-h-screen font-outfit">
       <Header onMenuToggle={toggleMobileMenu} />
       {isMobileMenuOpen && (
         <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
       )}
       <HeroSection event={event} onBookTickets={handleBookTickets} /> 
-      <section className="py-12 bg-white">
+      <section className="py-12 bg-[#050505]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-8">

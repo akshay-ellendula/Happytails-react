@@ -1,19 +1,32 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Calendar, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const HeroBanner = ({ events }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [slideDirection, setSlideDirection] = useState("right");
   const navigate = useNavigate();
 
   useEffect(() => {
     if (events.length === 0) return;
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % events.length);
+      goToSlide((currentSlide + 1) % events.length, "right");
     }, 5000);
     return () => clearInterval(interval);
-  }, [events.length]);
+  }, [events.length, currentSlide]);
+
+  const goToSlide = (index, direction) => {
+    if (isAnimating) return;
+    setSlideDirection(direction);
+    setIsAnimating(true);
+    
+    setTimeout(() => {
+      setCurrentSlide(index);
+      setTimeout(() => setIsAnimating(false), 50);
+    }, 300);
+  };
 
   const handleEventClick = () => {
     const featuredEvent = events[currentSlide];
@@ -24,9 +37,9 @@ const HeroBanner = ({ events }) => {
 
   if (events.length === 0) {
     return (
-      <section className="bg-[#f2c737] py-8 md:py-12 lg:py-16">
+      <section className="bg-[#050505] py-8 md:py-12 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-500">No featured events available</p>
+          <p className="text-white/40">No featured events available</p>
         </div>
       </section>
     );
@@ -35,110 +48,148 @@ const HeroBanner = ({ events }) => {
   const featuredEvent = events[currentSlide];
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % events.length);
+    goToSlide((currentSlide + 1) % events.length, "right");
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + events.length) % events.length);
+    goToSlide((currentSlide - 1 + events.length) % events.length, "left");
+  };
+
+  const slideStyle = {
+    transition: "transform 0.4s ease, opacity 0.4s ease",
+    transform: isAnimating
+      ? `translateX(${slideDirection === "right" ? "-40px" : "40px"})`
+      : "translateX(0)",
+    opacity: isAnimating ? 0 : 1,
+  };
+
+  const imageStyle = {
+    transition: "transform 0.5s ease, opacity 0.5s ease",
+    transform: isAnimating
+      ? `translateX(${slideDirection === "right" ? "40px" : "-40px"}) scale(0.95)`
+      : "translateX(0) scale(1)",
+    opacity: isAnimating ? 0 : 1,
   };
 
   return (
-    <section className="bg-[#f2c737] py-8 md:py-12 lg:py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <button
-          onClick={prevSlide}
-          className="hidden lg:flex absolute -left-16 top-1/2 transform -translate-y-1/2 bg-white hover:bg-gray-50 text-[#1a1a1a] w-14 h-14 rounded-full items-center justify-center transition-all shadow-xl border border-gray-300 z-10"
-        >
-          <ChevronLeft className="w-7 h-7" />
-        </button>
+    <section className="relative bg-[#050505] overflow-hidden">
+      
+      {/* Blurred background image for atmosphere */}
+      <div className="absolute inset-0 z-0 transition-opacity duration-700">
+        <img
+          src={featuredEvent.bannerImg || featuredEvent.img || "/images/default-event.jpg"}
+          alt=""
+          className="w-full h-full object-cover opacity-[0.08] blur-2xl scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/80 to-[#050505]/60" />
+      </div>
 
-        <button
-          onClick={nextSlide}
-          className="hidden lg:flex absolute -right-16 top-1/2 transform -translate-y-1/2 bg-white hover:bg-gray-50 text-[#1a1a1a] w-14 h-14 rounded-full items-center justify-center transition-all shadow-xl border border-gray-300 z-10"
-        >
-          <ChevronRight className="w-7 h-7" />
-        </button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="flex items-center min-h-[500px] lg:min-h-[520px] py-12 lg:py-16">
 
-        <div className=" bg-[#ffffff] p-14 rounded-2xl flex flex-col lg:flex-row items-center justify-between">
-          <div className="flex-1 w-full lg:w-auto text-center lg:text-left order-2 lg:order-1">
-            <div className="flex items-center justify-center lg:justify-start text-[#1a1a1a] text-sm font-semibold mb-2">
-              <Calendar className="w-4 h-4 mr-2" />
-              <span>{featuredEvent.date || "Date TBA"}</span>
-            </div>
+          {/* Left Arrow */}
+          <button
+            onClick={prevSlide}
+            className="hidden lg:flex flex-shrink-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white items-center justify-center transition-all mr-8"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] mb-4 leading-tight">
-              {featuredEvent.title || "Untitled Event"}
-            </h1>
+          {/* Content Area */}
+          <div className="flex-1 flex flex-col lg:flex-row items-center lg:items-center justify-between gap-10 lg:gap-16">
+            
+            {/* Left: Event Info */}
+            <div className="flex-1 w-full text-center lg:text-left order-2 lg:order-1" style={slideStyle}>
+              <div className="inline-flex items-center text-[#f2c737] text-sm font-semibold mb-4">
+                <Calendar className="w-4 h-4 mr-2" />
+                <span>{featuredEvent.date || "Date TBA"}</span>
+              </div>
 
-            <div className="flex items-center justify-center lg:justify-start text-[#1a1a1a] text-base sm:text-lg mb-6">
-              <MapPin className="w-4 h-4 mr-2" />
-              <span>{featuredEvent.venue || "Venue TBA"}</span>
-            </div>
+              <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold text-white mb-5 leading-[1.15]">
+                {featuredEvent.title || "Untitled Event"}
+              </h1>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-              <span className="text-[#1a1a1a] font-bold text-lg">
+              <div className="flex items-center justify-center lg:justify-start text-white/60 text-base mb-6">
+                <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span>{featuredEvent.venue || "Venue TBA"}</span>
+              </div>
+
+              <p className="text-[#f2c737] font-bold text-lg mb-6">
                 {featuredEvent.price === 0
                   ? "Free Entry"
                   : `₹${featuredEvent.price} onwards`}
-              </span>
+              </p>
+
               <button
                 onClick={handleEventClick}
-                className="bg-[#1a1a1a] text-[#f2c737] font-bold px-8 py-3 rounded-full hover:bg-[#f2c737] hover:text-[#1a1a1a] transition transform hover:scale-105 text-sm sm:text-base whitespace-nowrap shadow-md border-2 border-[#1a1a1a]"
+                className="bg-white text-black font-semibold px-8 py-3.5 rounded-xl hover:bg-[#f2c737] transition-colors text-sm"
               >
-                {featuredEvent.buttonText || "Learn More"}
+                Book tickets
               </button>
             </div>
 
-            <div className="flex justify-center lg:justify-start space-x-2 mt-6 lg:mt-8">
-              {events.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all ${
-                    index === currentSlide ? "bg-[#1a1a1a]" : "bg-gray-400"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="w-full lg:w-auto mb-8 lg:mb-0 order-1 lg:order-2 relative">
-            <div className="relative mx-auto lg:mx-0">
+            {/* Right: Image Card */}
+            <div className="w-full max-w-xs sm:max-w-sm lg:max-w-[340px] xl:max-w-[380px] flex-shrink-0 order-1 lg:order-2" style={imageStyle}>
               <div
                 onClick={handleEventClick}
-                className="w-full max-w-md lg:w-72 xl:w-80 h-64 sm:h-80 lg:h-80 xl:h-96 bg-white rounded-3xl shadow-2xl overflow-hidden lg:transform lg:rotate-3 relative cursor-pointer hover:shadow-2xl transition-shadow border-2 border-[#1a1a1a]"
+                className="relative cursor-pointer group"
               >
-                <div className="absolute inset-0">
-                  <img
-                    src={
-                      featuredEvent.bannerImg ||
-                      featuredEvent.img ||
-                      "/images/default-event.jpg"
-                    }
-                    alt={featuredEvent.title || "Event"}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                      e.target.nextSibling.style.display = "flex";
-                    }}
-                  />
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-3 shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
+                  <div className="rounded-xl overflow-hidden aspect-[4/5]">
+                    <img
+                      src={
+                        featuredEvent.bannerImg ||
+                        featuredEvent.img ||
+                        "/images/default-event.jpg"
+                      }
+                      alt={featuredEvent.title || "Event"}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <button
-                onClick={prevSlide}
-                className="lg:hidden absolute -left-4 top-1/2 transform -translate-y-1/2 bg-white hover:bg-gray-50 text-[#1a1a1a] w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl border border-gray-300"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <button
-                onClick={nextSlide}
-                className="lg:hidden absolute -right-4 top-1/2 transform -translate-y-1/2 bg-white hover:bg-gray-50 text-[#1a1a1a] w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xl border border-gray-300"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
+              {/* Mobile navigation arrows */}
+              <div className="flex lg:hidden justify-center gap-4 mt-6">
+                <button
+                  onClick={prevSlide}
+                  className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Right Arrow */}
+          <button
+            onClick={nextSlide}
+            className="hidden lg:flex flex-shrink-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white items-center justify-center transition-all ml-8"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Slide Indicators */}
+        <div className="flex justify-center gap-2 pb-10">
+          {events.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index, index > currentSlide ? "right" : "left")}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                index === currentSlide ? "bg-white w-6" : "bg-white/20 w-2"
+              }`}
+            />
+          ))}
         </div>
       </div>
     </section>
