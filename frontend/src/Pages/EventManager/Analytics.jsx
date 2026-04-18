@@ -6,8 +6,10 @@ import {
 import { axiosInstance } from '../../utils/axios.js';
 import { 
   Loader2, TrendingUp, DollarSign, Calendar, Ticket, 
-  Users, Activity, Percent, ArrowUpRight, ArrowDownRight, Filter
+  Users, Activity, Percent, ArrowUpRight, ArrowDownRight, Filter, Download
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const Analytics = () => {
   const [loading, setLoading] = useState(true);
@@ -86,6 +88,100 @@ const Analytics = () => {
     );
   }
 
+  const generatePDFReport = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(26, 26, 26);
+    doc.text("Happy Tails - Analytics Report", pageWidth / 2, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, pageWidth / 2, 28, { align: "center" });
+    doc.text(`Date Range: ${startDate} to ${endDate}`, pageWidth / 2, 34, { align: "center" });
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, 40, pageWidth - 14, 40);
+
+    // Financial Summary
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Financial Summary", 14, 50);
+
+    const financialsData = [
+      ["Gross Revenue", `Rs ${basicStats?.totalRevenue?.toLocaleString() || 0}`],
+      ["Platform Fee (6%)", `Rs ${basicStats?.platformFee?.toLocaleString() || 0}`],
+      ["Net Revenue (Payout)", `Rs ${basicStats?.netRevenue?.toLocaleString() || 0}`],
+      ["Tickets Sold", `${basicStats?.totalTicketsSold || 0}`]
+    ];
+
+    autoTable(doc, {
+      startY: 55,
+      head: [["Metric", "Value"]],
+      body: financialsData,
+      theme: 'grid',
+      headStyles: { fillColor: [26, 26, 26] },
+      styles: { fontSize: 11 },
+      alternateRowStyles: { fillColor: [245, 245, 245] }
+    });
+
+    // Customer Insights
+    const finalYAfterFinance = doc.lastAutoTable.finalY || 100;
+    doc.setFontSize(16);
+    doc.text("Customer Insights", 14, finalYAfterFinance + 15);
+
+    const insightsData = [
+      ["Average Ticket Price", `Rs ${performance?.averageTicketPrice?.toLocaleString() || 0}`],
+      ["Customer Lifetime Value", `Rs ${performance?.customerLifetimeValue?.toLocaleString() || 0}`]
+    ];
+
+    autoTable(doc, {
+      startY: finalYAfterFinance + 20,
+      head: [["Insight", "Value"]],
+      body: insightsData,
+      theme: 'grid',
+      headStyles: { fillColor: [26, 26, 26] },
+      styles: { fontSize: 11 },
+      alternateRowStyles: { fillColor: [245, 245, 245] }
+    });
+
+    // Top Events
+    const finalYAfterInsights = doc.lastAutoTable.finalY || 150;
+    doc.setFontSize(16);
+    doc.text("Top Events by Attendance", 14, finalYAfterInsights + 15);
+
+    const topEventsData = attendance.slice(0, 5).map(evt => [
+        evt.name,
+        evt.date,
+        evt.isCancelled ? "Cancelled" : "Active",
+        `${evt.sold} / ${evt.capacity}`,
+        `${evt.rate}%`
+    ]);
+
+    autoTable(doc, {
+        startY: finalYAfterInsights + 20,
+        head: [["Event Name", "Date", "Status", "Sales/Capacity", "Fill Rate"]],
+        body: topEventsData,
+        theme: 'grid',
+        headStyles: { fillColor: [26, 26, 26] },
+        styles: { fontSize: 10 },
+        alternateRowStyles: { fillColor: [245, 245, 245] }
+    });
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth - 20, doc.internal.pageSize.getHeight() - 10, { align: "right" });
+    }
+
+    doc.save(`Analytics_Report_${startDate}_to_${endDate}.pdf`);
+  };
+
   // Helper for trend badge
   const GrowthBadge = ({ value }) => {
     if (value === undefined || value === null) return null;
@@ -107,25 +203,36 @@ const Analytics = () => {
             <p className="text-gray-500 text-sm mt-1">Track your event performance, revenue, and customer insights</p>
           </div>
           
-          {/* Custom Date Filters */}
-          <div className="flex items-center gap-3 bg-gray-50 p-1.5 rounded-xl border border-gray-200">
-            <div className="flex items-center px-3 gap-2 border-r border-gray-200">
-              <Filter className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-600">Filter:</span>
+          {/* Custom Date Filters & Download Config */}
+          <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 bg-gray-50 p-1.5 rounded-xl border border-gray-200">
+              <div className="flex items-center px-3 gap-2 border-r border-gray-200 hidden sm:flex">
+                <Filter className="w-4 h-4 text-gray-400" />
+                <span className="text-sm font-medium text-gray-600">Filter:</span>
+              </div>
+              <input 
+                  type="date" 
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-transparent border-none text-sm font-medium text-gray-700 focus:outline-none cursor-pointer p-1"
+              />
+              <span className="text-gray-400 text-sm hidden sm:inline">to</span>
+              <input 
+                  type="date" 
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-transparent border-none text-sm font-medium text-gray-700 focus:outline-none cursor-pointer pr-3 p-1"
+              />
             </div>
-            <input 
-                type="date" 
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-transparent border-none text-sm font-medium text-gray-700 focus:outline-none cursor-pointer"
-            />
-            <span className="text-gray-400 text-sm">to</span>
-            <input 
-                type="date" 
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-transparent border-none text-sm font-medium text-gray-700 focus:outline-none cursor-pointer pr-3"
-            />
+            {/* Download Button */}
+            <button 
+              onClick={generatePDFReport}
+              className="bg-gray-800 text-white p-2 sm:px-4 sm:py-2.5 rounded-xl text-sm font-medium hover:bg-gray-900 transition-colors flex items-center justify-center gap-2 shadow-sm"
+              title="Download PDF Report"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Download PDF</span>
+            </button>
           </div>
         </div>
       </header>

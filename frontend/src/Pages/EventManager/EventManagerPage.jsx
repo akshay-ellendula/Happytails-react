@@ -25,7 +25,9 @@ import {
   User,
   LogOut,
   Star,
-  Mail // <-- IMPORT MAIL ICON
+  Mail,
+  Menu,
+  X
 } from "lucide-react";
 
 // Lazy load components - MUST BE DEFINED OUTSIDE THE COMPONENT
@@ -41,6 +43,7 @@ const EventManagerPages = () => {
   const [currentEvent, setCurrentEvent] = useState(null);
   const [currentTicket, setCurrentTicket] = useState(null);
   const [pageHistory, setPageHistory] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Profile State for Sidebar
   const [profile, setProfile] = useState({
@@ -212,8 +215,33 @@ const EventManagerPages = () => {
 
   return (
     <div className="h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100 flex overflow-hidden">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Mobile Header Bar */}
+      <div className="fixed top-0 left-0 right-0 h-14 bg-gradient-to-r from-yellow-400 to-yellow-500 flex items-center px-4 z-40 lg:hidden shadow-md">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 rounded-lg bg-white/30 hover:bg-white/50 transition-colors mr-3"
+          aria-label="Toggle sidebar"
+        >
+          {sidebarOpen ? <X className="w-5 h-5 text-gray-900" /> : <Menu className="w-5 h-5 text-gray-900" />}
+        </button>
+        <div className="flex items-center space-x-2">
+          <span className="text-xl">🐾</span>
+          <h1 className="text-lg font-black text-gray-900 tracking-tight">Happy Tails</h1>
+        </div>
+      </div>
+
       {/* Dynamic Sidebar matched to Admin UI */}
-      <div className="w-64 h-full flex-shrink-0 bg-gradient-to-b from-yellow-400 to-yellow-500 shadow-2xl flex flex-col z-20 border-r border-yellow-600 transition-all duration-300 relative">
+      <div className={`fixed lg:relative w-64 h-full flex-shrink-0 bg-gradient-to-b from-yellow-400 to-yellow-500 shadow-2xl flex flex-col z-40 border-r border-yellow-600 transition-transform duration-300 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0`}>
         <div className="p-6 pb-2">
           <div className="flex items-center space-x-3 mb-2">
             <div className="bg-white p-2 rounded-xl shadow-sm">
@@ -223,6 +251,14 @@ const EventManagerPages = () => {
               <h1 className="text-xl font-black text-gray-900 tracking-tight">Happy Tails</h1>
               <p className="text-xs font-bold text-yellow-800 uppercase tracking-wider">Event Manager</p>
             </div>
+            {/* Close button inside sidebar on mobile */}
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="ml-auto p-1.5 rounded-lg hover:bg-yellow-300 lg:hidden"
+              aria-label="Close sidebar"
+            >
+              <X className="w-5 h-5 text-gray-900" />
+            </button>
           </div>
         </div>
 
@@ -236,7 +272,10 @@ const EventManagerPages = () => {
               return (
                 <li key={item.id}>
                   <button
-                    onClick={() => handlePageChange(item.id)}
+                    onClick={() => {
+                      handlePageChange(item.id);
+                      setSidebarOpen(false);
+                    }}
                     className={`w-full text-left flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-300 group ${
                       isActive
                         ? "bg-gradient-to-r from-white to-yellow-50 text-yellow-800 shadow-md font-bold"
@@ -293,7 +332,7 @@ const EventManagerPages = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden w-full relative">
+      <div className="flex-1 flex flex-col h-full overflow-hidden w-full relative pt-14 lg:pt-0">
         <div className="flex-1 h-full overflow-y-auto bg-gray-50/50">{renderPage()}</div>
       </div>
     </div>

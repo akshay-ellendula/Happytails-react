@@ -152,7 +152,12 @@ export const getPlatformFeeBreakdown = async (req, res) => {
                         month: { $month: "$createdAt" }, 
                         year: { $year: "$createdAt" } 
                     },
-                    totalRevenue: { $sum: "$price" }
+                    totalGross: { $sum: "$price" },
+                    validGross: { 
+                        $sum: { 
+                            $cond: [{ $ne: ["$status", false] }, "$price", 0] 
+                        } 
+                    }
                 }
             },
             { $sort: { "_id.year": 1, "_id.month": 1 } }
@@ -162,18 +167,13 @@ export const getPlatformFeeBreakdown = async (req, res) => {
             const date = new Date(item._id.year, item._id.month - 1);
             const monthName = date.toLocaleString('default', { month: 'short' });
             
-            // For the chart, we want accurate net revenue.
-            // Since we aggregated ALL gross revenue above to calculate platform fees correctly,
-            // we will approximate chart's valid net revenue historically.
-            // (Alternatively, a dedicated valid revenue aggregate would be ideal, but for the scope 
-            // of this chart, displaying the true platformFee from total is key)
-            const totalRevenue = item.totalRevenue;
-            const platformFee = totalRevenue * 0.06;
-            const netRevenue = totalRevenue - platformFee;
+            const totalGross = item.totalGross;
+            const platformFee = totalGross * 0.06; // Platform retains fees even on cancellations
+            const netRevenue = item.validGross - platformFee;
             
             return {
                 month: `${monthName} ${item._id.year}`,
-                totalRevenue,
+                totalRevenue: item.validGross, // Display valid gross in UI as "Gross"
                 platformFee: Math.round(platformFee * 100) / 100,
                 netRevenue: Math.round(netRevenue * 100) / 100
             };
@@ -213,12 +213,12 @@ export const getDashboardAnalytics = async (req, res) => {
         
         // Historical numbers remain based on all tickets processed
         const totalTicketsSold = allTickets.reduce((sum, t) => sum + (t.numberOfTickets || 1), 0);
-        const totalRevenue = allTickets.reduce((sum, t) => sum + t.price, 0); // Gross
-        const platformFee = totalRevenue * 0.06;
+        const allGrossRevenue = allTickets.reduce((sum, t) => sum + t.price, 0); // All processed tickets
+        const platformFee = allGrossRevenue * 0.06; // Platform keeps fees on cancelled tickets too
         
         // Net Revenue should precisely track only valid tickets since Manager doesn't get cancelled payouts
-        const validGrossRevenue = validTickets.reduce((sum, t) => sum + t.price, 0);
-        const netRevenue = validGrossRevenue * 0.94;
+        const totalRevenue = validTickets.reduce((sum, t) => sum + t.price, 0); // Valid Gross is what Manager earns
+        const netRevenue = totalRevenue - platformFee;
 
         // 2. Calculate Growth (Current Period vs Previous Period)
         const periodLength = end.getTime() - start.getTime();

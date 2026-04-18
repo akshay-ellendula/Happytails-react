@@ -176,52 +176,52 @@ const Dashboard = ({ setCurrentPage }) => {
 
   return (
     <>
-      <header className="bg-white shadow-sm p-6 sticky top-0 z-20 flex justify-between items-center border-b border-gray-100">
+      <header className="bg-white shadow-sm p-4 sm:p-6 sticky top-0 z-20 flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-gray-100">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
             Event Manager Dashboard
           </h1>
           <p className="text-gray-500 text-sm mt-1">Overview of your performance</p>
         </div>
         <button
           onClick={() => setCurrentPage("create-event")}
-          className="bg-gray-800 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-gray-900 transition-colors flex items-center gap-2 shadow-sm"
+          className="bg-gray-800 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-gray-900 transition-colors flex items-center gap-2 shadow-sm w-full sm:w-auto justify-center"
         >
           <span>Create Event</span>
         </button>
       </header>
 
-      <main className="p-6">
+      <main className="p-4 sm:p-6">
         {/* Welcome Banner matched to Admin */}
         {showWelcome && (
-          <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 border border-yellow-200 shadow-lg animate-fade-out">
-            <div className="flex items-center">
-              <div className="h-16 w-16 rounded-full bg-yellow-500 flex items-center justify-center text-white text-2xl mr-4">
+          <div className="mb-8 p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 border border-yellow-200 shadow-lg animate-fade-out">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-yellow-500 flex items-center justify-center text-white text-xl sm:text-2xl flex-shrink-0">
                 👋
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800 mb-1">Welcome back, Event Manager!</h1>
-                <p className="text-gray-600">Here's what's happening with your events today.</p>
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-800 mb-1">Welcome back, Event Manager!</h1>
+                <p className="text-gray-600 text-sm sm:text-base">Here's what's happening with your events today.</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Key Metrics matched to Admin */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8">
           {metricCards.map((metric, i) => {
             const borderColors = ['border-yellow-500', 'border-orange-500', 'border-amber-500', 'border-green-500'];
             const iconColors = ['text-yellow-600 bg-yellow-100', 'text-orange-600 bg-orange-100', 'text-amber-600 bg-amber-100', 'text-green-600 bg-green-100'];
             
             return (
-              <div key={i} className={`bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 ${borderColors[i % 4]}`}>
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-sm text-gray-600 uppercase tracking-wider">{metric.title}</h3>
-                    <p className="text-3xl font-bold text-gray-800 mt-2">{metric.value}</p>
+              <div key={i} className={`bg-white rounded-xl p-3 sm:p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 ${borderColors[i % 4]}`}>
+                <div className="flex justify-between items-start mb-2 sm:mb-4">
+                  <div className="min-w-0">
+                    <h3 className="text-xs sm:text-sm text-gray-600 uppercase tracking-wider truncate">{metric.title}</h3>
+                    <p className="text-lg sm:text-3xl font-bold text-gray-800 mt-1 sm:mt-2 truncate">{metric.value}</p>
                     {metric.title === "Total Revenue" && <p className="text-xs text-gray-500 mt-1">(Gross)</p>}
                   </div>
-                  <div className={`h-12 w-12 rounded-lg flex items-center justify-center text-xl ${iconColors[i % 4]}`}>
+                  <div className={`h-8 w-8 sm:h-12 sm:w-12 rounded-lg flex items-center justify-center text-sm sm:text-xl flex-shrink-0 ${iconColors[i % 4]}`}>
                     {metric.icon}
                   </div>
                 </div>
@@ -231,15 +231,15 @@ const Dashboard = ({ setCurrentPage }) => {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
           {/* Revenue Trend */}
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold mb-4">Revenue Trend</h2>
-            <ResponsiveContainer width="100%" height={300}>
+          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-bold mb-4">Revenue Trend</h2>
+            <ResponsiveContainer width="100%" height={220}>
               <LineChart data={revenueTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip />
                 <Line type="monotone" dataKey="revenue" stroke="#1a1a1a" strokeWidth={2} />
               </LineChart>
@@ -247,13 +247,13 @@ const Dashboard = ({ setCurrentPage }) => {
           </div>
 
           {/* Event Type Breakdown */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold mb-4">Tickets by Type</h2>
-            <ResponsiveContainer width="100%" height={300}>
+          <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-bold mb-4">Tickets by Type</h2>
+            <ResponsiveContainer width="100%" height={220}>
               <BarChart data={ticketBreakdown}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="event" />
-                <YAxis />
+                <XAxis dataKey="event" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip />
                 <Bar dataKey="sold" fill="#2563eb" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -262,15 +262,15 @@ const Dashboard = ({ setCurrentPage }) => {
         </div>
 
         {/* Recent Events & Upcoming Events Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
             {/* Recent Events Table */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">Recent Events</h2>
-                <div className="overflow-x-auto">
-                <table className="w-full">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+                <h2 className="text-base sm:text-lg font-bold text-[#1a1a1a] mb-4">Recent Events</h2>
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <table className="w-full min-w-[400px]">
                     <thead>
                     <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 text-sm text-gray-500">Event</th>
+                        <th className="text-left py-3 px-4 sm:px-0 text-sm text-gray-500">Event</th>
                         <th className="text-left py-3 text-sm text-gray-500">Date</th>
                         <th className="text-left py-3 text-sm text-gray-500">Status</th>
                     </tr>
@@ -281,15 +281,15 @@ const Dashboard = ({ setCurrentPage }) => {
                     ) : (
                         recentEvents.map((event) => (
                             <tr key={event.id} className="border-b border-gray-100">
-                            <td className="py-3">
+                            <td className="py-3 px-4 sm:px-0">
                                 <div className="flex items-center space-x-3">
                                     <div>
-                                        <p className="font-medium text-[#1a1a1a]">{event.title}</p>
+                                        <p className="font-medium text-[#1a1a1a] text-sm sm:text-base">{event.title}</p>
                                         <p className="text-xs text-gray-500">{event.location}</p>
                                     </div>
                                 </div>
                             </td>
-                            <td className="py-3 text-sm">{event.date}</td>
+                            <td className="py-3 text-xs sm:text-sm whitespace-nowrap">{event.date}</td>
                             <td className="py-3">
                                 <span className={getStatusBadge(event.status, event.date)}>{getStatusText(event.status, event.date)}</span>
                             </td>
@@ -302,17 +302,17 @@ const Dashboard = ({ setCurrentPage }) => {
             </div>
 
             {/* Upcoming Events List */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">Upcoming Events</h2>
-                <div className="space-y-4">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+                <h2 className="text-base sm:text-lg font-bold text-[#1a1a1a] mb-4">Upcoming Events</h2>
+                <div className="space-y-3 sm:space-y-4">
                     {upcomingEvents.length === 0 ? <p className="text-gray-500">No upcoming events.</p> : upcomingEvents.map((event) => (
-                    <div key={event.id} className="flex items-start space-x-3 p-3 border border-gray-100 rounded-lg">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white`}>
+                    <div key={event.id} className="flex items-start space-x-3 p-2.5 sm:p-3 border border-gray-100 rounded-lg">
+                        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center text-white flex-shrink-0`}>
                             <span>{event.icon}</span>
                         </div>
-                        <div className="flex-1">
-                            <h3 className="font-semibold text-[#1a1a1a]">{event.title}</h3>
-                            <p className="text-sm text-gray-600">{event.date}</p>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-[#1a1a1a] text-sm sm:text-base truncate">{event.title}</h3>
+                            <p className="text-xs sm:text-sm text-gray-600">{event.date}</p>
                         </div>
                     </div>
                     ))}
@@ -321,13 +321,13 @@ const Dashboard = ({ setCurrentPage }) => {
         </div>
 
         {/* Recent Tickets Table */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-bold text-[#1a1a1a] mb-4">Recent Ticket Sales</h2>
-            <div className="overflow-x-auto">
-            <table className="w-full">
+        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-6">
+            <h2 className="text-base sm:text-lg font-bold text-[#1a1a1a] mb-4">Recent Ticket Sales</h2>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full min-w-[500px]">
                 <thead>
                 <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 text-sm text-gray-500">Ticket ID</th>
+                    <th className="text-left py-3 px-4 sm:px-0 text-sm text-gray-500">Ticket ID</th>
                     <th className="text-left py-3 text-sm text-gray-500">Event</th>
                     <th className="text-left py-3 text-sm text-gray-500">Customer</th>
                     <th className="text-left py-3 text-sm text-gray-500">Price</th>
@@ -339,10 +339,10 @@ const Dashboard = ({ setCurrentPage }) => {
                 ) : (
                     recentTickets.map((ticket, index) => (
                         <tr key={index} className="border-b border-gray-100">
-                        <td className="py-3 text-sm font-medium text-[#1a1a1a]">{ticket.id}</td>
-                        <td className="py-3 text-sm">{ticket.event}</td>
-                        <td className="py-3 text-sm">{ticket.customer}</td>
-                        <td className="py-3 text-sm">₹{ticket.price.toFixed(2)}</td>
+                        <td className="py-3 px-4 sm:px-0 text-xs sm:text-sm font-medium text-[#1a1a1a]">{ticket.id}</td>
+                        <td className="py-3 text-xs sm:text-sm">{ticket.event}</td>
+                        <td className="py-3 text-xs sm:text-sm">{ticket.customer}</td>
+                        <td className="py-3 text-xs sm:text-sm whitespace-nowrap">₹{ticket.price.toFixed(2)}</td>
                         </tr>
                     ))
                 )}
