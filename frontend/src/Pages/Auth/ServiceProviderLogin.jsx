@@ -19,13 +19,13 @@ const ServiceProviderLogin = () => {
   useEffect(() => {
     const googleSuccess = searchParams.get('google_login_success');
     const googleError = searchParams.get('error');
-    
+
     if (googleSuccess === 'true') {
       toast.success('Google login successful!');
       // Remove the query param from URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-    
+
     if (googleError === 'google_auth_failed') {
       toast.error('Google login failed. Please try again.');
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -163,13 +163,12 @@ const ServiceProviderLogin = () => {
                 </select>
               </div>
             </div>
-            
+
             <button
               type="submit"
               disabled={loading}
-              className={`w-full mt-4 py-4 bg-[#1a1a1a] text-white font-bold rounded-xl hover:bg-gray-800 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border-2 border-[#1a1a1a] ${
-                loading ? "opacity-70 cursor-not-allowed" : ""
-              }`}
+              className={`w-full mt-4 py-4 bg-[#1a1a1a] text-white font-bold rounded-xl hover:bg-gray-800 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border-2 border-[#1a1a1a] ${loading ? "opacity-70 cursor-not-allowed" : ""
+                }`}
             >
               {loading ? "Logging in..." : "Login"}
             </button>
@@ -187,12 +186,12 @@ const ServiceProviderLogin = () => {
 
           {/* Google Login Button - Only show if role is selected */}
           {formData.role && (
-            <GoogleLoginButton 
+            <GoogleLoginButton
               role={getGoogleRole()}
               buttonText={`Continue with Google as ${formData.role === "event-manager" ? "Event Manager" : "Store Partner"}`}
             />
           )}
-          
+
           {!formData.role && (
             <div className="text-center text-sm text-gray-400 mt-4">
               Select a role to continue with Google

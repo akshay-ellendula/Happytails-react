@@ -111,112 +111,96 @@ function AuthPage() {
 
   return (
     <div
-      className="min-h-screen bg-[#effe8b]"
+      className="min-h-screen bg-[#1a1a1a] flex flex-col relative overflow-hidden"
       style={{ fontFamily: "'Outfit', sans-serif" }}
     >
-      {/* Decorative Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-40 right-10 w-72 h-72 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-1/2 w-72 h-72 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-      </div>
+      {/* Animated gradient orbs (Theme matching) */}
+      <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-[#f2c737]/15 blur-[120px] animate-pulse"></div>
+      <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] rounded-full bg-[#f2c737]/10 blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+
+      {/* Subtle grid pattern overlay */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+        style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+          backgroundSize: '40px 40px'
+        }}
+      ></div>
 
       {/* Navbar */}
-      <nav className="relative z-10 mx-5 sm:mx-20 lg:mx-20">
-        <header className="flex justify-between items-center p-4 sm:p-6 lg:p-8">
+      <nav className="relative z-10 w-full mb-4">
+        <header className="flex justify-center sm:justify-start items-center p-6 sm:px-12 pt-8">
           <a
             href="/"
-            className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1a1a1a] hover:scale-110 transition-transform no-underline flex items-center gap-2"
+            className="text-3xl font-black text-white hover:scale-105 transition-transform no-underline flex items-center gap-3"
           >
-            <PawPrint size={32} />
-            <span className="bg-[#1a1a1a] bg-clip-text text-transparent">
-              Happy Tails
-            </span>
+            <div className="w-10 h-10 bg-[#f2c737] rounded-xl flex items-center justify-center">
+              <PawPrint className="text-[#1a1a1a] w-6 h-6" />
+            </div>
+            <span>HappyTails</span>
           </a>
         </header>
       </nav>
 
       {/* Container */}
-      <div className="relative z-10 bg-white rounded-3xl shadow-2xl overflow-hidden w-11/12 sm:w-[480px] max-w-full min-h-[580px] mx-auto my-12 border-4 border-black">
-        {/* Toggle Container */}
-        <div className="relative flex bg-[#1a1a1a] p-2">
-          <div
-            className={`absolute top-2 bottom-2 w-1/2 bg-[#effe8b] rounded-xl transition-all duration-300 ease-in-out ${
-              isSignIn ? "left-2" : "left-1/2 -ml-1"
-            }`}
-          ></div>
+      <div className="relative z-10 w-full max-w-[480px] mx-auto px-4 pb-12 flex-1 flex flex-col justify-center">
+
+        {/* Toggle Pills - Modern Look */}
+        <div className="flex bg-white/10 backdrop-blur-md border border-white/10 p-1.5 rounded-2xl mb-6 mx-auto w-full max-w-[300px]">
           <button
             type="button"
-            className={`relative z-10 flex-1 text-base font-bold py-3 cursor-pointer transition-all rounded-xl ${
-              isSignIn ? "text-[#1a1a1a]" : "text-[#effe8b] hover:text-white"
-            }`}
+            className={`flex-1 text-sm font-bold py-2.5 rounded-xl transition-all duration-300 ${isSignIn
+                ? "bg-[#f2c737] text-[#1a1a1a] shadow-lg"
+                : "text-white/70 hover:text-white"
+              }`}
             onClick={() => setIsSignIn(true)}
           >
             Sign In
           </button>
           <button
             type="button"
-            className={`relative z-10 flex-1 text-base font-bold py-3 cursor-pointer transition-all rounded-xl ${
-              !isSignIn ? "text-[#1a1a1a]" : "text-[#effe8b] hover:text-white"
-            }`}
+            className={`flex-1 text-sm font-bold py-2.5 rounded-xl transition-all duration-300 ${!isSignIn
+                ? "bg-[#f2c737] text-[#1a1a1a] shadow-lg"
+                : "text-white/70 hover:text-white"
+              }`}
             onClick={() => setIsSignIn(false)}
           >
             Sign Up
           </button>
         </div>
 
-        {/* Form Container */}
-        <div className="px-8 sm:px-12 py-8 text-center bg-white">
-          <AuthForm
-            isSignIn={isSignIn}
-            formData={isSignIn ? loginInput : signupInput}
-            onChange={(e) => handleInputChange(e, isSignIn)}
-            onSubmit={isSignIn ? handleLoginSubmit : handleSignupSubmit}
-            onToggleMode={() => setIsSignIn(!isSignIn)}
-            onForgotPassword={handleForgotPassword}
-            loading={loading}
-          />
-          
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+        {/* Card */}
+        <div className="bg-white rounded-[2rem] shadow-[0_20px_60px_rgba(242,199,55,0.15)] overflow-hidden w-full border border-white/20">
+          <div className="px-6 sm:px-10 py-10 text-center">
+            <AuthForm
+              isSignIn={isSignIn}
+              formData={isSignIn ? loginInput : signupInput}
+              onChange={(e) => handleInputChange(e, isSignIn)}
+              onSubmit={isSignIn ? handleLoginSubmit : handleSignupSubmit}
+              onToggleMode={() => setIsSignIn(!isSignIn)}
+              onForgotPassword={handleForgotPassword}
+              loading={loading}
+            />
+
+            {/* Divider */}
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-400 font-medium">Or continue with</span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+
+            {/* Google Login Button */}
+            <div className="hover:scale-[1.02] active:scale-[0.98] transition-transform">
+              <GoogleLoginButton
+                role="customer"
+                buttonText={isSignIn ? "Sign in with Google" : "Sign up with Google"}
+              />
             </div>
           </div>
-          
-          {/* Google Login Button */}
-          <GoogleLoginButton 
-            role="customer" 
-            buttonText={isSignIn ? "Sign in with Google" : "Sign up with Google"}
-          />
         </div>
       </div>
-
-      {/* Add animations */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
-        
-        @keyframes blob {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
     </div>
   );
 }

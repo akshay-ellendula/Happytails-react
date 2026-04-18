@@ -48,13 +48,97 @@ const ProductAccessoryPageWrapper = () => {
     fetchProductData();
   }, []); // Empty array ensures this runs only once when the component mounts
 
+  const [loadingText, setLoadingText] = useState("Fetching best accessories...");
+
+  // Cycle through fun pet-themed loading texts
+  useEffect(() => {
+    if (!isLoading) return;
+    const texts = [
+      "Fetching best accessories...",
+      "Sniffing out great deals...",
+      "Organizing squeaky toys...",
+      "Packing up the treats...",
+      "Almost ready to wag! 🐾"
+    ];
+    let i = 0;
+    const interval = setInterval(() => {
+      i = (i + 1) % texts.length;
+      setLoadingText(texts[i]);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
   // --- Render loading/error states ---
   if (isLoading) {
-    return <div>Loading Accessories... Please wait.</div>;
+    return (
+      <div className="fixed inset-0 z-50 bg-[#1a1a1a] flex flex-col items-center justify-center overflow-hidden font-outfit">
+        
+        {/* Animated glowing orbs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-[#f2c737]/20 blur-[100px] animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-[#f2c737]/10 blur-[80px] animate-pulse" style={{ animationDelay: '1s' }}></div>
+
+        {/* Floating paws pattern */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{ 
+          backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', 
+          backgroundSize: '40px 40px' 
+        }}></div>
+
+        <div className="relative z-10 flex flex-col items-center text-center">
+          
+          {/* Paw bouncing animation */}
+          <div className="relative w-32 h-32 mb-8 flex items-center justify-center">
+             <div className="absolute inset-0 bg-[#f2c737] rounded-full animate-ping opacity-20"></div>
+             <div className="absolute inset-2 bg-[#f2c737] rounded-full animate-pulse opacity-40"></div>
+             <div className="relative z-10 w-20 h-20 bg-[#f2c737] rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(242,199,55,0.6)] animate-bounce">
+                <span className="text-4xl">🐾</span>
+             </div>
+          </div>
+
+          {/* Glowing Text */}
+          <h2 className="text-3xl sm:text-4xl font-black text-white mb-4 tracking-tight drop-shadow-lg">
+            Hang tight!
+          </h2>
+          
+          {/* Typewriter/Fading Fun Text */}
+          <p className="text-[#f2c737] font-bold text-lg sm:text-xl h-8 animate-pulse transition-all duration-500">
+            {loadingText}
+          </p>
+
+          {/* Progress Bar Container */}
+          <div className="mt-12 w-64 h-2 bg-white/10 rounded-full overflow-hidden border border-white/5 relative">
+            {/* Animated infinite loading bar */}
+            <div className="absolute top-0 left-0 h-full bg-[#f2c737] rounded-full shadow-[0_0_15px_rgba(242,199,55,0.8)] relative w-full translate-x-[-100%] animate-[slideRight_1.5s_infinite_ease-in-out]"></div>
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes slideRight {
+            0% { transform: translateX(-100%); }
+            50% { transform: translateX(0%); }
+            100% { transform: translateX(100%); }
+          }
+        `}</style>
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error loading page: {error}</div>;
+    return (
+      <div className="min-h-screen bg-[#1a1a1a] flex flex-col items-center justify-center p-6 text-center font-outfit relative">
+         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
+         <div className="relative z-10 bg-white p-10 rounded-[2rem] shadow-[0_20px_60px_rgba(242,199,55,0.15)] max-w-md border border-white/20">
+            <div className="text-6xl mb-4">😿</div>
+            <h2 className="text-3xl font-black text-[#1a1a1a] mb-2 tracking-tight">Oops!</h2>
+            <p className="text-gray-500 mb-8 font-medium">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full bg-[#f2c737] text-[#1a1a1a] font-black py-4 rounded-xl hover:shadow-[0_10px_30px_rgba(242,199,55,0.3)] hover:-translate-y-1 transition-all duration-300 border border-[#f2c737]/20"
+            >
+              Try Again
+            </button>
+         </div>
+      </div>
+    );
   }
 
   // Ensure pageData and essential filter data exist before rendering

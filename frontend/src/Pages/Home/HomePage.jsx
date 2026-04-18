@@ -4,7 +4,6 @@ import MobileMenu from '../../components/MobileMenu';
 import Hero from './components/Hero';
 import PetEvents from './components/PetEvents';
 import Shop from './components/Shop';
-import About from './components/About';
 import Footer from '../../components/Footer';
 
 function HomePage() {
@@ -25,7 +24,6 @@ function HomePage() {
         <Hero />
         <PetEvents />
         <Shop />
-        <About />
         <Footer />
       </div>
     </>

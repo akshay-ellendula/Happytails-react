@@ -1,13 +1,13 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 
-const AuthForm = ({ 
-  isSignIn, 
-  formData, 
-  onChange, 
-  onSubmit, 
-  onForgotPassword, 
-  loading 
+const AuthForm = ({
+  isSignIn,
+  formData,
+  onChange,
+  onSubmit,
+  onForgotPassword,
+  loading
 }) => {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4 text-left">
@@ -15,8 +15,8 @@ const AuthForm = ({
         {isSignIn ? "Welcome Back!" : "Create Account"}
       </h2>
       <p className="text-gray-500 mb-6">
-        {isSignIn 
-          ? "Enter your details to access your account" 
+        {isSignIn
+          ? "Enter your details to access your account"
           : "Join our community of pet lovers today"}
       </p>
 
