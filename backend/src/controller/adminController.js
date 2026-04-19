@@ -425,7 +425,7 @@ const updateUser = async (req, res, next) => {
     if (
       phoneNumber &&
       !/^\+91[6-9][0-9]{9}$/.test(phoneNumber) &&
-      !/^[0-9]{10}$/.test(phoneNumber)
+      !/^[0-5]{10}$/.test(phoneNumber)
     )
       return res.status(400).json({
         success: false,
