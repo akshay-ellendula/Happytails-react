@@ -78,7 +78,6 @@ function AuthPage() {
       toast.success("Login successful!");
       // Navigation handled by useEffect
     } else {
-      console.log("Signin failed:", result);
       toast.error(result?.error || "Login failed");
     }
   };
@@ -96,7 +95,6 @@ function AuthPage() {
       toast.success("Registration successful!");
       // Navigation handled by useEffect
     } else {
-      console.log("Signup failed:", result);
       toast.error(result?.error || "Signup failed");
     }
   };

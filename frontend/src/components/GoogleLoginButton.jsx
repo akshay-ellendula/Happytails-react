@@ -14,8 +14,6 @@ const GoogleLoginButton = ({ role = 'customer', onSuccess, buttonText = 'Continu
         }
         const redirectUrl = `${backendUrl}/auth/google?role=${role}`;
 
-        console.log('Redirecting to:', redirectUrl);
-
         // For better UX, you can open in current tab or popup
         window.location.href = redirectUrl;
     };

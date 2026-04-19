@@ -71,7 +71,6 @@ export const signup = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.log("Something went wrong in signup controller", error);
     next(error); // Pass error to error handling middleware
   }
 };
@@ -126,7 +125,6 @@ export const signin = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.log("Something went wrong in signin controller", error);
     next(error); // Pass error to error handling middleware
   }
 };
@@ -203,7 +201,6 @@ export const eventManagersignup = async (req, res, next) => {
 
     res.status(201).json({ success: true });
   } catch (error) {
-    console.log("Something went wrong in signup controller", error);
     next(error); // Pass error to error handling middleware
   }
 };
@@ -257,10 +254,6 @@ export const eventManagersignin = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.log(
-      "Something went wrong in eventManager signin controller",
-      error,
-    );
     next(error); // Pass error to error handling middleware
   }
 };
@@ -439,7 +432,6 @@ export const verifyAuth = async (req, res) => {
       user: userData,
     });
   } catch (error) {
-    console.log("JWT verification failed:", error);
     res.clearCookie("jwt");
     res.status(200).json({ authenticated: false });
   }
@@ -525,7 +517,6 @@ export const storePartnerSignup = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("Error in vendor signup:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -618,7 +609,6 @@ export const storePartnerSignin = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log("Error in vendor signin:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -743,7 +733,6 @@ export const resetPassword = async (req, res) => {
 // @access  Public
 export const googleAuth = (req, res, next) => {
   const { role } = req.query;
-  console.log("Google auth initiated for role:", role);
 
   // Pass role as state parameter to retrieve in callback
   const authenticator = passport.authenticate("google", {
@@ -758,31 +747,16 @@ export const googleAuth = (req, res, next) => {
 // @route   GET /api/auth/google/callback
 // @access  Public
 export const googleAuthCallback = (req, res, next) => {
-  console.log("=== Google Callback Received ===");
-  console.log("[GOOGLE_PIPELINE] 5. Hits /api/auth/google/callback endpoint");
-  console.log(
-    `[GOOGLE_PIPELINE] Full URL Requested: ${req.protocol}://${req.get("host")}${req.originalUrl}`,
-  );
-  console.log("Query params:", req.query);
-  console.log("State param:", req.query.state); // The role should be in the state parameter
-
   // The role is passed in the state parameter from the initial request
   // We need to add it to the query so it's available in the passport strategy
   if (req.query.state) {
     req.query.role = req.query.state;
-    console.log("Role extracted from state:", req.query.role);
   }
 
   passport.authenticate(
     "google",
     { session: false },
     async (err, data, info) => {
-      console.log("[GOOGLE_PIPELINE] 6. Returned from passport.authenticate()");
-      console.log("Passport authentication result:");
-      console.log("- Error:", err?.message || err);
-      console.log("- Has data:", !!data);
-      console.log(`[GOOGLE_PIPELINE] info object/details:`, info);
-
       if (err || !data) {
         console.error(
           "[GOOGLE_PIPELINE] 7. ERROR: Google auth failed. Details:",
@@ -792,18 +766,11 @@ export const googleAuthCallback = (req, res, next) => {
         const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
         const errorMessage = err?.message || "Unknown error";
         const redirectErrorUrl = `${frontendUrl}/service-login?error=google_auth_failed&details=${encodeURIComponent(errorMessage)}`;
-        console.log(
-          `[GOOGLE_PIPELINE] 7. Redirecting to FRONTEND with error: ${redirectErrorUrl}`,
-        );
         return res.redirect(redirectErrorUrl);
       }
 
       try {
         const { user, token, role } = data;
-        console.log("Google auth successful!");
-        console.log("- Role:", role);
-        console.log("- User email:", user.email);
-        console.log("- User ID:", user._id);
 
         // Set JWT cookie
         res.cookie("jwt", token, {
@@ -828,9 +795,6 @@ export const googleAuthCallback = (req, res, next) => {
         }
 
         redirectUrl += `?google_login_success=true`;
-        console.log(
-          `[GOOGLE_PIPELINE] 7. SUCCESS: Redirecting to frontend: ${redirectUrl}`,
-        );
 
         return res.redirect(redirectUrl);
       } catch (error) {

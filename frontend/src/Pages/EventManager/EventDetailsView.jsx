@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ArrowLeft, Users, DollarSign, Ticket, Calendar,
+  ArrowLeft, Users, IndianRupee, Ticket, Calendar,
   Loader2, MapPin, Clock, Info, Tag, Search,
   Star, Download, FileText, Image as ImageIcon
 } from 'lucide-react';
@@ -291,7 +291,7 @@ const EventDetailsView = ({ event, setCurrentPage }) => {
               <p className="text-sm text-gray-500 mb-1">Gross Revenue</p>
               <h3 className="text-3xl font-bold text-gray-800">₹{grossRevenue.toFixed(2)}</h3>
             </div>
-            <div className="p-4 bg-green-50 text-green-600 rounded-xl"><DollarSign className="w-6 h-6" /></div>
+            <div className="p-4 bg-green-50 text-green-600 rounded-xl"><IndianRupee className="w-6 h-6" /></div>
           </div>
           <p className="text-sm text-gray-400 mt-3 font-medium">From {ticketsSold} sales</p>
         </div>
@@ -301,7 +301,7 @@ const EventDetailsView = ({ event, setCurrentPage }) => {
               <p className="text-sm text-gray-500 mb-1">Taxes & Fees (6%)</p>
               <h3 className="text-3xl font-bold text-red-500">-₹{estimatedTaxesAndFees.toFixed(2)}</h3>
             </div>
-            <div className="p-4 bg-red-50 text-red-500 rounded-xl"><DollarSign className="w-6 h-6" /></div>
+            <div className="p-4 bg-red-50 text-red-500 rounded-xl"><IndianRupee className="w-6 h-6" /></div>
           </div>
           <p className="text-sm text-gray-400 mt-3 font-medium">Platform deductions</p>
         </div>
@@ -311,7 +311,7 @@ const EventDetailsView = ({ event, setCurrentPage }) => {
               <p className="text-sm text-gray-500 mb-1">Net Earnings</p>
               <h3 className="text-3xl font-bold text-green-600">₹{netRevenue.toFixed(2)}</h3>
             </div>
-            <div className="p-4 bg-[#effe8b]/30 text-green-700 rounded-xl"><DollarSign className="w-6 h-6" /></div>
+            <div className="p-4 bg-[#effe8b]/30 text-green-700 rounded-xl"><IndianRupee className="w-6 h-6" /></div>
           </div>
           <p className="text-sm text-gray-400 mt-3 font-medium">Available for payout</p>
         </div>

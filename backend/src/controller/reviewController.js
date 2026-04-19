@@ -182,30 +182,14 @@ export const getEventManagerAnalytics = async (req, res, next) => {
             .populate('customerId', 'userName email profilePic')
             .sort({ purchaseDate: -1 });
 
-        console.log(`[Analytics] Found ${tickets.length} tickets`);
         if (tickets.length > 0) {
             const sample = tickets[0];
-            console.log('[Analytics] Sample ticket.eventId fields:', JSON.stringify({
-                title: sample.eventId?.title,
-                category: sample.eventId?.category,
-                venue: sample.eventId?.venue,
-                location: sample.eventId?.location,
-                date_time: sample.eventId?.date_time,
-            }));
-            console.log('[Analytics] Sample ticket fields:', JSON.stringify({
-                contactPhone: sample.contactPhone,
-                contactEmail: sample.contactEmail,
-                price: sample.price,
-                numberOfTickets: sample.numberOfTickets,
-                petName: sample.petName,
-            }));
         }
 
         // 3. Fetch all reviews for these events to link to tickets
         const reviews = await Review.find({ eventId: { $in: eventIds } });
         const reviewMap = new Map();
         reviews.forEach(r => reviewMap.set(r.ticketId.toString(), r));
-        console.log(`[Analytics] Found ${reviews.length} reviews, mapped by ticketId`);
 
         // Build the email logs based on tickets
         const emailLogsMap = new Map();
@@ -288,7 +272,6 @@ export const getEventManagerAnalytics = async (req, res, next) => {
             deepAnalysis,
             emailLogs
         });
-
     } catch (error) {
         console.error("Error fetching review analytics:", error);
         next(error);

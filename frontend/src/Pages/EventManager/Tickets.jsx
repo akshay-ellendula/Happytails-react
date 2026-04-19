@@ -135,7 +135,7 @@ const Tickets = ({ setCurrentPage }) => {
                     </td>
                     <td className="py-4 text-sm text-gray-600">{ticket.petDetails}</td>
                     <td className="py-4 text-sm">{formatDate(ticket.purchaseDate)}</td>
-                    <td className="py-4 text-sm font-medium">${ticket.price}</td>
+                    <td className="py-4 text-sm font-medium">₹{ticket.price}</td>
                     <td className="py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(ticket.status)}`}>
                         {ticket.status}

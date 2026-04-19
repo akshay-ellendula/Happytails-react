@@ -5,7 +5,7 @@ import {
   Users,
   Search,
   ArrowLeft,
-  DollarSign,
+  IndianRupee,
   ShoppingBag,
   User,
 } from "lucide-react";
@@ -116,7 +116,7 @@ const ViewAllCustomers = () => {
               </p>
             </div>
             <div className="p-3 bg-purple-100 rounded-xl">
-              <DollarSign className="text-purple-600" size={24} />
+              <IndianRupee className="text-purple-600" size={24} />
             </div>
           </div>
         </div>

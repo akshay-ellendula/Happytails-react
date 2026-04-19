@@ -17,7 +17,6 @@ const ProductAccessoryPageWrapper = () => {
       try {
         // Fetch from the API endpoint
         const response = await axiosInstance.get("/products/getProducts");
-        console.log("API Response:", response.data); // Debug log
         if (response.data.success) {
           setPageData({
             // UPDATED: Removed 'user' from here. We get it from useAuth now.

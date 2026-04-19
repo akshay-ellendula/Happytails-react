@@ -11,7 +11,7 @@ import {
   Trash2,
   ArrowLeft,
   Clock,
-  DollarSign,
+  IndianRupee,
   MapPin,
   User,
   Calendar,
@@ -907,7 +907,7 @@ const ManagerOrderDetails = () => {
 
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl p-5 border border-emerald-200">
           <div className="flex items-center gap-3">
-            <DollarSign className="text-emerald-600" size={20} />
+            <IndianRupee className="text-emerald-600" size={20} />
             <div>
               <p className="text-sm text-emerald-600 font-medium">
                 Total Items

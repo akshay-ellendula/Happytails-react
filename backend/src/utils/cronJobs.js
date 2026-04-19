@@ -7,14 +7,10 @@ import sendEmail from './sendEmail.js';
 // 1. Extract the logic into a reusable function
 const sendReviewEmails = async () => {
     try {
-        console.log('Running check for completed events...');
-        
         // FOR TESTING: We removed the "$gte: yesterday" part so it finds ALL past events
         const completedEvents = await Event.find({
             date_time: { $lt: new Date() } 
         });
-
-        console.log(`Found ${completedEvents.length} past events to process.`);
 
         for (const event of completedEvents) {
             // Find all valid, un-reviewed tickets for this event
@@ -23,8 +19,6 @@ const sendReviewEmails = async () => {
                 status: true,
                 isReviewed: false
             }).populate('customerId');
-
-            console.log(`Found ${tickets.length} un-reviewed tickets for event: ${event.title}`);
 
             for (const ticket of tickets) {
                 // 1. Generate a raw random token
@@ -114,16 +108,13 @@ const sendReviewEmails = async () => {
                     subject: `How was ${event.title}? Leave a review!`,
                     message: message
                 });
-                
+
                 // Track that the email was successfully sent
                 ticket.isReviewEmailSent = true;
                 ticket.reviewEmailSentAt = new Date();
                 await ticket.save();
-                
-                console.log(`Successfully sent email to ${ticket.contactEmail}`);
             }
         }
-        console.log('Finished processing review emails.');
     } catch (error) {
         console.error("Error in review email cron job:", error);
     }

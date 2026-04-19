@@ -58,17 +58,21 @@ const CreateEvent = ({ setCurrentPage }) => {
       data.append(key, formData[key]);
     });
 
-    try {
-      // Assumes generic POST /api/events endpoint
-      const response = await axiosInstance.post('/events', data);
+    const createEventPromise = axiosInstance.post('/events', data);
 
+    toast.promise(createEventPromise, {
+      loading: 'Creating event... Uploading images may take a moment.',
+      success: 'Event created successfully!',
+      error: (err) => err.response?.data?.message || "Failed to create event. Please try again."
+    });
+
+    try {
+      const response = await createEventPromise;
       if (response.status === 201 || response.status === 200) {
-        toast.success("Event created successfully!");
         setCurrentPage("events");
       }
     } catch (error) {
       console.error("Error creating event:", error);
-      toast.error(error.response?.data?.message || "Failed to create event. Please try again.");
     } finally {
       setIsLoading(false);
     }

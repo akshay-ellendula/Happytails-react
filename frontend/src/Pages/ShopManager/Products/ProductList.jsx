@@ -12,7 +12,7 @@ import {
   Package,
   TrendingUp,
   ChevronDown,
-  DollarSign,
+  IndianRupee,
   AlertCircle,
   ArrowRight,
   Trash2,
@@ -516,7 +516,6 @@ const ProductList = () => {
           </div>
         </div>
       </div>
-
       {/* Low Stock Alert Banner */}
       {(() => {
         if (lowStockProducts.length === 0) return null;
@@ -557,7 +556,6 @@ const ProductList = () => {
           </div>
         );
       })()}
-
       <div className="bg-white rounded-2xl shadow border border-gray-200 overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -663,7 +661,6 @@ const ProductList = () => {
           </div>
         )}
       </div>
-
       {/* Search + Filters */}
       <div className="space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -793,7 +790,6 @@ const ProductList = () => {
           </div>
         )}
       </div>
-
       {/* Bulk Action Bar */}
       {selectedProducts.length > 0 && (
         <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
@@ -818,7 +814,6 @@ const ProductList = () => {
           </button>
         </div>
       )}
-
       {/* Stock Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
@@ -846,7 +841,6 @@ const ProductList = () => {
           </p>
         </div>
       </div>
-
       {/* Products Grid */}
       {filteredProducts.length > 0 ? (
         viewMode === "grid" ? (
@@ -1184,7 +1178,6 @@ const ProductList = () => {
           </Link>
         </div>
       )}
-
       {/* Floating Buttons */}
       <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
         <button
@@ -1201,7 +1194,6 @@ const ProductList = () => {
           <Plus size={24} />
         </Link>
       </div>
-
       {/* CSV Upload Modal */}
       {csvModalOpen && (
         <div
@@ -1443,7 +1435,6 @@ const ProductList = () => {
           </div>
         </div>
       )}
-
       {/* Product Preview Modal */}
       {previewProduct && (
         <div
@@ -1488,12 +1479,7 @@ const ProductList = () => {
                       }
                       alt={`${previewProduct.product_name} - ${currentImageIndex + 1}`}
                       className="w-full h-80 object-cover"
-                      onError={(e) => {
-                        console.log(
-                          "Image failed to load:",
-                          previewProduct.images[currentImageIndex],
-                        );
-                      }}
+                      onError={(e) => {}}
                     />
 
                     {/* Image Navigation */}

@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   ShoppingBag,
   Users,
-  DollarSign,
+  IndianRupee,
   Package,
   TrendingUp,
   Calendar,
@@ -48,7 +48,6 @@ const ShopDashboard = () => {
           axiosInstance.get("/vendors/products/top3"),
         ]);
 
-        console.log("Dashboard response:", dashboardRes.data);
         if (dashboardRes.data.success) {
           setStats(dashboardRes.data.stats);
         }
@@ -467,7 +466,7 @@ const ShopDashboard = () => {
               </h3>
             </div>
             <div className="p-2 sm:p-3 bg-emerald-100 rounded-xl">
-              <DollarSign className="text-emerald-600" size={20} />
+              <IndianRupee className="text-emerald-600" size={20} />
             </div>
           </div>
           <div className="text-sm text-gray-500 flex items-center gap-2">

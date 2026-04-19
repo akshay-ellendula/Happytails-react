@@ -163,7 +163,6 @@ const Reviews = () => {
 
     return (
         <div className="space-y-8 p-6 md:p-8 max-w-7xl mx-auto">
-            
             {/* Header & Filter Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h1 className="text-4xl font-black text-[#1a1a1a] uppercase tracking-wide">
@@ -189,7 +188,6 @@ const Reviews = () => {
                     </div>
                 </div>
             </div>
-
             {/* Dashboard Stats & Graph Container */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
@@ -239,7 +237,6 @@ const Reviews = () => {
                     </div>
                 </div>
             </div>
-
             {/* Tabs for toggling views */}
             <div className="flex gap-4 border-b-2 border-black pb-4 mt-8">
                 <button 
@@ -263,11 +260,10 @@ const Reviews = () => {
                     Attendee Tracking
                 </button>
             </div>
-
             {/* Conditional Views based on Tabs */}
             {activeTab === 'reviews' ? (
                 /* Reviews List Grid */
-                <div className="mt-4">
+                (<div className="mt-4">
                     {filteredReviews.length === 0 ? (
                         <div className="bg-white border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-xl p-12 text-center mt-6">
                             <div className="w-20 h-20 bg-[#effe8b] border-2 border-black rounded-full flex items-center justify-center mx-auto mb-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -318,7 +314,6 @@ const Reviews = () => {
                             ))}
                         </div>
                     )}
-                    
                     {/* Reviews Pagination Controls */}
                     {totalReviewPages > 1 && (
                         <div className="flex justify-center items-center gap-4 mt-8">
@@ -341,10 +336,10 @@ const Reviews = () => {
                             </button>
                         </div>
                     )}
-                </div>
+                </div>)
             ) : (
                 /* Attendee Deep Analysis Section */
-                <div className="mt-4 space-y-6">
+                (<div className="mt-4 space-y-6">
                     {/* Advanced Filters Bar */}
                     <div className="flex flex-col md:flex-row gap-4 mb-6">
                         <input 
@@ -365,7 +360,6 @@ const Reviews = () => {
                             <option value="not_sent">🚫 Email Not Sent</option>
                         </select>
                     </div>
-
                     {filteredAnalytics.length === 0 ? (
                         <div className="bg-white border-2 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-xl p-12 text-center mt-6">
                             <p className="text-2xl font-bold text-[#1a1a1a]">No attendees found!</p>
@@ -431,7 +425,6 @@ const Reviews = () => {
                             </table>
                         </div>
                     )}
-
                     {/* Tracking Pagination Controls */}
                     {totalTrackingPages > 1 && (
                         <div className="flex justify-center items-center gap-4 mt-8">
@@ -454,9 +447,8 @@ const Reviews = () => {
                             </button>
                         </div>
                     )}
-                </div>
+                </div>)
             )}
-            
             {/* Detailed Review Modal */}
             {selectedReviewDetail && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/70 backdrop-blur-md overflow-y-auto">
@@ -508,7 +500,7 @@ const Reviews = () => {
                                             </div>
                                             <div className="flex justify-between items-center bg-white p-2 border-2 border-black rounded-lg">
                                                 <span className="font-bold text-sm">Total Paid</span>
-                                                <span className="font-black text-xl text-green-700">${selectedReviewDetail.ticketDetails?.price || "0"}</span>
+                                                <span className="font-black text-xl text-green-700">₹{selectedReviewDetail.ticketDetails?.price || "0"}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -587,7 +579,6 @@ const Reviews = () => {
                     </div>
                 </div>
             )}
-            
         </div>
     );
 };

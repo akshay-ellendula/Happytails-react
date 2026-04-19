@@ -6,7 +6,7 @@ import {
   Upload,
   Package,
   Tag,
-  DollarSign,
+  IndianRupee,
   Hash,
   Palette,
   Grid,
@@ -314,7 +314,7 @@ const AddProduct = () => {
                       Selling Price (₹) *
                     </label>
                     <div className="relative">
-                      <DollarSign
+                      <IndianRupee
                         className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                         size={16}
                       />
@@ -337,7 +337,7 @@ const AddProduct = () => {
                       Sale Price (₹)
                     </label>
                     <div className="relative">
-                      <DollarSign
+                      <IndianRupee
                         className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                         size={16}
                       />

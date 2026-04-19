@@ -18,18 +18,6 @@ export const configureGoogleStrategy = () => {
       },
       async (req, accessToken, refreshToken, profile, done) => {
         try {
-          console.log("[GOOGLE_PIPELINE] 1. Passport Strategy Triggered");
-          console.log(
-            `[GOOGLE_PIPELINE] req.protocol: ${req.protocol}, req.secure: ${req.secure}`,
-          );
-          console.log(
-            `[GOOGLE_PIPELINE] req.headers.host: ${req.headers.host}`,
-          );
-          console.log(
-            `[GOOGLE_PIPELINE] req.headers['x-forwarded-proto']: ${req.headers["x-forwarded-proto"]}`,
-          );
-          console.log("Full Google profile:", JSON.stringify(profile, null, 2));
-
           // Extract email - make sure we get the first verified email
           const email =
             profile.emails && profile.emails[0]
@@ -62,12 +50,6 @@ export const configureGoogleStrategy = () => {
             userName = email.split("@")[0];
           }
 
-          console.log("Extracted user data:", { email, userName });
-          console.log(
-            "[GOOGLE_PIPELINE] 2. User Data Successfully Extracted:",
-            email,
-          );
-
           const picture =
             profile.photos && profile.photos[0]
               ? profile.photos[0].value
@@ -76,7 +58,6 @@ export const configureGoogleStrategy = () => {
 
           // Get role from query parameters or state
           const role = req.query.role || req.query.state || "customer";
-          console.log("Role from query:", role);
 
           let user;
           let Model;
@@ -94,16 +75,10 @@ export const configureGoogleStrategy = () => {
               Model = Customer;
           }
 
-          console.log("Using model for role:", role);
-          console.log(
-            `[GOOGLE_PIPELINE] 3. Checking DB using Model for role: ${role}`,
-          );
-
           // Check if user exists with this email
           user = await Model.findOne({ email });
 
           if (!user) {
-            console.log("Creating new user with role:", role);
             const userData = {
               email,
               userName: userName,
@@ -137,15 +112,12 @@ export const configureGoogleStrategy = () => {
             // attached to the document context, causing spurious validation errors.
             user = new Model(userData);
             await user.save({ validateBeforeSave: false });
-            console.log("User created successfully");
           } else {
-            console.log("Existing user found");
             // Update existing user with googleId if not present
             if (!user.googleId) {
               user.googleId = googleId;
               user.isGoogleLogin = true;
               await user.save({ validateBeforeSave: false });
-              console.log("Updated user with Google ID");
             }
           }
 
@@ -171,17 +143,9 @@ export const configureGoogleStrategy = () => {
             expiresIn: "7d",
           });
 
-          console.log("JWT token generated for role:", normalizedRole);
-          console.log(
-            "[GOOGLE_PIPELINE] 4. SUCCESS: Generating JWT and calling done()",
-          );
           return done(null, { user, token, role: normalizedRole });
         } catch (error) {
           console.error("Google Strategy Error:", error);
-          console.log(
-            "[GOOGLE_PIPELINE] 4. ERROR: Failed inside Passport Strategy:",
-            error.message,
-          );
           return done(error, null);
         }
       },

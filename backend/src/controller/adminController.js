@@ -2720,7 +2720,6 @@ const updateProduct = async (req, res) => {
         });
       }
     } catch (err) {
-      console.log("Error parsing variants:", err);
       return res
         .status(400)
         .json({ success: false, message: "Invalid variants data" });

@@ -54,7 +54,6 @@ export default function MyWishlistPage() {
     <div className="bg-[#f2c737] min-h-screen">
       <Header onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
       {isMobileMenuOpen && <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />}
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
@@ -109,7 +108,7 @@ export default function MyWishlistPage() {
                 </div>
               ) : wishlistItems.length === 0 ? (
                 /* ── Empty State ── */
-                <div className="flex flex-col items-center justify-center py-20 text-center">
+                (<div className="flex flex-col items-center justify-center py-20 text-center">
                   <div
                     style={{
                       width: "7rem",
@@ -143,10 +142,10 @@ export default function MyWishlistPage() {
                   >
                     Browse Accessories
                   </Link>
-                </div>
+                </div>)
               ) : (
                 /* ── Wishlist Grid ── */
-                <div
+                (<div
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
@@ -301,13 +300,12 @@ export default function MyWishlistPage() {
                       </div>
                     );
                   })}
-                </div>
+                </div>)
               )}
             </div>
           </div>
         </div>
       </div>
-
       <Footer />
     </div>
   );

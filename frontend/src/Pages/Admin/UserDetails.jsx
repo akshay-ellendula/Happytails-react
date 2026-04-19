@@ -347,7 +347,7 @@ export default function UserDetails() {
                                                     const price = parseFloat(order.price.replace(/[^0-9.-]+/g, ""));
                                                     return acc + (isNaN(price) ? 0 : price);
                                                 }, 0);
-                                                return `$${total.toFixed(2)}`;
+                                                return `₹${total.toFixed(2)}`;
                                             })()}
                                         </p>
                                     </div>

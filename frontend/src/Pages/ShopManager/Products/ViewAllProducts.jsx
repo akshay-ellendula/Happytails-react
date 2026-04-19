@@ -31,15 +31,6 @@ const ViewAllProducts = () => {
 
       const res = await axiosInstance.get(url);
       if (res.data.success) {
-        console.log("Products data:", res.data.products);
-        console.log(
-          "First product price:",
-          res.data.products[0]?.price,
-          "regular:",
-          res.data.products[0]?.regular_price,
-          "sale:",
-          res.data.products[0]?.sale_price,
-        );
         setProducts(res.data.products || []);
         setCategories(res.data.categories || []);
       }

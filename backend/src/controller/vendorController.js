@@ -566,10 +566,6 @@ const submitProduct = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
 
-  // DEBUG: Log to verify what is being received
-  console.log("Submit Product - Body:", req.body);
-  console.log("Submit Product - Files:", req.files);
-
   const {
     product_name,
     product_category,
@@ -669,9 +665,6 @@ const updateProduct = async (req, res, next) => {
   if (!req.user) return sendError(res, "Unauthorized", 401);
   const vendorId = req.user.vendorId;
   const productId = req.params.productId;
-
-  // DEBUG: Log for update
-  console.log("Update Product - Files:", req.files);
 
   const {
     product_name,
@@ -1981,7 +1974,6 @@ const getVendorDashboard = async (req, res, next) => {
       })),
     };
 
-    console.log("Final Dashboard Stats:", JSON.stringify(stats, null, 2));
     sendJson(res, { stats });
   } catch (error) {
     console.error("Dashboard Error:", error);
@@ -2138,9 +2130,6 @@ const getVendorProductsSorted = async (req, res) => {
       vendor_id: vendorId,
       is_deleted: { $ne: true },
     });
-
-    console.log("Products sorted - returning:", products.length, "products");
-    console.log("Sample product:", products[0]);
 
     res.json({
       success: true,
@@ -2615,8 +2604,6 @@ const bulkUploadProducts = async (req, res, next) => {
           row[h] = values[idx] ? values[idx].replace(/^"|"$/g, "") : "";
         });
 
-        console.log(`Row ${i}: `, row);
-
         const productName = row.product_name || row.name || "";
         const category = row.product_category || row.category || "other";
 
@@ -2640,8 +2627,6 @@ const bulkUploadProducts = async (req, res, next) => {
           stock_status: "In Stock",
         });
 
-        console.log(`Created product: ${newProduct._id} - ${productName}`);
-
         // Create variant
         const regularPrice =
           parseFloat(row.regular_price || row.price || 0) || 0;
@@ -2658,8 +2643,6 @@ const bulkUploadProducts = async (req, res, next) => {
           sku: row.sku || null,
         });
 
-        console.log(`Created variant for: ${newProduct._id}`);
-
         // Handle images: can be single URL or semicolon-separated URLs
         const imageUrlsRaw = row.image_url || row.imageurl || row.image || "";
 
@@ -2674,11 +2657,6 @@ const bulkUploadProducts = async (req, res, next) => {
                 (url.startsWith("http://") || url.startsWith("https://")),
             );
 
-          console.log(
-            `Processing ${imageUrls.length} images for product ${newProduct._id}:`,
-            imageUrls,
-          );
-
           // Create image records
           for (let imgIdx = 0; imgIdx < imageUrls.length; imgIdx++) {
             const imageUrl = imageUrls[imgIdx];
@@ -2690,7 +2668,6 @@ const bulkUploadProducts = async (req, res, next) => {
                 image_data: imageUrl,
                 is_primary: imgIdx === 0, // First image is primary
               });
-              console.log(`Created image ${imgIdx + 1}: ${imageUrl}`);
             } catch (imgErr) {
               console.error(
                 `Failed to create image for ${newProduct._id}:`,
@@ -2699,9 +2676,7 @@ const bulkUploadProducts = async (req, res, next) => {
               // Continue with other images even if one fails
             }
           }
-        } else {
-          console.log(`No image URL provided for product ${newProduct._id}`);
-        }
+        } else {}
 
         results.created++;
       } catch (rowErr) {
@@ -2710,10 +2685,6 @@ const bulkUploadProducts = async (req, res, next) => {
         results.errors.push({ row: i + 1, error: rowErr.message });
       }
     }
-
-    console.log(
-      `Bulk upload complete: ${results.created} created, ${results.failed} failed`,
-    );
 
     sendJson(res, {
       message: `Bulk upload complete: ${results.created} created, ${results.failed} failed`,

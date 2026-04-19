@@ -72,7 +72,6 @@ const EditTicket = ({ setCurrentPage, ticketData }) => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Saving ticket data:", formData);
       alert("Ticket updated successfully!");
       setFormChanged(false);
       setCurrentPage("ticket-details", formData, 'ticket');
@@ -346,7 +345,7 @@ const EditTicket = ({ setCurrentPage, ticketData }) => {
                       </div>
                       <div>
                         <span className="text-xs text-gray-600">Price:</span>
-                        <div className="ml-2 font-bold text-base">${formData.price.toFixed(2)}</div>
+                        <div className="ml-2 font-bold text-base">₹{formData.price.toFixed(2)}</div>
                       </div>
                     </div>
                     <button
