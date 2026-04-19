@@ -71,8 +71,48 @@ import {
 } from '../controller/adminController.js'; // Corrected import syntax for controller functions
 import upload from '../middleware/uploadMiddleware.js';
 import protectRoute from '../middleware/authMiddleware.js';
+import cacheMiddleware, { invalidateCache } from '../middleware/cacheMiddleware.js';
 
 const router = express.Router();
+
+// ─────────────────────────────────────────────────────
+// Cache Key Generators for Admin Routes
+// ─────────────────────────────────────────────────────
+const userListKeyGen = () => 'admin:users:list';
+const userStatsKeyGen = () => 'admin:users:stats';
+const usersWithRevenueKeyGen = () => 'admin:users:with-revenue';
+const topSpendersKeyGen = () => 'admin:users:top-spenders';
+
+// ─────────────────────────────────────────────────────
+// Cache Invalidation Middleware for User Operations
+// ─────────────────────────────────────────────────────
+const invalidateUserCache = async (req, res, next) => {
+    try {
+        await invalidateCache('admin:users:', 'admin:users:');
+    } catch (err) {
+        console.warn('⚠️ Failed to invalidate user cache:', err.message);
+    }
+    next();
+};
+
+// Same pattern for other entity types
+const invalidateVendorCache = async (req, res, next) => {
+    try {
+        await invalidateCache('admin:vendors:');
+    } catch (err) {
+        console.warn('⚠️ Failed to invalidate vendor cache:', err.message);
+    }
+    next();
+};
+
+const invalidateProductCache = async (req, res, next) => {
+    try {
+        await invalidateCache('admin:products:');
+    } catch (err) {
+        console.warn('⚠️ Failed to invalidate product cache:', err.message);
+    }
+    next();
+};
 // =======================================================
 router.get('/logout', protectRoute(['admin']), logout);
 
@@ -81,20 +121,20 @@ router.get('/logout', protectRoute(['admin']), logout);
 router.get('/stats', protectRoute(['admin']), dashBoardStats);
 router.get('/revenue-chart', protectRoute(['admin']), getRevenueChartData);
 // After the other customer routes
-router.get('/customers/top-spenders', protectRoute(['admin']), getTopSpenders);
+router.get('/customers/top-spenders', protectRoute(['admin']), cacheMiddleware(120, topSpendersKeyGen), getTopSpenders);
 // Add this line near your other customer routes
-router.get('/customers/with-revenue', protectRoute(['admin']), getUsersWithRevenue);
+router.get('/customers/with-revenue', protectRoute(['admin']), cacheMiddleware(120, usersWithRevenueKeyGen), getUsersWithRevenue);
 
 
 // =======================================================
 // 3. CUSTOMER (USER) MANAGEMENT
 // =======================================================
-router.get('/customers', protectRoute(['admin']), getUsers);
-router.get('/customers/stats', protectRoute(['admin']), getUserStats);
+router.get('/customers', protectRoute(['admin']), cacheMiddleware(60, userListKeyGen), getUsers);
+router.get('/customers/stats', protectRoute(['admin']), cacheMiddleware(60, userStatsKeyGen), getUserStats);
 router.get('/customers/latest', protectRoute(['admin']), adminGetUsers);
 router.get('/customers/:id', protectRoute(['admin']), getUser);
-router.put('/customers/:id', protectRoute(['admin']), updateUser);
-router.delete('/customers/:id', protectRoute(['admin']), deleteUser);
+router.put('/customers/:id', protectRoute(['admin']), invalidateUserCache, updateUser);
+router.delete('/customers/:id', protectRoute(['admin']), invalidateUserCache, deleteUser);
 
 
 // =======================================================
