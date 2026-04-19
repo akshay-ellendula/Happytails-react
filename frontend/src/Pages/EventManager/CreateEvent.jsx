@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { axiosInstance } from '../../utils/axios.js'; // Adjust path
 import { Loader2 } from "lucide-react";
+import toast from 'react-hot-toast';
 
 const CreateEvent = ({ setCurrentPage }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -59,17 +60,15 @@ const CreateEvent = ({ setCurrentPage }) => {
 
     try {
       // Assumes generic POST /api/events endpoint
-      const response = await axiosInstance.post('/events', data, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await axiosInstance.post('/events', data);
 
       if (response.status === 201 || response.status === 200) {
-        alert("Event created successfully!");
+        toast.success("Event created successfully!");
         setCurrentPage("events");
       }
     } catch (error) {
       console.error("Error creating event:", error);
-      alert(error.response?.data?.message || "Failed to create event. Please try again.");
+      toast.error(error.response?.data?.message || "Failed to create event. Please try again.");
     } finally {
       setIsLoading(false);
     }
