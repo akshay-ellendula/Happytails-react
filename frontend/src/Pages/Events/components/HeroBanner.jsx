@@ -1,31 +1,28 @@
-import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Calendar, MapPin } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, Calendar, MapPin, Ticket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const HeroBanner = ({ events }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [slideDirection, setSlideDirection] = useState("right");
   const navigate = useNavigate();
 
   useEffect(() => {
     if (events.length === 0) return;
 
     const interval = setInterval(() => {
-      goToSlide((currentSlide + 1) % events.length, "right");
-    }, 5000);
+      goToSlide((currentSlide + 1) % events.length);
+    }, 6000);
     return () => clearInterval(interval);
   }, [events.length, currentSlide]);
 
-  const goToSlide = (index, direction) => {
+  const goToSlide = (index) => {
     if (isAnimating) return;
-    setSlideDirection(direction);
     setIsAnimating(true);
-    
     setTimeout(() => {
       setCurrentSlide(index);
       setTimeout(() => setIsAnimating(false), 50);
-    }, 300);
+    }, 400);
   };
 
   const handleEventClick = () => {
@@ -48,148 +45,134 @@ const HeroBanner = ({ events }) => {
   const featuredEvent = events[currentSlide];
 
   const nextSlide = () => {
-    goToSlide((currentSlide + 1) % events.length, "right");
+    goToSlide((currentSlide + 1) % events.length);
   };
 
   const prevSlide = () => {
-    goToSlide((currentSlide - 1 + events.length) % events.length, "left");
+    goToSlide((currentSlide - 1 + events.length) % events.length);
   };
 
-  const slideStyle = {
-    transition: "transform 0.4s ease, opacity 0.4s ease",
-    transform: isAnimating
-      ? `translateX(${slideDirection === "right" ? "-40px" : "40px"})`
-      : "translateX(0)",
-    opacity: isAnimating ? 0 : 1,
-  };
-
-  const imageStyle = {
-    transition: "transform 0.5s ease, opacity 0.5s ease",
-    transform: isAnimating
-      ? `translateX(${slideDirection === "right" ? "40px" : "-40px"}) scale(0.95)`
-      : "translateX(0) scale(1)",
-    opacity: isAnimating ? 0 : 1,
-  };
+  const ticketsLeft = featuredEvent.total_tickets - featuredEvent.tickets_sold;
+  const isSoldOut = ticketsLeft === 0;
 
   return (
-    <section className="relative bg-[#050505] overflow-hidden">
-      
-      {/* Blurred background image for atmosphere */}
-      <div className="absolute inset-0 z-0 transition-opacity duration-700">
-        <img
-          src={featuredEvent.bannerImg || featuredEvent.img || "/images/default-event.jpg"}
-          alt=""
-          className="w-full h-full object-cover opacity-[0.08] blur-2xl scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/80 to-[#050505]/60" />
-      </div>
+    <section className="relative w-full h-[520px] sm:h-[560px] lg:h-[600px] overflow-hidden">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="flex items-center min-h-[500px] lg:min-h-[520px] py-12 lg:py-16">
+      {/* Full-bleed Background Image */}
+      {events.map((event, index) => (
+        <div
+          key={event.id}
+          className="absolute inset-0 transition-opacity duration-700 ease-in-out"
+          style={{ opacity: index === currentSlide && !isAnimating ? 1 : 0 }}
+        >
+          <img
+            src={event.bannerImg || event.img || "/images/default-event.jpg"}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        </div>
+      ))}
 
-          {/* Left Arrow */}
+      {/* Cinematic Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/70 to-[#050505]/30 z-[1]" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#050505]/80 via-transparent to-transparent z-[1]" />
+
+      {/* Content */}
+      <div className="relative z-10 h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-end pb-14 lg:pb-16">
+        
+        {/* Event Info */}
+        <div
+          className="max-w-2xl transition-all duration-500 ease-out"
+          style={{
+            opacity: isAnimating ? 0 : 1,
+            transform: isAnimating ? "translateY(20px)" : "translateY(0)",
+          }}
+        >
+          {/* Category Badge */}
+          <div className="flex items-center gap-3 mb-4">
+            <span className="inline-flex items-center gap-1.5 bg-[#f2c737] text-black text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
+              <Ticket className="w-3.5 h-3.5" />
+              {featuredEvent.category || "Event"}
+            </span>
+            {isSoldOut && (
+              <span className="inline-flex items-center bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
+                Sold Out
+              </span>
+            )}
+            {!isSoldOut && ticketsLeft < 10 && (
+              <span className="inline-flex items-center bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
+                Only {ticketsLeft} left!
+              </span>
+            )}
+          </div>
+
+          {/* Title */}
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-4 leading-tight drop-shadow-lg">
+            {featuredEvent.title || "Untitled Event"}
+          </h1>
+
+          {/* Meta Info */}
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-white/70 text-sm sm:text-base mb-6">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-[#f2c737]" />
+              <span>{featuredEvent.date || "Date TBA"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-[#f2c737]" />
+              <span>{featuredEvent.venue || "Venue TBA"}</span>
+            </div>
+          </div>
+
+          {/* Price & CTA */}
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              onClick={handleEventClick}
+              disabled={isSoldOut}
+              className={`font-semibold px-8 py-3.5 rounded-xl text-sm transition-all duration-300 ${
+                isSoldOut
+                  ? "bg-white/10 text-white/30 cursor-not-allowed"
+                  : "bg-[#f2c737] text-black hover:bg-white hover:shadow-[0_0_30px_rgba(242,199,55,0.3)]"
+              }`}
+            >
+              {isSoldOut
+                ? "Sold Out"
+                : featuredEvent.price === 0
+                ? "Register Free"
+                : `Book Now — ₹${featuredEvent.price}`}
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation Controls */}
+        <div className="absolute bottom-14 lg:bottom-16 right-4 sm:right-6 lg:right-8 flex items-center gap-3 z-20">
           <button
             onClick={prevSlide}
-            className="hidden lg:flex flex-shrink-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white items-center justify-center transition-all mr-8"
+            className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 text-white flex items-center justify-center transition-all border border-white/10"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
 
-          {/* Content Area */}
-          <div className="flex-1 flex flex-col lg:flex-row items-center lg:items-center justify-between gap-10 lg:gap-16">
-            
-            {/* Left: Event Info */}
-            <div className="flex-1 w-full text-center lg:text-left order-2 lg:order-1" style={slideStyle}>
-              <div className="inline-flex items-center text-[#f2c737] text-sm font-semibold mb-4">
-                <Calendar className="w-4 h-4 mr-2" />
-                <span>{featuredEvent.date || "Date TBA"}</span>
-              </div>
+          {/* Slide Count */}
+          <span className="text-white/60 text-sm font-medium tabular-nums min-w-[48px] text-center">
+            {String(currentSlide + 1).padStart(2, "0")} / {String(events.length).padStart(2, "0")}
+          </span>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-bold text-white mb-5 leading-[1.15]">
-                {featuredEvent.title || "Untitled Event"}
-              </h1>
-
-              <div className="flex items-center justify-center lg:justify-start text-white/60 text-base mb-6">
-                <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span>{featuredEvent.venue || "Venue TBA"}</span>
-              </div>
-
-              <p className="text-[#f2c737] font-bold text-lg mb-6">
-                {featuredEvent.price === 0
-                  ? "Free Entry"
-                  : `₹${featuredEvent.price} onwards`}
-              </p>
-
-              <button
-                onClick={handleEventClick}
-                className="bg-white text-black font-semibold px-8 py-3.5 rounded-xl hover:bg-[#f2c737] transition-colors text-sm"
-              >
-                Book tickets
-              </button>
-            </div>
-
-            {/* Right: Image Card */}
-            <div className="w-full max-w-xs sm:max-w-sm lg:max-w-[340px] xl:max-w-[380px] flex-shrink-0 order-1 lg:order-2" style={imageStyle}>
-              <div
-                onClick={handleEventClick}
-                className="relative cursor-pointer group"
-              >
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-3 shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
-                  <div className="rounded-xl overflow-hidden aspect-[4/5]">
-                    <img
-                      src={
-                        featuredEvent.bannerImg ||
-                        featuredEvent.img ||
-                        "/images/default-event.jpg"
-                      }
-                      alt={featuredEvent.title || "Event"}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Mobile navigation arrows */}
-              <div className="flex lg:hidden justify-center gap-4 mt-6">
-                <button
-                  onClick={prevSlide}
-                  className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={nextSlide}
-                  className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Arrow */}
           <button
             onClick={nextSlide}
-            className="hidden lg:flex flex-shrink-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white items-center justify-center transition-all ml-8"
+            className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 text-white flex items-center justify-center transition-all border border-white/10"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Slide Indicators */}
-        <div className="flex justify-center gap-2 pb-10">
-          {events.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index, index > currentSlide ? "right" : "left")}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                index === currentSlide ? "bg-white w-6" : "bg-white/20 w-2"
-              }`}
+        {/* Slide Progress Bar */}
+        <div className="absolute bottom-0 left-0 right-0 z-20">
+          <div className="h-1 bg-white/10">
+            <div
+              className="h-full bg-[#f2c737] transition-all duration-500 ease-out"
+              style={{ width: `${((currentSlide + 1) / events.length) * 100}%` }}
             />
-          ))}
+          </div>
         </div>
       </div>
     </section>

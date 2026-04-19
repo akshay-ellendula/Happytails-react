@@ -121,6 +121,7 @@ export function createApp({
   initializePassport = true,
 } = {}) {
   const app = express();
+  app.set('trust proxy', 1);
 
   if (initializePassport) {
     ensurePassportConfigured();
