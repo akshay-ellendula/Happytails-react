@@ -46,15 +46,15 @@ const AboutPage = () => {
           </div>
         </div>
 
-        {/* <div className="text-center border-t border-white/10 pt-12">
-          <h2 className="text-2xl font-bold mb-4">Want to partner with us?</h2>
+        <div className="text-center border-t border-white/10 pt-12">
+          <h2 className="text-2xl font-bold mb-4">Want to partner with Us?</h2>
           <p className="text-white/40 mb-8 max-w-md mx-auto">
             Whether you're a store owner or event organizer, join HappyTails and grow your reach.
           </p>
           <Link to="/partnerRegistrataion" className="px-8 py-3 bg-[#f2c737] text-black font-semibold rounded-lg hover:bg-white transition-colors">
             Become a Partner
           </Link>
-        </div> */}
+        </div> 
       </div>
 
       <Footer />
