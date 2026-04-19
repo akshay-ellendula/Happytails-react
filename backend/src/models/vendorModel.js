@@ -77,9 +77,24 @@ const vendorSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// NOTE: Password hashing is handled EXPLICITLY in the controllers (authControllers.js
-// and vendorController.js) using bcrypt.hash(). There is NO pre-save hook here to
-// prevent double-hashing.
+vendorSchema.pre("save", async function (next) {
+  if (!this.isModified("password") || !this.password) {
+    return next();
+  }
+
+  // Prevent double-hashing when a controller already provided bcrypt output.
+  if (/^\$2[aby]\$\d{2}\$/.test(this.password)) {
+    return next();
+  }
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 // matchPassword method
 vendorSchema.methods.matchPassword = async function (enteredPassword) {
