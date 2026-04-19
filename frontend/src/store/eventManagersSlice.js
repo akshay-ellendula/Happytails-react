@@ -21,13 +21,19 @@ export const fetchEventManagerDetails = createAsyncThunk(
     try {
       const res = await axiosInstance.get(`/admin/event-managers/${id}`);
       if (!res.data.success) {
-        throw new Error(res.data.message || "Failed to load event manager details");
+        throw new Error(
+          res.data.message || "Failed to load event manager details",
+        );
       }
       return res.data.manager;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || "Failed to load event manager details");
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to load event manager details",
+      );
     }
-  }
+  },
 );
 
 /* ---------------------- FETCH METRICS ---------------------- */
@@ -35,15 +41,19 @@ export const fetchEventManagerMetrics = createAsyncThunk(
   "eventManagers/fetchEventManagerMetrics",
   async (id, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.get(`/admin/event-managers/${id}/metrics`);
+      const res = await axiosInstance.get(
+        `/admin/event-managers/${id}/metrics`,
+      );
       if (!res.data.success) {
         throw new Error(res.data.message || "Failed to load metrics");
       }
       return res.data.metrics;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || "Failed to load metrics");
+      return rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to load metrics",
+      );
     }
-  }
+  },
 );
 
 /* ---------------------- FETCH UPCOMING EVENTS ---------------------- */
@@ -51,15 +61,21 @@ export const fetchUpcomingEvents = createAsyncThunk(
   "eventManagers/fetchUpcomingEvents",
   async (id, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.get(`/admin/event-managers/${id}/upcoming-events`);
+      const res = await axiosInstance.get(
+        `/admin/event-managers/${id}/upcoming-events`,
+      );
       if (!res.data.success) {
         throw new Error(res.data.message || "Failed to load upcoming events");
       }
       return res.data.events;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || "Failed to load upcoming events");
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to load upcoming events",
+      );
     }
-  }
+  },
 );
 
 /* ---------------------- FETCH PAST EVENTS ---------------------- */
@@ -67,15 +83,65 @@ export const fetchPastEvents = createAsyncThunk(
   "eventManagers/fetchPastEvents",
   async (id, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.get(`/admin/event-managers/${id}/past-events`);
+      const res = await axiosInstance.get(
+        `/admin/event-managers/${id}/past-events`,
+      );
       if (!res.data.success) {
         throw new Error(res.data.message || "Failed to load past events");
       }
       return res.data.events;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || "Failed to load past events");
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to load past events",
+      );
     }
-  }
+  },
+);
+
+/* ---------------------- FETCH EVENTS BY DATE RANGE ---------------------- */
+export const fetchEventManagerEventsByDateRange = createAsyncThunk(
+  "eventManagers/fetchEventManagerEventsByDateRange",
+  async ({ id, startDate, endDate }, { rejectWithValue }) => {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+
+      const res = await axiosInstance.get(
+        `/admin/event-managers/${id}/events-by-date?${params.toString()}`,
+      );
+      if (!res.data.success) {
+        throw new Error(res.data.message || "Failed to load events");
+      }
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to load events",
+      );
+    }
+  },
+);
+
+/* ---------------------- FETCH ALL EVENT MANAGER EVENTS ---------------------- */
+export const fetchAllEventManagerEvents = createAsyncThunk(
+  "eventManagers/fetchAllEventManagerEvents",
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.get(
+        `/admin/event-managers/${id}/events-by-date`,
+      );
+      if (!res.data.success) {
+        throw new Error(res.data.message || "Failed to load events");
+      }
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || err.message || "Failed to load events",
+      );
+    }
+  },
 );
 
 /* ---------------------- UPDATE EVENT MANAGER ---------------------- */
@@ -83,18 +149,26 @@ export const updateEventManager = createAsyncThunk(
   "eventManagers/updateEventManager",
   async ({ id, formData }, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.put(`/admin/event-managers/${id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await axiosInstance.put(
+        `/admin/event-managers/${id}`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
       if (!res.data.success) {
         throw new Error(res.data.message || "Event manager update failed");
       }
       // Assuming backend returns the updated manager object for consistency
       return res.data.manager || formData; // Fallback to optimistic data if not returned
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || "Event manager update failed");
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Event manager update failed",
+      );
     }
-  }
+  },
 );
 
 /* ---------------------- DELETE EVENT MANAGER ---------------------- */
@@ -108,9 +182,13 @@ export const deleteEventManager = createAsyncThunk(
       }
       return { id };
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || "Event manager delete failed");
+      return rejectWithValue(
+        err.response?.data?.message ||
+          err.message ||
+          "Event manager delete failed",
+      );
     }
-  }
+  },
 );
 
 const eventManagersSlice = createSlice({
@@ -120,11 +198,17 @@ const eventManagersSlice = createSlice({
     metrics: null,
     upcomingEvents: [],
     pastEvents: [],
+    dateRangeEvents: [],
+    dateRangeSummary: null,
+    dateRangeFilter: { startDate: null, endDate: null },
+    allEvents: [],
 
     loadingDetail: false,
     loadingMetrics: false,
     loadingUpcoming: false,
     loadingPast: false,
+    loadingDateRangeEvents: false,
+    loadingAllEvents: false,
 
     error: null,
   },
@@ -135,6 +219,9 @@ const eventManagersSlice = createSlice({
       state.metrics = null;
       state.upcomingEvents = [];
       state.pastEvents = [];
+      state.dateRangeEvents = [];
+      state.dateRangeSummary = null;
+      state.allEvents = [];
       state.error = null;
     },
   },
@@ -194,6 +281,37 @@ const eventManagersSlice = createSlice({
         state.error = action.payload;
       })
 
+      /* ---------------- Events by Date Range ---------------- */
+      .addCase(fetchEventManagerEventsByDateRange.pending, (state) => {
+        state.loadingDateRangeEvents = true;
+      })
+      .addCase(
+        fetchEventManagerEventsByDateRange.fulfilled,
+        (state, action) => {
+          state.loadingDateRangeEvents = false;
+          state.dateRangeEvents = action.payload.events || [];
+          state.dateRangeSummary = action.payload.summary || {};
+          state.dateRangeFilter = action.payload.dateRange || {};
+        },
+      )
+      .addCase(fetchEventManagerEventsByDateRange.rejected, (state, action) => {
+        state.loadingDateRangeEvents = false;
+        state.error = action.payload;
+      })
+
+      /* ---------------- All Event Manager Events ---------------- */
+      .addCase(fetchAllEventManagerEvents.pending, (state) => {
+        state.loadingAllEvents = true;
+      })
+      .addCase(fetchAllEventManagerEvents.fulfilled, (state, action) => {
+        state.loadingAllEvents = false;
+        state.allEvents = action.payload.events || [];
+      })
+      .addCase(fetchAllEventManagerEvents.rejected, (state, action) => {
+        state.loadingAllEvents = false;
+        state.error = action.payload;
+      })
+
       /* ---------------- Update Event Manager ---------------- */
       .addCase(updateEventManager.fulfilled, (state, action) => {
         if (state.selected) {
@@ -206,7 +324,10 @@ const eventManagersSlice = createSlice({
 
       /* ---------------- Delete Event Manager ---------------- */
       .addCase(deleteEventManager.fulfilled, (state, action) => {
-        if (state.selected && String(state.selected._id) === String(action.payload.id)) {
+        if (
+          state.selected &&
+          String(state.selected._id) === String(action.payload.id)
+        ) {
           state.selected = null;
           state.metrics = null;
           state.upcomingEvents = [];
