@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, Search, Plus, Loader2, Eye, ArrowUpDown, Calendar as CalendarIcon, DollarSign } from 'lucide-react';
+import { Edit, Trash2, Search, Plus, Loader2, Eye, ArrowUpDown, Calendar as CalendarIcon, IndianRupee } from 'lucide-react';
 import { axiosInstance } from '../../utils/axios.js';
 
 const Events = ({ setCurrentPage }) => {
@@ -213,8 +213,8 @@ const Events = ({ setCurrentPage }) => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5">
-                            <DollarSign className="w-4 h-4 text-green-600" />
-                            <span className="text-sm font-bold text-green-700">₹{netRevenue.toFixed(2)}</span>
+                            <IndianRupee className="w-4 h-4 text-green-600" />
+<span className="text-sm font-bold text-green-700">{netRevenue.toFixed(2)}</span>
                           </div>
                           <p className="text-[10px] text-gray-400 mt-0.5">After 6% platform tax</p>
                         </td>

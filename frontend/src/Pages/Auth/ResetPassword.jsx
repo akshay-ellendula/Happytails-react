@@ -34,16 +34,10 @@ const ResetPassword = () => {
             
             toast.success("Password reset successful! Please login.");
             
-            // Redirect based on role
-            if (role === 'customer') {
-                navigate("/login");
-            } else {
-                // Both Event Managers and Store Partners use the service provider login page
-                navigate("/service-provider-login"); 
-            }
+            // Redirect to home page as requested
+            navigate("/");
             
         } catch (error) {
-            console.error(error);
             toast.error(error.response?.data?.message || "Invalid or expired token");
         }
         setLoading(false);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { axiosInstance } from "../../../utils/axios";
-import { BarChart, Activity, DollarSign, ShoppingBag } from "lucide-react";
+import { BarChart, Activity, IndianRupee, ShoppingBag } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -324,7 +324,7 @@ const ShopAnalytics = () => {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-500 font-medium">Revenue</h3>
             <div className="p-3 bg-emerald-50 rounded-xl">
-              <DollarSign className="text-emerald-600" size={20} />
+              <IndianRupee className="text-emerald-600" size={20} />
             </div>
           </div>
           <p className="text-3xl font-bold text-gray-800">

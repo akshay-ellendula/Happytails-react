@@ -11,7 +11,7 @@ import {
   X,
   Package,
   Tag,
-  DollarSign,
+  IndianRupee,
   Hash,
   Grid,
   Image as ImageIcon,
@@ -359,7 +359,7 @@ const EditProduct = () => {
                       Selling Price *
                     </label>
                     <div className="relative">
-                      <DollarSign
+                      <IndianRupee
                         className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                         size={16}
                       />
@@ -382,7 +382,7 @@ const EditProduct = () => {
                       Sale Price
                     </label>
                     <div className="relative">
-                      <DollarSign
+                      <IndianRupee
                         className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                         size={16}
                       />

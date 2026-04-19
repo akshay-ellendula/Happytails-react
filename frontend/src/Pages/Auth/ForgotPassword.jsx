@@ -8,6 +8,7 @@ const ForgotPassword = () => {
     const [email, setEmail] = useState("");
     const [role, setRole] = useState("customer"); // Default role
     const [loading, setLoading] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -15,6 +16,7 @@ const ForgotPassword = () => {
         try {
             // Send role along with email
             await axiosInstance.post("/auth/forgotpassword", { email, role });
+            setIsSubmitted(true);
             toast.success(`Reset link sent to your ${role} email!`);
         } catch (error) {
             console.error(error);
@@ -45,53 +47,74 @@ const ForgotPassword = () => {
 
             <div className="relative z-10 mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="bg-[#0d0d0d]/80 backdrop-blur-xl py-8 px-4 shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:rounded-3xl sm:px-10 border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
-                    <form className="space-y-6 relative z-10" onSubmit={handleSubmit}>
-                        
-                        {/* Role Selection */}
-                        <div>
-                            <label htmlFor="role" className="block text-sm font-bold text-white/90 uppercase tracking-wider mb-2">
-                                Account Type
-                            </label>
-                            <select
-                                id="role"
-                                value={role}
-                                onChange={(e) => setRole(e.target.value)}
-                                className="mt-1 block w-full pl-3 pr-10 py-3 text-base bg-[#1a1a1a] text-white border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#f2c737]/50 focus:border-[#f2c737] sm:text-sm rounded-xl transition-all"
-                            >
-                                <option value="customer" className="bg-[#1a1a1a]">Customer</option>
-                                <option value="eventManager" className="bg-[#1a1a1a]">Event Manager</option>
-                                <option value="vendor" className="bg-[#1a1a1a]">Store Partner (Vendor)</option>
-                            </select>
-                        </div>
-
-                        {/* Email Input */}
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-bold text-white/90 uppercase tracking-wider mb-2">
-                                Email address
-                            </label>
-                            <div className="mt-1">
-                                <input
-                                    id="email"
-                                    type="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="appearance-none block w-full px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#f2c737]/50 focus:border-[#f2c737] sm:text-sm transition-all"
-                                    placeholder="you@example.com"
-                                />
+                    {isSubmitted ? (
+                        <div className="space-y-6 relative z-10 text-center py-6">
+                            <div className="mx-auto w-16 h-16 bg-[#10b981]/20 rounded-full flex items-center justify-center mb-4 border border-[#10b981]/30">
+                                <svg className="w-8 h-8 text-[#10b981]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                </svg>
                             </div>
-                        </div>
-
-                        <div className="pt-2">
+                            <h3 className="text-xl font-bold text-white mb-2">Check your email</h3>
+                            <p className="text-white/70 text-sm mb-6">
+                                We've sent a password reset link to <br/>
+                                <strong className="text-white">{email}</strong>
+                            </p>
                             <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-black text-black bg-[#f2c737] hover:bg-[#f2c737]/90 hover:shadow-[0_0_20px_rgba(242,199,55,0.4)] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f2c737] focus:ring-offset-[#0d0d0d] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                                onClick={() => setIsSubmitted(false)}
+                                className="w-full flex justify-center items-center py-3.5 px-4 border border-white/10 rounded-xl shadow-lg text-sm font-bold text-white bg-transparent hover:bg-white/5 transition-all duration-300"
                             >
-                                {loading ? "Sending..." : "Send Reset Link"}
+                                Send another link
                             </button>
                         </div>
-                    </form>
+                    ) : (
+                        <form className="space-y-6 relative z-10" onSubmit={handleSubmit}>
+                            
+                            {/* Role Selection */}
+                            <div>
+                                <label htmlFor="role" className="block text-sm font-bold text-white/90 uppercase tracking-wider mb-2">
+                                    Account Type
+                                </label>
+                                <select
+                                    id="role"
+                                    value={role}
+                                    onChange={(e) => setRole(e.target.value)}
+                                    className="mt-1 block w-full pl-3 pr-10 py-3 text-base bg-[#1a1a1a] text-white border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#f2c737]/50 focus:border-[#f2c737] sm:text-sm rounded-xl transition-all"
+                                >
+                                    <option value="customer" className="bg-[#1a1a1a]">Customer</option>
+                                    <option value="eventManager" className="bg-[#1a1a1a]">Event Manager</option>
+                                    <option value="vendor" className="bg-[#1a1a1a]">Store Partner (Vendor)</option>
+                                </select>
+                            </div>
+
+                            {/* Email Input */}
+                            <div>
+                                <label htmlFor="email" className="block text-sm font-bold text-white/90 uppercase tracking-wider mb-2">
+                                    Email address
+                                </label>
+                                <div className="mt-1">
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        required
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="appearance-none block w-full px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#f2c737]/50 focus:border-[#f2c737] sm:text-sm transition-all"
+                                        placeholder="you@example.com"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-2">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-black text-black bg-[#f2c737] hover:bg-[#f2c737]/90 hover:shadow-[0_0_20px_rgba(242,199,55,0.4)] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f2c737] focus:ring-offset-[#0d0d0d] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                                >
+                                    {loading ? "Sending..." : "Send Reset Link"}
+                                </button>
+                            </div>
+                        </form>
+                    )}
 
                     <div className="mt-8 text-center relative z-10 border-t border-white/10 pt-6">
                         <Link to="/login" className="font-bold text-white/60 hover:text-[#f2c737] transition-colors">

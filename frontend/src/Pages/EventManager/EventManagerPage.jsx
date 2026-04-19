@@ -13,7 +13,7 @@ import EditEvent from "./EditEvent.jsx";
 import EventDetailsView from "./EventDetailsView.jsx";
 import EventPublicPreview from "./EventPublicPreview.jsx";
 import Reviews from "./Reviews.jsx"; 
-import EmailLogs from "./EmailLogs.jsx"; // <-- IMPORT EMAIL LOGS
+import Promotions from "./Promotions.jsx";
 
 // Icons
 import {
@@ -100,8 +100,8 @@ const EventManagerPages = () => {
       icon: Star, // <-- NEW REVIEWS TAB
     },
     {
-      id: "emailLogs",
-      label: "Email Logs",
+      id: "promotions",
+      label: "Promotions",
       icon: Mail, 
     },
     {
@@ -179,8 +179,8 @@ const EventManagerPages = () => {
         );
       case "reviews": // <-- NEW CASE FOR REVIEWS
         return <Reviews />;
-      case "emailLogs":
-        return <EmailLogs />;
+      case "promotions":
+        return <Promotions />;
       case "analytics":
         return <Analytics />;
       case "settings":

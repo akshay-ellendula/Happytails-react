@@ -345,7 +345,7 @@ const EditTicket = ({ setCurrentPage, ticketData }) => {
                       </div>
                       <div>
                         <span className="text-xs text-gray-600">Price:</span>
-                        <div className="ml-2 font-bold text-base">${formData.price.toFixed(2)}</div>
+                        <div className="ml-2 font-bold text-base">₹{formData.price.toFixed(2)}</div>
                       </div>
                     </div>
                     <button

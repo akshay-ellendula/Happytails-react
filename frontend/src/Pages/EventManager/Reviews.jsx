@@ -500,7 +500,7 @@ const Reviews = () => {
                                             </div>
                                             <div className="flex justify-between items-center bg-white p-2 border-2 border-black rounded-lg">
                                                 <span className="font-bold text-sm">Total Paid</span>
-                                                <span className="font-black text-xl text-green-700">${selectedReviewDetail.ticketDetails?.price || "0"}</span>
+                                                <span className="font-black text-xl text-green-700">₹{selectedReviewDetail.ticketDetails?.price || "0"}</span>
                                             </div>
                                         </div>
                                     </div>

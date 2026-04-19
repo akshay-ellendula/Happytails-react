@@ -12,7 +12,7 @@ import {
   Package,
   TrendingUp,
   ChevronDown,
-  DollarSign,
+  IndianRupee,
   AlertCircle,
   ArrowRight,
   Trash2,

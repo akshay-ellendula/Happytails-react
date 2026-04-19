@@ -5,7 +5,7 @@ import {
 } from "recharts";
 import { axiosInstance } from '../../utils/axios.js';
 import { 
-  Loader2, TrendingUp, DollarSign, Calendar, Ticket, 
+  Loader2, TrendingUp, IndianRupee, Calendar, Ticket, 
   Users, Activity, Percent, ArrowUpRight, ArrowDownRight, Filter, Download
 } from "lucide-react";
 import jsPDF from "jspdf";
@@ -243,7 +243,7 @@ const Analytics = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
             <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-green-50 text-green-600 rounded-xl"><DollarSign className="w-6 h-6" /></div>
+              <div className="p-3 bg-green-50 text-green-600 rounded-xl"><IndianRupee className="w-6 h-6" /></div>
               <GrowthBadge value={basicStats?.revenueGrowth} />
             </div>
             <div>

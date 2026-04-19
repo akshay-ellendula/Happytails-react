@@ -7,6 +7,9 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState("Saving...");
   
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  
   const [formData, setFormData] = useState({
     title: eventData?.title || "",
     description: eventData?.description || "",
@@ -50,12 +53,11 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
 
     const hasNewImages = formData.thumbnail || formData.banner;
 
-    try {
-      let updatedEvent;
+    let updatePromise;
 
+    try {
       if (hasNewImages) {
         // Slow path: multipart (Cloudinary upload involved)
-        setLoadingMsg("Uploading images... this may take a moment ☁️");
         const data = new FormData();
         Object.keys(formData).forEach(key => {
           if (key !== 'thumbnail' && key !== 'banner') data.append(key, formData[key]);
@@ -63,14 +65,12 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
         if (formData.thumbnail) data.append('thumbnail', formData.thumbnail);
         if (formData.banner) data.append('banner', formData.banner);
 
-        const res = await axiosInstance.put(`/events/${eventData._id}`, data, {
+        updatePromise = axiosInstance.put(`/events/${eventData._id}`, data, {
           headers: { "Content-Type": "multipart/form-data" },
           timeout: 90000 // 90s for Cloudinary uploads on slow servers
-        });
-        updatedEvent = res.data?.event || res.data;
+        }).then(res => res.data?.event || res.data);
       } else {
         // Fast path: plain JSON, no file upload
-        setLoadingMsg("Saving changes... ⏳");
         const jsonPayload = {
           title: formData.title,
           description: formData.description,
@@ -84,24 +84,23 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
           ticketPrice: formData.ticketPrice,
           ageLimit: formData.ageLimit,
         };
-        const res = await axiosInstance.put(`/events/${eventData._id}`, jsonPayload, {
-          timeout: 60000  // 60s — allow for Render cold starts
-        });
-        updatedEvent = res.data?.event || res.data;
+        updatePromise = axiosInstance.put(`/events/${eventData._id}`, jsonPayload, {
+          timeout: 60000  // 60s
+        }).then(res => res.data?.event || res.data);
       }
 
-      toast.success('Event updated successfully!');
+      toast.promise(updatePromise, {
+        loading: hasNewImages ? 'Uploading images... this may take a moment ☁️' : 'Saving changes... ⏳',
+        success: 'Event updated successfully!',
+        error: (err) => err.response?.data?.message || "Failed to update event."
+      });
+
+      const updatedEvent = await updatePromise;
       setCurrentPage("event-details", updatedEvent, "event");
     } catch (error) {
         console.error("Update error:", error);
-        if (error.code === 'ECONNABORTED') {
-          toast.error("The server is taking too long (possible cold start). Please try again in a moment.");
-        } else {
-          toast.error(error.response?.data?.message || "Failed to update event.");
-        }
     } finally {
         setIsLoading(false);
-        setLoadingMsg("Saving...");
     }
   };
 
@@ -124,25 +123,33 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
   };
 
   // --- NEW: Cancel Event & Refund Logic ---
-  const handleCancelEvent = async () => {
-    const reason = window.prompt(
-      "Are you sure you want to cancel this event?\n\nPlease enter a reason (this will be emailed to all ticket holders):"
-    );
+  const handleCancelEventClick = () => {
+    setCancelReason("");
+    setIsCancelModalOpen(true);
+  };
 
-    if (reason === null) return; // User clicked cancel
-    if (reason.trim() === "") {
-      alert("A reason is required to cancel the event.");
+  const executeCancelEvent = async () => {
+    if (cancelReason.trim() === "") {
+      toast.error("A reason is required to cancel the event.");
       return;
     }
 
+    setIsCancelModalOpen(false);
+    setIsLoading(true);
+
+    const cancelPromise = axiosInstance.put(`/events/${eventData._id}/cancel`, { reason: cancelReason });
+
+    toast.promise(cancelPromise, {
+      loading: 'Cancelling event and processing refunds...',
+      success: 'Event cancelled. Emails sent to all ticket holders.',
+      error: (err) => err.response?.data?.message || 'Failed to cancel event'
+    });
+
     try {
-      setIsLoading(true);
-      await axiosInstance.put(`/events/${eventData._id}/cancel`, { reason });
-      toast.success('Event cancelled. Emails sent to all ticket holders.');
+      await cancelPromise;
       setCurrentPage("events");
     } catch (err) {
       console.error("Error cancelling event:", err);
-      toast.error(err.response?.data?.message || "Failed to cancel event");
     } finally {
       setIsLoading(false);
     }
@@ -319,7 +326,7 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
                 {!isEventCompleted && !isEventCancelled && (
                   <button 
                     type="button" 
-                    onClick={handleCancelEvent}
+                    onClick={handleCancelEventClick}
                     className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded text-sm font-medium hover:bg-red-100 flex items-center gap-2"
                     title="Cancels event, refunds tickets, and notifies attendees"
                   >
@@ -353,6 +360,49 @@ const EditEvent = ({ setCurrentPage, eventData }) => {
           </form>
         </div>
       </div>
+
+      {/* Cancel Reason Modal */}
+      {isCancelModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
+          <div className="bg-[#0f0f0f] border border-white/10 rounded-3xl shadow-2xl p-8 w-full max-w-lg">
+            <h3 className="text-2xl font-bold text-white mb-2">Cancel Event</h3>
+            <p className="text-sm text-white/60 mb-6">
+              This action cannot be undone. All active tickets will be refunded automatically.
+            </p>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-white/90 uppercase tracking-wider mb-2">
+                Reason for Cancellation *
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Briefly explain why (ticket holders will see this in their email)"
+                rows={4}
+                className="w-full bg-[#1a1a1a] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all text-sm resize-none"
+              />
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/10 mt-2">
+              <button
+                onClick={() => setIsCancelModalOpen(false)}
+                className="px-5 py-2.5 text-sm font-bold text-white/70 bg-transparent hover:bg-white/5 rounded-xl transition-colors"
+                disabled={isLoading}
+              >
+                Go Back
+              </button>
+              <button
+                onClick={executeCancelEvent}
+                className="px-5 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-red-900/50 transition-all border border-red-500/50"
+                disabled={isLoading}
+              >
+                <XCircle className="w-4 h-4" /> 
+                Confirm Cancellation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -6,7 +6,7 @@ import {
   Search,
   Filter,
   Calendar,
-  DollarSign,
+  IndianRupee,
   Package,
   Truck,
   CheckCircle,
@@ -471,7 +471,7 @@ const OrderList = () => {
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-2">
-                          <DollarSign size={14} className="text-gray-400" />
+                          <IndianRupee size={14} className="text-gray-400" />
                           <span className="font-bold text-gray-900">
                             ₹{Number(order.total || 0).toFixed(2)}
                           </span>

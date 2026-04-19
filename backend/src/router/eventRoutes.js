@@ -10,13 +10,19 @@ import {
     updateEvent,
     deleteEvent,
     getEventAnalytics,
-    getAllEvents,cancelEvent
+    getAllEvents,cancelEvent,
+    sendPromotionalEmail
 } from '../controller/eventController.js';
 
 const router = express.Router();
 
 // Public browsing routes — cached for fast event discovery
 router.get('/public', cacheMiddleware(60), getAllEvents);          // Event listings — 1 min cache
+
+router.post('/promotions/send', protectRoute(['eventManager']), sendPromotionalEmail);
+
+// Named route MUST be above /:id to prevent "my-events" being cast as ObjectId
+router.get('/my-events', protectRoute(['eventManager']), getEventManagerEvents);
 
 router.route('/')
     .post(protectRoute(['eventManager']), upload.fields([
