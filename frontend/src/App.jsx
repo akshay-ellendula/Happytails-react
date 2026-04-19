@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { Routes, Route, Navigate, useSearchParams, useNavigate } from "react-router";
-import { Toaster } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./hooks/useAuth";
 import { CartProvider, useCart } from "./context/CartContext";
@@ -114,9 +114,7 @@ const GoogleLoginHandler = () => {
 
     if (googleSuccess === 'true') {
       // Show success message
-      import('react-hot-toast').then(({ toast }) => {
-        toast.success('Google login successful! Welcome to Happy Tails!');
-      });
+      toast.success('Google login successful! Welcome to Happy Tails!');
 
       // Wait a moment to ensure user state is updated, then redirect
       setTimeout(() => {
@@ -135,9 +133,7 @@ const GoogleLoginHandler = () => {
 
     if (googleError === 'google_auth_failed') {
       console.error('Google login failed:', errorDetails);
-      import('react-hot-toast').then(({ toast }) => {
-        toast.error(`Google login failed: ${errorDetails || 'Please try again'}`);
-      });
+      toast.error(`Google login failed: ${errorDetails || 'Please try again'}`);
 
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -145,18 +141,14 @@ const GoogleLoginHandler = () => {
 
     // Check if there's any error from Google
     if (searchParams.get('error') === 'access_denied') {
-      import('react-hot-toast').then(({ toast }) => {
-        toast.error('You denied access. Please try again or use email login.');
-      });
+      toast.error('You denied access. Please try again or use email login.');
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     // Check for other error types
     if (searchParams.get('error') && searchParams.get('error') !== 'google_auth_failed') {
       console.error('OAuth error:', searchParams.get('error'));
-      import('react-hot-toast').then(({ toast }) => {
-        toast.error(`Authentication error: ${searchParams.get('error')}`);
-      });
+      toast.error(`Authentication error: ${searchParams.get('error')}`);
     }
   }, [searchParams, user, navigate]);
 

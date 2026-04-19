@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
+import { toast } from "react-hot-toast";
 import { axiosInstance } from "../utils/axios";
 
 const AuthContext = createContext(null);
@@ -185,9 +186,7 @@ export const AuthProvider = ({ children }) => {
           
           // If the user's token expires while they are authenticated, log them out
           if (!isVerifyRoute && !isSigninRoute && isAuthenticated) {
-            import('react-hot-toast').then(({ toast }) => {
-              toast.error('Login session completed. Auto logging out...');
-            });
+            toast.error('Login session completed. Auto logging out...');
             
             setIsAuthenticated(false);
             setUser(null);
