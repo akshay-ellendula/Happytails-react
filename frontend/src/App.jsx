@@ -415,7 +415,6 @@ function AppContent() {
         removeItem={removeItem}
         handleCheckout={handleCheckout}
       />
-      <Toaster />
     </>
   );
 }
