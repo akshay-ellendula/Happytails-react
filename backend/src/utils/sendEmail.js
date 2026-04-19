@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 
 const sendEmail = async (options) => {
+    console.log(process.env.EMAIL_USERNAME);
     console.log(`[EMAIL] Attempting to send to: ${options.email} | Subject: ${options.subject}`);
     console.log(`[EMAIL] Using account: ${process.env.EMAIL_USERNAME}`);
 

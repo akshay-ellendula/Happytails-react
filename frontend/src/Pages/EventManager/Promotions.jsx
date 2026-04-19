@@ -7,7 +7,7 @@ const Promotions = () => {
     const [audience, setAudience] = useState('all'); // 'all' or 'event'
     const [selectedEventId, setSelectedEventId] = useState('');
     const [events, setEvents] = useState([]);
-    
+
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,7 +32,7 @@ const Promotions = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (audience === 'event' && !selectedEventId) {
             toast.error("Please select an event");
             return;
@@ -44,12 +44,10 @@ const Promotions = () => {
         }
 
         setIsSubmitting(true);
-        const sendPromise = axiosInstance.post('/events/promotions/send', {
-            audience,
-            eventId: selectedEventId,
-            subject,
-            message
-        });
+        const payload = { audience, eventId: selectedEventId, subject, message };
+        console.log('[PROMO] Sending to:', axiosInstance.defaults.baseURL + '/events/promotions/send');
+        console.log('[PROMO] Payload:', payload);
+        const sendPromise = axiosInstance.post('/events/promotions/send', payload);
 
         toast.promise(sendPromise, {
             loading: 'Preparing and dispatching promotional emails...',
@@ -84,7 +82,7 @@ const Promotions = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="bg-white border-4 border-black rounded-3xl p-8 md:p-10 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                
+
                 <div className="space-y-8">
                     {/* Audience Selection */}
                     <div className="space-y-4">
@@ -92,16 +90,15 @@ const Promotions = () => {
                             <Users className="w-6 h-6 text-[#f2c737]" />
                             Target Audience
                         </label>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <button
                                 type="button"
                                 onClick={() => setAudience('all')}
-                                className={`p-6 border-4 border-black rounded-2xl text-left transition-all ${
-                                    audience === 'all' 
-                                    ? 'bg-[#effe8b] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]' 
-                                    : 'bg-gray-50 hover:bg-gray-100 opacity-60 hover:opacity-100'
-                                }`}
+                                className={`p-6 border-4 border-black rounded-2xl text-left transition-all ${audience === 'all'
+                                        ? 'bg-[#effe8b] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]'
+                                        : 'bg-gray-50 hover:bg-gray-100 opacity-60 hover:opacity-100'
+                                    }`}
                             >
                                 <Users className="w-8 h-8 mb-3 text-black" />
                                 <h3 className="text-xl font-black text-black mb-1">All Customers</h3>
@@ -111,11 +108,10 @@ const Promotions = () => {
                             <button
                                 type="button"
                                 onClick={() => setAudience('event')}
-                                className={`p-6 border-4 border-black rounded-2xl text-left transition-all ${
-                                    audience === 'event' 
-                                    ? 'bg-[#effe8b] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]' 
-                                    : 'bg-gray-50 hover:bg-gray-100 opacity-60 hover:opacity-100'
-                                }`}
+                                className={`p-6 border-4 border-black rounded-2xl text-left transition-all ${audience === 'event'
+                                        ? 'bg-[#effe8b] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]'
+                                        : 'bg-gray-50 hover:bg-gray-100 opacity-60 hover:opacity-100'
+                                    }`}
                             >
                                 <Calendar className="w-8 h-8 mb-3 text-black" />
                                 <h3 className="text-xl font-black text-black mb-1">Event Attendees</h3>
@@ -130,7 +126,7 @@ const Promotions = () => {
                             <label className="block text-sm font-black text-black uppercase mb-3">
                                 Select Event
                             </label>
-                            <select 
+                            <select
                                 value={selectedEventId}
                                 onChange={(e) => setSelectedEventId(e.target.value)}
                                 className="w-full bg-white border-2 border-black rounded-xl px-4 py-3 font-bold text-gray-800 outline-none focus:ring-4 focus:ring-[#f2c737]/50 transition-shadow appearance-none cursor-pointer"

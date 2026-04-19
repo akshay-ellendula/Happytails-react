@@ -73,12 +73,12 @@ export const createEvent = async (req, res, next) => {
         // We fetch all customers and send emails individually to protect their privacy
         Customer.find({}).select('email userName')
             .then(async (customers) => {
-            const formattedDate = new Date(date_time).toLocaleDateString('en-IN', {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            });
+                const formattedDate = new Date(date_time).toLocaleDateString('en-IN', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
 
-            const emailMessage = `
+                const emailMessage = `
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
 </style>
@@ -159,21 +159,21 @@ export const createEvent = async (req, res, next) => {
 </div>
 `;
 
-            // Loop through and send individually so customers don't see each other's emails
-            for (const customer of customers) {
-                if (customer.email) {
-                    try {
-                        await sendEmail({
-                            email: customer.email,
-                            subject: `🐾 New Event Alert: ${title} is here!`,
-                            message: emailMessage
-                        });
-                    } catch (err) {
-                        console.error(`Failed to send event notification to ${customer.email}:`, err.message);
+                // Loop through and send individually so customers don't see each other's emails
+                for (const customer of customers) {
+                    if (customer.email) {
+                        try {
+                            await sendEmail({
+                                email: customer.email,
+                                subject: `🐾 New Event Alert: ${title} is here!`,
+                                message: emailMessage
+                            });
+                        } catch (err) {
+                            console.error(`Failed to send event notification to ${customer.email}:`, err.message);
+                        }
                     }
                 }
-            }
-        })
+            })
             .catch(err => {
                 console.error("Error fetching customers for event notification:", err);
             });
@@ -213,7 +213,7 @@ export const getEventManagerEvents = async (req, res, next) => {
 
         const eventIds = events.map(e => e._id);
         const allTickets = await Ticket.find({ eventId: { $in: eventIds }, status: { $ne: false } }).lean();
-        
+
         const eventRevenueMap = new Map();
         allTickets.forEach(t => {
             const eid = t.eventId.toString();
@@ -340,7 +340,7 @@ export const updateEvent = async (req, res, next) => {
         await event.save();
 
         // Invalidate cache in the background (don't block the response)
-        invalidateCache('cache:/api/events').catch(() => {});
+        invalidateCache('cache:/api/events').catch(() => { });
 
         res.status(200).json({
             success: true,
@@ -692,27 +692,23 @@ export const sendPromotionalEmail = async (req, res, next) => {
         let recipients = [];
 
         if (audience === 'all') {
-            // Fetch all customers. Exclude customers without valid emails.
             const customers = await Customer.find({ email: { $exists: true, $ne: null } }).select('email');
             recipients = customers.map(c => c.email);
         } else if (audience === 'event') {
             if (!eventId) return res.status(400).json({ success: false, message: "Event ID is required." });
-            
-            // Validate the event belongs to this manager
+
             const event = await Event.findOne({ _id: eventId, eventManagerId: currentManagerId });
             if (!event) return res.status(403).json({ success: false, message: "Unauthorized or event not found." });
 
-            const tickets = await Ticket.find({ eventId, status: true }).select('contactEmail');
+            const tickets = await Ticket.find({ eventId }).select('contactEmail');
             recipients = tickets.map(t => t.contactEmail);
-            
-            // Remove duplicates
             recipients = [...new Set(recipients)];
         } else {
             return res.status(400).json({ success: false, message: "Invalid audience type." });
         }
 
         if (recipients.length === 0) {
-            return res.status(200).json({ success: true, message: "No applicable recipients found to send to." });
+            return res.status(400).json({ success: false, message: "This event has 0 registered attendees. No emails were sent." });
         }
 
         // Return immediately so the UI doesn't hang while mailing
