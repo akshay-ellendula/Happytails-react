@@ -17,6 +17,10 @@ export const configureGoogleStrategy = () => {
             },
             async (req, accessToken, refreshToken, profile, done) => {
                 try {
+                    console.log('[GOOGLE_PIPELINE] 1. Passport Strategy Triggered');
+                    console.log(`[GOOGLE_PIPELINE] req.protocol: ${req.protocol}, req.secure: ${req.secure}`);
+                    console.log(`[GOOGLE_PIPELINE] req.headers.host: ${req.headers.host}`);
+                    console.log(`[GOOGLE_PIPELINE] req.headers['x-forwarded-proto']: ${req.headers['x-forwarded-proto']}`);
                     console.log('Full Google profile:', JSON.stringify(profile, null, 2));
                     
                     // Extract email - make sure we get the first verified email
@@ -49,6 +53,7 @@ export const configureGoogleStrategy = () => {
                     }
                     
                     console.log('Extracted user data:', { email, userName });
+                    console.log('[GOOGLE_PIPELINE] 2. User Data Successfully Extracted:', email);
                     
                     const picture = profile.photos && profile.photos[0] ? profile.photos[0].value : null;
                     const googleId = profile.id;
@@ -74,6 +79,7 @@ export const configureGoogleStrategy = () => {
                     }
                     
                     console.log('Using model for role:', role);
+                    console.log(`[GOOGLE_PIPELINE] 3. Checking DB using Model for role: ${role}`);
                     
                     // Check if user exists with this email
                     user = await Model.findOne({ email });
@@ -141,9 +147,11 @@ export const configureGoogleStrategy = () => {
                     );
                     
                     console.log('JWT token generated for role:', role);
+                    console.log('[GOOGLE_PIPELINE] 4. SUCCESS: Generating JWT and calling done()');
                     return done(null, { user, token, role });
                 } catch (error) {
                     console.error('Google Strategy Error:', error);
+                    console.log('[GOOGLE_PIPELINE] 4. ERROR: Failed inside Passport Strategy:', error.message);
                     return done(error, null);
                 }
             }
