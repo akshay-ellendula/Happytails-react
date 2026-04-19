@@ -301,6 +301,40 @@
 
 ---
 
+## 10. Ratings
+
+> Swagger file: [`doc/ratingSwagger.js`](doc/ratingSwagger.js)
+> Route file: [`src/router/ratingRoutes.js`](src/router/ratingRoutes.js)
+> Controller: [`src/controller/ratingController.js`](src/controller/ratingController.js)
+
+| Method | Route | Summary | Used By |
+|--------|-------|---------|---------|
+| POST | `/api/ratings/create` | Create a product rating | Customer |
+| GET | `/api/ratings/my-ratings` | Get logged-in customer's ratings | Customer |
+| PUT | `/api/ratings/{ratingId}` | Update a rating | Customer |
+| DELETE | `/api/ratings/{ratingId}` | Delete a rating | Customer |
+| POST | `/api/ratings/{ratingId}/helpful` | Mark a rating as helpful | Customer |
+| GET | `/api/ratings/product/{productId}/summary` | Get rating summary for a product | Public |
+| GET | `/api/ratings/product/{productId}` | Get full ratings for a product | Public |
+
+---
+
+## 11. Reviews
+
+> Swagger file: [`doc/reviewSwagger.js`](doc/reviewSwagger.js)
+> Route file: [`src/router/reviewRoutes.js`](src/router/reviewRoutes.js)
+> Controller: [`src/controller/reviewController.js`](src/controller/reviewController.js)
+
+| Method | Route | Summary | Used By |
+|--------|-------|---------|---------|
+| GET | `/api/review/manager` | Get all reviews for current event manager | Event Manager |
+| GET | `/api/review/manager/analytics` | Get review analytics for event manager | Event Manager |
+| GET | `/api/review/event/{eventId}` | Get reviews for a specific event | Event Manager |
+| GET | `/api/review/{ticketId}/{token}` | Get review details by ticket and token | Customer |
+| POST | `/api/review/{ticketId}/{token}` | Submit a review for a ticket | Customer |
+
+---
+
 ## Source Code Quick Reference
 
 | Swagger Doc File | Route File | Controller File |
@@ -314,4 +348,6 @@
 | `doc/eventAnalyticsSwagger.js` | `src/router/eventAnalyticsRoutes.js` | `src/controller/eventAnalyticsController.js` |
 | `doc/vendorSwagger.js` | `src/router/vendorRoutes.js` | `src/controller/vendorController.js` |
 | `doc/adminSwagger.js` | `src/router/adminRoutes.js` | `src/controller/adminController.js` |
+| `doc/ratingSwagger.js` | `src/router/ratingRoutes.js` | `src/controller/ratingController.js` |
+| `doc/reviewSwagger.js` | `src/router/reviewRoutes.js` | `src/controller/reviewController.js` |
 | `doc/schemaSwagger.js` | — | — (shared schemas only) |
