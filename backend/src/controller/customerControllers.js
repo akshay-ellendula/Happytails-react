@@ -50,7 +50,7 @@ export const putCustomer = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Username and email are required" });
     }
 
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@\.com$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ success: false, message: "Only @gmail.com allowed" });
     }
