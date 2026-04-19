@@ -16,13 +16,13 @@ const AboutPage = () => {
         </p>
 
         <div className="grid sm:grid-cols-2 gap-8 mb-20">
-          {/* <div className="bg-[#111] rounded-2xl p-8">
+          <div className="bg-[#111] rounded-2xl p-8">
             <Heart className="w-8 h-8 text-[#f2c737] mb-4" />
             <h3 className="text-lg font-semibold mb-2">Our Mission</h3>
             <p className="text-white/50 text-sm leading-relaxed">
               To create a vibrant ecosystem where pet lovers can discover events, shop premium accessories, and connect with like-minded people who share their passion for animals.
             </p>
-          </div> */}
+          </div> 
           <div className="bg-[#111] rounded-2xl p-8">
             <Users className="w-8 h-8 text-[#f2c737] mb-4" />
             <h3 className="text-lg font-semibold mb-2">Our Community</h3>
