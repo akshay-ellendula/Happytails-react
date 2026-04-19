@@ -16,7 +16,7 @@ import {
   Grid,
   Image as ImageIcon,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 
 const EditProduct = () => {
@@ -75,8 +75,8 @@ const EditProduct = () => {
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     setNewFiles(selectedFiles);
-    
-    const urls = selectedFiles.map(file => URL.createObjectURL(file));
+
+    const urls = selectedFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls(urls);
   };
 
@@ -89,7 +89,7 @@ const EditProduct = () => {
     const newFilesList = [...newFiles];
     newFilesList.splice(index, 1);
     setNewFiles(newFilesList);
-    
+
     const newUrls = [...previewUrls];
     URL.revokeObjectURL(newUrls[index]);
     newUrls.splice(index, 1);
@@ -99,7 +99,7 @@ const EditProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    
+
     const data = new FormData();
     Object.keys(formData).forEach((k) => data.append(k, formData[k]));
     data.append("variants", JSON.stringify(variants));
@@ -121,9 +121,13 @@ const EditProduct = () => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this product? This action cannot be undone."))
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this product? This action cannot be undone.",
+      )
+    )
       return;
-    
+
     try {
       await axiosInstance.delete(`/vendors/products/${productId}`);
       toast.success("Product deleted");
@@ -134,14 +138,15 @@ const EditProduct = () => {
     }
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <div className="text-center">
-        <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading Product...</p>
+  if (loading)
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Product...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
@@ -160,7 +165,7 @@ const EditProduct = () => {
             <p className="text-gray-500 mt-1">Update product details</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className="text-sm text-gray-500">Product ID</p>
@@ -179,9 +184,11 @@ const EditProduct = () => {
             <div className="p-3 bg-blue-100 rounded-xl">
               <Tag className="text-blue-600" size={24} />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              Basic Information
+            </h2>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -274,7 +281,9 @@ const EditProduct = () => {
               <div className="p-3 bg-purple-100 rounded-xl">
                 <Grid className="text-purple-600" size={24} />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Product Variants</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                Product Variants
+              </h2>
             </div>
             <button
               type="button"
@@ -295,10 +304,13 @@ const EditProduct = () => {
               + Add Variant
             </button>
           </div>
-          
+
           <div className="space-y-4">
             {variants.map((v, i) => (
-              <div key={i} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div
+                key={i}
+                className="bg-gray-50 rounded-xl p-4 border border-gray-200"
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-medium text-gray-900">Variant {i + 1}</h3>
                   {variants.length > 1 && (
@@ -313,10 +325,12 @@ const EditProduct = () => {
                     </button>
                   )}
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Size *</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Size *
+                    </label>
                     <input
                       name="size"
                       placeholder="Size (e.g. S, M, 1kg)"
@@ -326,9 +340,11 @@ const EditProduct = () => {
                       required
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Color</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Color
+                    </label>
                     <input
                       name="color"
                       placeholder="Color"
@@ -337,27 +353,61 @@ const EditProduct = () => {
                       className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Regular Price *</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Selling Price *
+                    </label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                      <DollarSign
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        size={16}
+                      />
                       <input
                         name="regular_price"
                         type="number"
-                        placeholder="Regular Price"
-                        value={v.regular_price}
+                        placeholder="Selling Price"
+                        value={v.regular_price || ""}
                         onChange={(e) => handleVariant(i, e)}
                         className="w-full pl-10 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        min="0"
+                        step="0.01"
                         required
                       />
                     </div>
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Stock Qty *</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Sale Price
+                    </label>
                     <div className="relative">
-                      <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                      <DollarSign
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        size={16}
+                      />
+                      <input
+                        name="sale_price"
+                        type="number"
+                        placeholder="Sale Price"
+                        value={v.sale_price || ""}
+                        onChange={(e) => handleVariant(i, e)}
+                        className="w-full pl-10 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Stock Qty *
+                    </label>
+                    <div className="relative">
+                      <Hash
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        size={16}
+                      />
                       <input
                         name="stock_quantity"
                         type="number"
@@ -369,13 +419,16 @@ const EditProduct = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex items-end">
                     <div className="w-full">
-                      <label className="block text-sm text-gray-600 mb-1">Total Value</label>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Total Value
+                      </label>
                       <div className="p-2 bg-gray-100 rounded-lg text-center">
                         <span className="font-medium text-gray-900">
-                          ₹{(v.regular_price * v.stock_quantity || 0).toFixed(2)}
+                          ₹
+                          {(v.regular_price * v.stock_quantity || 0).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -426,7 +479,9 @@ const EditProduct = () => {
             <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:border-blue-500 transition-colors mb-4">
               <Upload className="mx-auto text-gray-400 mb-3" size={32} />
               <p className="text-gray-600 mb-2">Click to upload new images</p>
-              <p className="text-sm text-gray-500 mb-4">Max 4 total images including existing</p>
+              <p className="text-sm text-gray-500 mb-4">
+                Max 4 total images including existing
+              </p>
               <input
                 type="file"
                 multiple
@@ -446,7 +501,9 @@ const EditProduct = () => {
             {/* New Image Previews */}
             {previewUrls.length > 0 && (
               <div>
-                <h4 className="font-medium text-gray-900 mb-3">New Image Previews</h4>
+                <h4 className="font-medium text-gray-900 mb-3">
+                  New Image Previews
+                </h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {previewUrls.map((url, index) => (
                     <div key={index} className="relative group">
@@ -480,8 +537,8 @@ const EditProduct = () => {
             disabled={saving}
             className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-bold text-lg transition-all ${
               saving
-                ? 'bg-emerald-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-emerald-500 to-green-500 hover:shadow-xl'
+                ? "bg-emerald-500 cursor-not-allowed"
+                : "bg-gradient-to-r from-emerald-500 to-green-500 hover:shadow-xl"
             } text-white`}
           >
             {saving ? (
@@ -496,7 +553,7 @@ const EditProduct = () => {
               </>
             )}
           </button>
-          
+
           <button
             type="button"
             onClick={() => navigate("/shop/products")}
@@ -504,7 +561,7 @@ const EditProduct = () => {
           >
             Cancel
           </button>
-          
+
           <button
             type="button"
             onClick={handleDelete}

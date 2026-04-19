@@ -45,7 +45,14 @@ const ProductList = () => {
   const [csvRawText, setCsvRawText] = useState("");
   const [csvUploading, setCsvUploading] = useState(false);
   const [searchDebounce, setSearchDebounce] = useState("");
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(() => {
+    try {
+      const saved = localStorage.getItem("shopProductFiltersVisible");
+      return saved === null ? true : saved === "true";
+    } catch {
+      return true;
+    }
+  });
   const [previewProduct, setPreviewProduct] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [hoveredProductId, setHoveredProductId] = useState(null);
@@ -125,6 +132,18 @@ const ProductList = () => {
       category: "All Categories",
       sort: "newest",
       petType: "all",
+    });
+  }, []);
+
+  const toggleFilters = useCallback(() => {
+    setShowFilters((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("shopProductFiltersVisible", String(next));
+      } catch {
+        // ignore storage write failures
+      }
+      return next;
     });
   }, []);
 
@@ -661,13 +680,15 @@ const ProductList = () => {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowFilters((prev) => !prev)}
+                  onClick={toggleFilters}
                   className={`relative p-2 rounded-lg transition-colors ${
                     showFilters
                       ? "bg-blue-100 text-blue-600"
                       : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                   }`}
                   title={showFilters ? "Hide filters" : "Show filters"}
+                  aria-label={showFilters ? "Hide filters" : "Show filters"}
+                  aria-pressed={showFilters}
                 >
                   <Filter className="text-gray-400" size={20} />
                   {activeFilterCount > 0 && (
@@ -721,6 +742,19 @@ const ProductList = () => {
             </select>
           )}
         </div>
+
+        {!showFilters && (
+          <div className="flex items-center gap-3 text-sm text-gray-600">
+            <span>Filters are hidden</span>
+            <button
+              type="button"
+              onClick={toggleFilters}
+              className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium"
+            >
+              Show Filters
+            </button>
+          </div>
+        )}
 
         {showFilters && (
           <div className="flex flex-wrap items-center gap-3">

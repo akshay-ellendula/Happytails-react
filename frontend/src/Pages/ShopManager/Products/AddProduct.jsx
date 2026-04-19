@@ -13,7 +13,7 @@ import {
   Plus,
   X,
   Image as ImageIcon,
-  CheckCircle
+  CheckCircle,
 } from "lucide-react";
 
 const AddProduct = () => {
@@ -50,9 +50,9 @@ const AddProduct = () => {
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     setFiles(selectedFiles);
-    
+
     // Create preview URLs
-    const urls = selectedFiles.map(file => URL.createObjectURL(file));
+    const urls = selectedFiles.map((file) => URL.createObjectURL(file));
     setPreviewUrls(urls);
   };
 
@@ -60,7 +60,7 @@ const AddProduct = () => {
     const newFiles = [...files];
     newFiles.splice(index, 1);
     setFiles(newFiles);
-    
+
     const newUrls = [...previewUrls];
     URL.revokeObjectURL(newUrls[index]);
     newUrls.splice(index, 1);
@@ -70,12 +70,12 @@ const AddProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setUploading(true);
-    
+
     const data = new FormData();
     Object.keys(formData).forEach((k) => data.append(k, formData[k]));
-    
+
     data.append("variants", JSON.stringify(variants));
-    
+
     if (files && files.length > 0) {
       Array.from(files).forEach((f) => data.append("product_images", f));
     }
@@ -86,12 +86,11 @@ const AddProduct = () => {
           "Content-Type": "multipart/form-data",
         },
       });
-      
+
       // Show success animation
       setTimeout(() => {
         navigate("/shop/products");
       }, 1000);
-      
     } catch (err) {
       console.error("Upload error:", err.response?.data || err.message);
       alert("Error adding product");
@@ -112,11 +111,13 @@ const AddProduct = () => {
             <span className="font-medium">Back</span>
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Add New Product</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Add New Product
+            </h1>
             <p className="text-gray-500 mt-1">Create a new product listing</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
             <Package className="text-emerald-600" size={24} />
@@ -131,9 +132,11 @@ const AddProduct = () => {
             <div className="p-3 bg-blue-100 rounded-xl">
               <Tag className="text-blue-600" size={24} />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">Basic Information</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              Basic Information
+            </h2>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -223,7 +226,9 @@ const AddProduct = () => {
               <div className="p-3 bg-purple-100 rounded-xl">
                 <Grid className="text-purple-600" size={24} />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Product Variants</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                Product Variants
+              </h2>
             </div>
             <button
               type="button"
@@ -245,10 +250,13 @@ const AddProduct = () => {
               <span>Add Variant</span>
             </button>
           </div>
-          
+
           <div className="space-y-4">
             {variants.map((v, i) => (
-              <div key={i} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <div
+                key={i}
+                className="bg-gray-50 rounded-xl p-4 border border-gray-200"
+              >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-medium text-gray-900">Variant {i + 1}</h3>
                   {variants.length > 1 && (
@@ -263,10 +271,12 @@ const AddProduct = () => {
                     </button>
                   )}
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Size *</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Size *
+                    </label>
                     <input
                       name="size"
                       placeholder="e.g., S, M, 1kg"
@@ -276,9 +286,11 @@ const AddProduct = () => {
                       required
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Color</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Color
+                    </label>
                     <div className="flex gap-2">
                       <input
                         name="color"
@@ -296,27 +308,61 @@ const AddProduct = () => {
                       )}
                     </div>
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Price (₹) *</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Selling Price (₹) *
+                    </label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                      <DollarSign
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        size={16}
+                      />
                       <input
                         name="regular_price"
                         type="number"
-                        placeholder="Price"
+                        placeholder="Selling Price"
                         value={v.regular_price}
                         onChange={(e) => handleVariant(i, e)}
                         className="w-full pl-10 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        min="0"
+                        step="0.01"
                         required
                       />
                     </div>
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Stock Quantity *</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Sale Price (₹)
+                    </label>
                     <div className="relative">
-                      <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                      <DollarSign
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        size={16}
+                      />
+                      <input
+                        name="sale_price"
+                        type="number"
+                        placeholder="Sale Price"
+                        value={v.sale_price || ""}
+                        onChange={(e) => handleVariant(i, e)}
+                        className="w-full pl-10 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Stock Quantity *
+                    </label>
+                    <div className="relative">
+                      <Hash
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        size={16}
+                      />
                       <input
                         name="stock_quantity"
                         type="number"
@@ -342,15 +388,19 @@ const AddProduct = () => {
             </div>
             <h2 className="text-xl font-bold text-gray-900">Product Images</h2>
           </div>
-          
+
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Upload Images (Max 4 images)
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-500 transition-colors">
               <Upload className="mx-auto text-gray-400 mb-3" size={32} />
-              <p className="text-gray-600 mb-2">Drag & drop images here or click to browse</p>
-              <p className="text-sm text-gray-500 mb-4">Supports JPG, PNG, WEBP (Max 5MB each)</p>
+              <p className="text-gray-600 mb-2">
+                Drag & drop images here or click to browse
+              </p>
+              <p className="text-sm text-gray-500 mb-4">
+                Supports JPG, PNG, WEBP (Max 5MB each)
+              </p>
               <input
                 type="file"
                 multiple
@@ -371,7 +421,9 @@ const AddProduct = () => {
           {/* Image Previews */}
           {previewUrls.length > 0 && (
             <div>
-              <h3 className="font-medium text-gray-900 mb-3">Image Previews ({previewUrls.length}/4)</h3>
+              <h3 className="font-medium text-gray-900 mb-3">
+                Image Previews ({previewUrls.length}/4)
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {previewUrls.map((url, index) => (
                   <div key={index} className="relative group">
@@ -404,8 +456,8 @@ const AddProduct = () => {
             disabled={uploading}
             className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 rounded-2xl font-bold text-lg transition-all ${
               uploading
-                ? 'bg-emerald-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-emerald-500 to-green-500 hover:shadow-xl'
+                ? "bg-emerald-500 cursor-not-allowed"
+                : "bg-gradient-to-r from-emerald-500 to-green-500 hover:shadow-xl"
             } text-white`}
           >
             {uploading ? (
@@ -420,7 +472,7 @@ const AddProduct = () => {
               </>
             )}
           </button>
-          
+
           <button
             type="button"
             onClick={() => navigate("/shop/products")}
