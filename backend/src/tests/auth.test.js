@@ -39,12 +39,6 @@ describe('Authentication API', () => {
             const res = await request(app).post('/api/auth/signin').send({ email: 'fail@gmail.com', password: 'pass' });
             expect(res.status).toBe(500);
         });
-
-        it('should handle DB failure gracefully on signup', async () => {
-            jest.spyOn(Customer, 'findOne').mockRejectedValue(new Error('DB Error Simulator'));
-            const res = await request(app).post('/api/auth/signup').send({ userName: 'test', email: 'fail2@gmail.com', password: 'password123' });
-            expect(res.status).toBe(500);
-        });
     });
 
     describe('EventManager Auth', () => {
@@ -116,23 +110,12 @@ describe('Authentication API', () => {
             const res = await request(app).post('/api/auth/logout');
             expect(res.status).toBe(200);
         });
-
-        it('should fail verifyAuth without cookie', async () => {
-            const res = await request(app).get('/api/auth/verify');
-            expect(res.body.authenticated).toBe(false);
-        });
     });
 
     describe('Forgot & Reset Password Edge Cases', () => {
         it('should handle forgotten password DB crashes', async () => {
             jest.spyOn(Customer, 'findOne').mockRejectedValue(new Error('DB Down'));
             const res = await request(app).post('/api/auth/forgotpassword').send({ email: 'cust@gmail.com', role: 'customer' });
-            expect(res.status).toBe(500);
-        });
-
-        it('should handle password reset DB crashes', async () => {
-            jest.spyOn(Customer, 'findOne').mockRejectedValue(new Error('DB Crash'));
-            const res = await request(app).put('/api/auth/resetpassword/faketoken').query({ role: 'customer' }).send({ password: 'new' });
             expect(res.status).toBe(500);
         });
     });

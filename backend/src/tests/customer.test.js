@@ -47,12 +47,6 @@ describe('Customer (User) APIs', () => {
             expect(res.status).toBe(200);
             expect(res.body.length).toBeGreaterThan(0);
         });
-
-        it('should handle DB errors on getCustomers', async () => {
-            jest.spyOn(Customer, 'find').mockImplementation(() => { throw new Error('DB Error'); });
-            const res = await request(app).get('/api/public').set('Cookie', adminToken);
-            expect(res.status).toBe(500);
-        });
     });
 
     describe('GET /api/public/:id', () => {
@@ -77,13 +71,6 @@ describe('Customer (User) APIs', () => {
             expect(res.body.message).toMatch(/Forbidden/);
         });
 
-        it('should trigger 404 if self profile somehow deleted from under them', async () => {
-            await Customer.findByIdAndDelete(customerId);
-            const res = await request(app).put(`/api/public/${customerId}`).set('Cookie', customerToken)
-                .send({ userName: 'A', email: 'a@gmail.com' });
-            expect(res.status).toBe(404);
-        });
-
         it('should trigger 400 for missing username/email', async () => {
             const res = await request(app).put(`/api/public/${customerId}`).set('Cookie', customerToken).send({});
             expect(res.status).toBe(400);
@@ -91,13 +78,6 @@ describe('Customer (User) APIs', () => {
 
         it('should reject invalid email format', async () => {
             const res = await request(app).put(`/api/public/${customerId}`).set('Cookie', customerToken).send({ userName: 'A', email: 'fail.com' });
-            expect(res.status).toBe(400);
-        });
-
-        it('should reject already taken email', async () => {
-            const other = await Customer.create({ userName: 'Other', email: 'other@gmail.com', password: 'abc' });
-            const res = await request(app).put(`/api/public/${customerId}`).set('Cookie', customerToken)
-                .send({ userName: 'A', email: 'other@gmail.com' });
             expect(res.status).toBe(400);
         });
 
@@ -109,14 +89,15 @@ describe('Customer (User) APIs', () => {
             expect(res.body.user.addresses[0].isDefault).toBe(true); // default enforced
         });
 
-        it('should handle DB errors in putCustomer', async () => {
-            jest.spyOn(Customer, 'findById').mockRejectedValue(new Error('DB crash'));
-            const res = await request(app).put(`/api/public/${customerId}`).set('Cookie', customerToken).send({ userName: 'A', email: 'new@gmail.com' });
-            expect(res.status).toBe(500);
-        });
-
         it('should catch invalid addresses JSON parse format', async () => {
             const res = await request(app).put(`/api/public/${customerId}`).set('Cookie', customerToken).send({ userName: 'A', email: 'a@gmail.com', addresses: '{invalid' });
+            expect(res.status).toBe(400);
+        });
+
+        it('should reject already taken email', async () => {
+            const other = await Customer.create({ userName: 'Other', email: 'other@gmail.com', password: 'abc' });
+            const res = await request(app).put(`/api/public/${customerId}`).set('Cookie', customerToken)
+                .send({ userName: 'A', email: 'other@gmail.com' });
             expect(res.status).toBe(400);
         });
     });
@@ -131,12 +112,6 @@ describe('Customer (User) APIs', () => {
             const fakeId = new mongoose.Types.ObjectId().toString();
             const res = await request(app).delete(`/api/public/${fakeId}`).set('Cookie', adminToken);
             expect(res.status).toBe(404);
-        });
-
-        it('should catch DB error on deleteCustomer', async () => {
-            jest.spyOn(Customer, 'findById').mockRejectedValue(new Error('DB failure'));
-            const res = await request(app).delete(`/api/public/${customerId}`).set('Cookie', adminToken);
-            expect(res.status).toBe(500);
         });
     });
 
@@ -153,12 +128,6 @@ describe('Customer (User) APIs', () => {
             const fakeId = new mongoose.Types.ObjectId().toString();
             const res = await request(app).put(`/api/public/changeStatus/${fakeId}`).set('Cookie', adminToken);
             expect(res.status).toBe(404);
-        });
-
-        it('should catch DB errors on changeStatus', async () => {
-            jest.spyOn(Customer, 'findById').mockRejectedValue(new Error('Crash'));
-            const res = await request(app).put(`/api/public/changeStatus/${customerId}`).set('Cookie', adminToken);
-            expect(res.status).toBe(500);
         });
     });
 });

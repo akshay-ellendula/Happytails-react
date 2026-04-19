@@ -9,5 +9,7 @@ export default {
   ],
   moduleNameMapper: {
     "^(\\.{1,2}/.*)\\.js$": "$1"
-  }
+  },
+  coverageReporters: ["text", "text-summary", "lcov", "json"],
+  coveragePathIgnorePatterns: ["/node_modules/"]
 };
