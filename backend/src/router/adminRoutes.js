@@ -68,6 +68,9 @@ import {
   getOrders,
   getOrderDetails,
   getOrderStats,
+  updateOrderStatusByAdmin,
+  updateOrderShippingAddressByAdmin,
+  deleteOrderByAdmin,
 
   // admin-dashboard.ejs
   dashBoardStats,
@@ -346,5 +349,16 @@ router.delete("/events/:id", protectRoute(["admin"]), deleteEvent);
 router.get("/orders", protectRoute(["admin"]), getOrders);
 router.get("/orders/stats", protectRoute(["admin"]), getOrderStats);
 router.get("/orders/:id", protectRoute(["admin"]), getOrderDetails);
+router.patch(
+  "/orders/:id/status",
+  protectRoute(["admin"]),
+  updateOrderStatusByAdmin,
+);
+router.patch(
+  "/orders/:id/address",
+  protectRoute(["admin"]),
+  updateOrderShippingAddressByAdmin,
+);
+router.delete("/orders/:id", protectRoute(["admin"]), deleteOrderByAdmin);
 
 export default router;

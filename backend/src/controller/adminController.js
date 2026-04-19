@@ -418,32 +418,26 @@ const updateUser = async (req, res, next) => {
         .status(400)
         .json({ success: false, message: "Name is required" });
     if (userName.length < 2)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Name must be at least 2 characters",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Name must be at least 2 characters",
+      });
     if (
       phoneNumber &&
       !/^\+91[6-9][0-9]{9}$/.test(phoneNumber) &&
       !/^[0-9]{10}$/.test(phoneNumber)
     )
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message:
-            "Phone must be a valid 10-digit number or Indian number starting with +91",
-        });
+      return res.status(400).json({
+        success: false,
+        message:
+          "Phone must be a valid 10-digit number or Indian number starting with +91",
+      });
     if (addressFieldsProvided && (!houseNumber || !city || !pincode)) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message:
-            "If updating address, House Number, City, and Pincode are required",
-        });
+      return res.status(400).json({
+        success: false,
+        message:
+          "If updating address, House Number, City, and Pincode are required",
+      });
     }
 
     const user = await Customer.findById(userId);
@@ -1884,40 +1878,30 @@ const updateVendor = async (req, res, next) => {
         .status(400)
         .json({ success: false, message: "Name is required" });
     if (!/^[a-zA-Z\s]+$/.test(name))
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Name must contain only letters and spaces",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Name must contain only letters and spaces",
+      });
     if (name.length < 2)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Name must be at least 2 characters",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Name must be at least 2 characters",
+      });
     if (!contact_number || !/^\+91[6-9][0-9]{9}$/.test(contact_number))
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Phone must be a valid Indian number starting with +91",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Phone must be a valid Indian number starting with +91",
+      });
     if (!store_name || store_name.length < 2)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Store name must be at least 2 characters",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Store name must be at least 2 characters",
+      });
     if (!store_location || store_location.length < 5)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Store location must be at least 5 characters",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Store location must be at least 5 characters",
+      });
 
     const vendor = await Vendor.findById(vendorId);
     if (!vendor)
@@ -2534,22 +2518,18 @@ const addProduct = async (req, res) => {
       !product_description ||
       !variants
     ) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "All required fields must be provided",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "All required fields must be provided",
+      });
     }
 
     const defaultVendor = await Vendor.findOne();
     if (!defaultVendor) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "No vendors available. Please add a vendor first.",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "No vendors available. Please add a vendor first.",
+      });
     }
 
     const product = new Product({
@@ -2701,12 +2681,10 @@ const updateProduct = async (req, res) => {
       !product_description ||
       !variants
     ) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "All required fields must be provided",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "All required fields must be provided",
+      });
     }
 
     const product = await Product.findById(productId);
@@ -2736,12 +2714,10 @@ const updateProduct = async (req, res) => {
         ? variants
         : JSON.parse(variants);
       if (!Array.isArray(parsedVariants) || parsedVariants.length === 0) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "At least one variant is required",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "At least one variant is required",
+        });
       }
     } catch (err) {
       console.log("Error parsing variants:", err);
@@ -3056,12 +3032,10 @@ const updateEvent = async (req, res) => {
         );
       } catch (error) {
         console.error("Cloudinary upload failed for thumbnail:", error);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Failed to upload event thumbnail.",
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload event thumbnail.",
+        });
       }
     }
 
@@ -3095,6 +3069,7 @@ const updateEvent = async (req, res) => {
 const getOrders = async (req, res) => {
   try {
     const orders = await Order.aggregate([
+      { $match: { is_deleted: { $ne: true } } },
       {
         $lookup: {
           from: "customers",
@@ -3126,9 +3101,15 @@ const getOrders = async (req, res) => {
 const getOrderDetails = async (req, res) => {
   try {
     const orderId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid order ID" });
+    }
+
     const order = await Order.findById(orderId).populate("customer_id");
 
-    if (!order) {
+    if (!order || order.is_deleted === true) {
       return res
         .status(404)
         .json({ success: false, message: "Order not found" });
@@ -3175,6 +3156,13 @@ const getOrderDetails = async (req, res) => {
           city: "",
           pincode: "",
         },
+        timeline: Array.isArray(order.timeline)
+          ? order.timeline.map((entry) => ({
+              status: entry.status || "",
+              date: entry.date || null,
+              description: entry.description || "",
+            }))
+          : [],
         items: orderItems.map((item) => ({
           productId: item.product_id ? item.product_id._id : "N/A",
           productName: item.product_id
@@ -3295,14 +3283,19 @@ const getOrderStats = async (req, res) => {
 
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const totalOrders = await Order.countDocuments();
+    const totalOrders = await Order.countDocuments({
+      is_deleted: { $ne: true },
+    });
     const monthlyOrders = await Order.countDocuments({
+      is_deleted: { $ne: true },
       order_date: { $gte: monthStart },
     });
     const weeklyOrders = await Order.countDocuments({
+      is_deleted: { $ne: true },
       order_date: { $gte: weekStart },
     });
     const dailyOrders = await Order.countDocuments({
+      is_deleted: { $ne: true },
       order_date: { $gte: today },
     });
 
@@ -3318,6 +3311,219 @@ const getOrderStats = async (req, res) => {
   } catch (err) {
     console.error("Error fetching order stats:", err);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+const updateOrderStatusByAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid order ID" });
+    }
+
+    const validStatuses = [
+      "Pending",
+      "Confirmed",
+      "Out for Delivery",
+      "Shipped",
+      "Delivered",
+      "Cancelled",
+    ];
+
+    if (!validStatuses.includes(status)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid status" });
+    }
+
+    const setFields = { status };
+    if (status === "Shipped") setFields.shipped_at = new Date();
+    if (status === "Delivered") setFields.delivered_at = new Date();
+    if (status === "Cancelled") setFields.cancelled_at = new Date();
+
+    let description = "Order status updated.";
+    if (status === "Pending") description = "Order is pending.";
+    else if (status === "Confirmed") description = "Order confirmed.";
+    else if (status === "Out for Delivery") {
+      description = "Order is out for delivery.";
+    } else if (status === "Shipped") {
+      description = "Order has been shipped.";
+    } else if (status === "Delivered") {
+      description = "Order has been delivered.";
+    } else if (status === "Cancelled") {
+      description = "Order has been cancelled.";
+    }
+
+    const updatePayload = {
+      $set: setFields,
+      $push: {
+        timeline: {
+          status,
+          date: new Date(),
+          description,
+        },
+      },
+    };
+
+    const updated = await Order.findOneAndUpdate(
+      { _id: id, is_deleted: { $ne: true } },
+      updatePayload,
+      { new: true },
+    );
+
+    if (!updated) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Order status updated successfully",
+      order: {
+        id: updated._id,
+        status: updated.status,
+      },
+    });
+  } catch (err) {
+    console.error("Error updating order status:", err);
+    next(err);
+  }
+};
+
+const updateOrderShippingAddressByAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { shippingAddress } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid order ID" });
+    }
+
+    if (!shippingAddress || typeof shippingAddress !== "object") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Shipping address is required" });
+    }
+
+    const order = await Order.findOne({ _id: id, is_deleted: { $ne: true } });
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    const editableStatuses = ["Pending", "Confirmed"];
+    if (!editableStatuses.includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Delivery address can only be updated for Pending or Confirmed orders",
+      });
+    }
+
+    const normalizedAddress = {
+      name: String(shippingAddress.name || "").trim(),
+      houseNumber: String(shippingAddress.houseNumber || "").trim(),
+      streetNo: String(shippingAddress.streetNo || "").trim(),
+      city: String(shippingAddress.city || "").trim(),
+      pincode: String(shippingAddress.pincode || "").trim(),
+    };
+
+    if (
+      !normalizedAddress.name ||
+      !normalizedAddress.city ||
+      !normalizedAddress.pincode
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, city and pincode are required",
+      });
+    }
+
+    const oldAddress = order.shippingAddress || {};
+
+    const addressFields = [
+      { key: "name", label: "Name" },
+      { key: "houseNumber", label: "House Number" },
+      { key: "streetNo", label: "Street" },
+      { key: "city", label: "City" },
+      { key: "pincode", label: "Pincode" },
+    ];
+
+    const changedFields = addressFields
+      .map(({ key, label }) => {
+        const before = String(oldAddress[key] || "").trim();
+        const after = String(normalizedAddress[key] || "").trim();
+        if (before === after) return null;
+        return `${label}: ${before || "N/A"} -> ${after || "N/A"}`;
+      })
+      .filter(Boolean);
+
+    if (changedFields.length === 0) {
+      return res.json({
+        success: true,
+        message: "No address changes detected",
+        shippingAddress: order.shippingAddress,
+      });
+    }
+
+    order.shippingAddress = normalizedAddress;
+    order.timeline = order.timeline || [];
+    order.timeline.push({
+      status: order.status,
+      date: new Date(),
+      description: `Delivery address updated by admin (${changedFields.join("; ")})`,
+    });
+
+    await order.save();
+
+    return res.json({
+      success: true,
+      message: "Delivery address updated successfully",
+      shippingAddress: order.shippingAddress,
+    });
+  } catch (err) {
+    console.error("Error updating delivery address:", err);
+    next(err);
+  }
+};
+
+const deleteOrderByAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid order ID" });
+    }
+
+    const deleted = await Order.findOneAndUpdate(
+      { _id: id, is_deleted: { $ne: true } },
+      { is_deleted: true },
+      { new: true },
+    );
+
+    if (!deleted) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Order deleted successfully",
+    });
+  } catch (err) {
+    console.error("Error deleting order:", err);
+    next(err);
   }
 };
 const getTopOrderedProducts = async (req, res, next) => {
@@ -3524,7 +3730,11 @@ const updateProductRatingByAdmin = async (req, res, next) => {
 
     if (rating !== undefined) {
       const parsedRating = Number(rating);
-      if (!Number.isFinite(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      if (
+        !Number.isFinite(parsedRating) ||
+        parsedRating < 1 ||
+        parsedRating > 5
+      ) {
         return res
           .status(400)
           .json({ success: false, message: "Rating must be between 1 and 5" });
@@ -3609,7 +3819,11 @@ const updateEventReviewByAdmin = async (req, res, next) => {
 
     if (rating !== undefined) {
       const parsedRating = Number(rating);
-      if (!Number.isFinite(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      if (
+        !Number.isFinite(parsedRating) ||
+        parsedRating < 1 ||
+        parsedRating > 5
+      ) {
         return res
           .status(400)
           .json({ success: false, message: "Rating must be between 1 and 5" });
@@ -3745,6 +3959,9 @@ export {
   getOrders,
   getOrderDetails,
   getOrderStats,
+  updateOrderStatusByAdmin,
+  updateOrderShippingAddressByAdmin,
+  deleteOrderByAdmin,
 
   //admin-dashboard.ejs
   dashBoardStats,

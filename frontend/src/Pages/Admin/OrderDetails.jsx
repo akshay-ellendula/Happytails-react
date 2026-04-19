@@ -5,6 +5,7 @@ import Sidebar from "./Components/Sidebar";
 import Header from "./Components/Header";
 import Loader from "./Components/Loader";
 import { fetchOrderDetails, clearSelectedOrder } from "../../store/ordersSlice";
+import { axiosInstance } from "../../utils/axios";
 import "./admin-styles.css";
 
 const OrderDetails = () => {
@@ -17,6 +18,22 @@ const OrderDetails = () => {
     loading,
     error,
   } = useSelector((state) => state.orders);
+  const [statusValue, setStatusValue] = React.useState("Pending");
+  const [statusSaving, setStatusSaving] = React.useState(false);
+  const [addressSaving, setAddressSaving] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const [addressForm, setAddressForm] = React.useState({
+    name: "",
+    houseNumber: "",
+    streetNo: "",
+    city: "",
+    pincode: "",
+  });
+  const [toast, setToast] = React.useState({
+    visible: false,
+    type: "success",
+    message: "",
+  });
 
   useEffect(() => {
     if (id) {
@@ -27,6 +44,136 @@ const OrderDetails = () => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  useEffect(() => {
+    if (order?.status) {
+      setStatusValue(order.status);
+    }
+  }, [order?.status]);
+
+  useEffect(() => {
+    if (order?.shippingAddress) {
+      setAddressForm({
+        name: order.shippingAddress.name || "",
+        houseNumber: order.shippingAddress.houseNumber || "",
+        streetNo: order.shippingAddress.streetNo || "",
+        city: order.shippingAddress.city || "",
+        pincode: order.shippingAddress.pincode || "",
+      });
+    }
+  }, [order?.shippingAddress]);
+
+  useEffect(() => {
+    if (!toast.visible) return undefined;
+    const timer = setTimeout(() => {
+      setToast((prev) => ({ ...prev, visible: false }));
+    }, 2600);
+    return () => clearTimeout(timer);
+  }, [toast.visible]);
+
+  const showToast = (type, message) => {
+    setToast({ visible: true, type, message });
+  };
+
+  const handleUpdateStatus = async (nextStatus = statusValue) => {
+    if (!id) return;
+
+    const statusToSend = String(nextStatus).trim();
+
+    if (!statusToSend || statusToSend === "[object Object]") {
+      showToast("error", "Please select a valid status");
+      return;
+    }
+
+    setStatusSaving(true);
+    try {
+      await axiosInstance.patch(`/admin/orders/${id}/status`, {
+        status: statusToSend,
+      });
+      setStatusValue(statusToSend);
+      await dispatch(fetchOrderDetails(id));
+      showToast("success", "Order status updated");
+    } catch (err) {
+      console.error("Status update failed");
+      showToast("error", "Failed to update order status");
+    } finally {
+      setStatusSaving(false);
+    }
+  };
+
+  const getQuickStatusActions = (currentStatus) => {
+    if (currentStatus === "Pending") return ["Confirmed", "Cancelled"];
+    if (currentStatus === "Confirmed") return ["Shipped", "Cancelled"];
+    if (currentStatus === "Out for Delivery") return ["Delivered", "Cancelled"];
+    if (currentStatus === "Shipped") return ["Delivered", "Cancelled"];
+    return [];
+  };
+
+  const quickActions = getQuickStatusActions(order?.status);
+
+  const handleCopyOrderId = async () => {
+    try {
+      await navigator.clipboard.writeText(String(order?.orderId || ""));
+      showToast("success", "Order ID copied");
+    } catch (err) {
+      console.error("Failed to copy order id:", err);
+      showToast("error", "Could not copy order ID");
+    }
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!id) return;
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this order?",
+    );
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      await axiosInstance.delete(`/admin/orders/${id}`);
+      showToast("success", "Order deleted successfully");
+      navigate("/admin/orders");
+    } catch (err) {
+      console.error("Failed to delete order:", err);
+      showToast("error", "Failed to delete order");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleAddressChange = (field, value) => {
+    setAddressForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleUpdateAddress = async () => {
+    if (!id) return;
+
+    if (
+      !addressForm.name.trim() ||
+      !addressForm.city.trim() ||
+      !addressForm.pincode.trim()
+    ) {
+      showToast("error", "Name, city and pincode are required");
+      return;
+    }
+
+    setAddressSaving(true);
+    try {
+      await axiosInstance.patch(`/admin/orders/${id}/address`, {
+        shippingAddress: addressForm,
+      });
+      await dispatch(fetchOrderDetails(id));
+      showToast("success", "Delivery address updated");
+    } catch (err) {
+      console.error("Failed to update delivery address:", err);
+      showToast(
+        "error",
+        err?.response?.data?.message || "Failed to update delivery address",
+      );
+    } finally {
+      setAddressSaving(false);
+    }
   };
 
   const getStatusBadgeClass = (status) => {
@@ -146,6 +293,14 @@ const OrderDetails = () => {
 
   const orderCode = `#ORD${String(order.orderId).slice(-3).padStart(3, "0")}`;
   const totalAmount = order.totalAmount || 0;
+  const isAddressEditable = ["Pending", "Confirmed"].includes(order.status);
+  const addressHistory = (order.timeline || [])
+    .filter((entry) =>
+      String(entry?.description || "")
+        .toLowerCase()
+        .includes("delivery address updated by admin"),
+    )
+    .sort((a, b) => new Date(b?.date || 0) - new Date(a?.date || 0));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
@@ -155,6 +310,20 @@ const OrderDetails = () => {
         <Header title="Order Details" />
 
         <main className="p-6">
+          {toast.visible && (
+            <div className="fixed top-20 right-6 z-[60]">
+              <div
+                className={`px-4 py-3 rounded-xl shadow-lg border text-sm font-semibold ${
+                  toast.type === "success"
+                    ? "bg-green-50 border-green-200 text-green-800"
+                    : "bg-red-50 border-red-200 text-red-800"
+                }`}
+              >
+                {toast.message}
+              </div>
+            </div>
+          )}
+
           {/* Header with Back Button */}
           <div className="flex justify-between items-center mb-8">
             <button
@@ -195,6 +364,193 @@ const OrderDetails = () => {
               </svg>
               Print Order
             </button>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
+            <div className="flex flex-col md:flex-row md:items-end gap-4">
+              <div className="w-full md:w-72">
+                <label className="block text-sm text-gray-600 mb-2 font-medium">
+                  Update Order Status
+                </label>
+                <select
+                  value={statusValue}
+                  onChange={(e) => setStatusValue(e.target.value)}
+                  className="w-full border-2 border-gray-200 rounded-xl p-3 focus:outline-none focus:border-yellow-500"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Out for Delivery">Out for Delivery</option>
+                  <option value="Shipped">Shipped</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleUpdateStatus()}
+                  disabled={statusSaving}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-60"
+                >
+                  {statusSaving ? "Updating..." : "Update Status"}
+                </button>
+                <button
+                  onClick={handleDeleteOrder}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 disabled:opacity-60"
+                >
+                  {deleting ? "Deleting..." : "Delete Order"}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-gray-200 flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => dispatch(fetchOrderDetails(id))}
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-semibold"
+              >
+                Refresh
+              </button>
+              <button
+                onClick={handleCopyOrderId}
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-semibold"
+              >
+                Copy Order ID
+              </button>
+              {quickActions.map((nextStatus) => (
+                <button
+                  key={nextStatus}
+                  onClick={() => handleUpdateStatus(nextStatus)}
+                  disabled={statusSaving || deleting}
+                  className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 text-sm font-semibold disabled:opacity-60"
+                >
+                  Mark {nextStatus}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-800">
+                Delivery Address
+              </h3>
+              <span
+                className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                  isAddressEditable
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                {isAddressEditable
+                  ? "Editable (Pending/Confirmed)"
+                  : `Locked in ${order.status}`}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Name</label>
+                <input
+                  type="text"
+                  value={addressForm.name}
+                  onChange={(e) => handleAddressChange("name", e.target.value)}
+                  disabled={!isAddressEditable || addressSaving}
+                  className="w-full border-2 border-gray-200 rounded-xl p-3 focus:outline-none focus:border-yellow-500 disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">
+                  House Number
+                </label>
+                <input
+                  type="text"
+                  value={addressForm.houseNumber}
+                  onChange={(e) =>
+                    handleAddressChange("houseNumber", e.target.value)
+                  }
+                  disabled={!isAddressEditable || addressSaving}
+                  className="w-full border-2 border-gray-200 rounded-xl p-3 focus:outline-none focus:border-yellow-500 disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">
+                  Street
+                </label>
+                <input
+                  type="text"
+                  value={addressForm.streetNo}
+                  onChange={(e) =>
+                    handleAddressChange("streetNo", e.target.value)
+                  }
+                  disabled={!isAddressEditable || addressSaving}
+                  className="w-full border-2 border-gray-200 rounded-xl p-3 focus:outline-none focus:border-yellow-500 disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">City</label>
+                <input
+                  type="text"
+                  value={addressForm.city}
+                  onChange={(e) => handleAddressChange("city", e.target.value)}
+                  disabled={!isAddressEditable || addressSaving}
+                  className="w-full border-2 border-gray-200 rounded-xl p-3 focus:outline-none focus:border-yellow-500 disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">
+                  Pincode
+                </label>
+                <input
+                  type="text"
+                  value={addressForm.pincode}
+                  onChange={(e) =>
+                    handleAddressChange("pincode", e.target.value)
+                  }
+                  disabled={!isAddressEditable || addressSaving}
+                  className="w-full border-2 border-gray-200 rounded-xl p-3 focus:outline-none focus:border-yellow-500 disabled:opacity-60"
+                />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <button
+                onClick={handleUpdateAddress}
+                disabled={!isAddressEditable || addressSaving}
+                className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-700 disabled:opacity-60"
+              >
+                {addressSaving ? "Saving Address..." : "Save Address"}
+              </button>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                Address Change History
+              </h4>
+              {addressHistory.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  No address edits recorded for this order.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {addressHistory.slice(0, 6).map((entry, idx) => (
+                    <div
+                      key={`${entry.date || "na"}-${idx}`}
+                      className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
+                    >
+                      <p className="text-sm text-gray-800 font-medium">
+                        {entry.description || "Address updated"}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {entry.date
+                          ? new Date(entry.date).toLocaleString()
+                          : "Time unavailable"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Order Stats */}
@@ -469,4 +825,3 @@ const OrderDetails = () => {
 };
 
 export default OrderDetails;
-
