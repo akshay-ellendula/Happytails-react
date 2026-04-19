@@ -63,8 +63,8 @@ const EditModal = ({ isOpen, onClose, event, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 flex items-center justify-center z-50 admin-modal-backdrop">
+      <div className="bg-white p-6 rounded-xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto admin-modal-panel admin-modal-panel-lg">
         <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-800">
             Edit Event Details
@@ -327,19 +327,19 @@ const EventDetails = () => {
       } else {
         alert(result.payload || "Failed to delete event");
       }
-    } catch (err) {
+    } catch {
       alert("Failed to delete event");
     }
   };
 
   if (loadingDetail || loadingAttendees) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Event Details" />
           <div className="p-6">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="bg-white rounded-2xl shadow-lg p-8 premium-hover-card">
               <Loader />
             </div>
           </div>
@@ -350,12 +350,12 @@ const EventDetails = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Event Details" />
           <div className="p-6">
-            <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <div className="bg-white rounded-2xl shadow-lg p-8 text-center premium-hover-card">
               <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                 <svg
                   className="w-8 h-8 text-red-600"
@@ -390,12 +390,12 @@ const EventDetails = () => {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Event Details" />
           <div className="p-6">
-            <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <div className="bg-white rounded-2xl shadow-lg p-8 text-center premium-hover-card">
               <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                 <svg
                   className="w-8 h-8 text-gray-600"
@@ -433,10 +433,10 @@ const EventDetails = () => {
   const eventCode = `#EV${String(event.id).slice(-3).padStart(3, "0")}`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
       <Sidebar />
 
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-64 admin-content">
         <Header title="Event Details" />
 
         <main className="p-6">
@@ -464,7 +464,7 @@ const EventDetails = () => {
           </div>
 
           {/* Event Header */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-6">
                 <img
@@ -612,7 +612,7 @@ const EventDetails = () => {
           </div>
 
           {/* Basic Information */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
             <h3 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-200">
               Basic Information
             </h3>
@@ -921,3 +921,5 @@ const EventDetails = () => {
 };
 
 export default EventDetails;
+
+

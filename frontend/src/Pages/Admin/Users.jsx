@@ -96,6 +96,7 @@ export default function Users() {
       (user.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.email || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const hasSearch = Boolean(searchTerm);
 
   const sortedUsers = [...filteredUsers].sort((a, b) => {
     if (sortBy === "newest") {
@@ -172,10 +173,10 @@ export default function Users() {
   // ────────────────────────────────────────────────
 
   return (
-    <div className="flex bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div className="flex bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen admin-shell">
       <Sidebar />
 
-      <div className="w-full ml-64">
+      <div className="w-full ml-64 admin-content">
         <Header title="User Management" />
 
         <div className="p-6">
@@ -309,7 +310,7 @@ export default function Users() {
           </div>
 
           {/* ─── User List + Search + Sort Filter ────────────────── */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">User List</h2>
@@ -354,7 +355,7 @@ export default function Users() {
 
             <div className="text-sm text-gray-500 mb-4 flex items-center gap-3">
               Showing {sortedUsers.length} of {tableData.length} users
-              {searchTerm && (
+              {hasSearch && (
                 <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs">
                   Searching: "{searchTerm}"
                 </span>
@@ -371,9 +372,11 @@ export default function Users() {
 
                 {sortedUsers.length === 0 && (
                   <div className="py-16 text-center">
-                    {searchTerm ? (
-                      <>
-                        <div className="text-6xl mb-4">😕</div>
+                    {hasSearch ? (
+                      <div className="max-w-xl mx-auto rounded-2xl border border-yellow-100 bg-gradient-to-br from-yellow-50 to-white p-8">
+                        <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-yellow-100 text-yellow-700 flex items-center justify-center text-3xl">
+                          🔎
+                        </div>
                         <h3 className="text-xl font-semibold text-gray-700 mb-2">
                           No users found
                         </h3>
@@ -386,17 +389,19 @@ export default function Users() {
                         >
                           Clear Search
                         </button>
-                      </>
+                      </div>
                     ) : (
-                      <>
-                        <div className="text-6xl mb-4">📭</div>
+                      <div className="max-w-xl mx-auto rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-8">
+                        <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gray-100 text-gray-600 flex items-center justify-center text-3xl">
+                          📭
+                        </div>
                         <h3 className="text-xl font-semibold text-gray-700 mb-2">
                           No users yet
                         </h3>
                         <p className="text-gray-500">
                           No customer accounts have been created.
                         </p>
-                      </>
+                      </div>
                     )}
                   </div>
                 )}

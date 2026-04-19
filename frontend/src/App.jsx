@@ -61,6 +61,8 @@ import EventManagerDetails from "./Pages/Admin/EventManagerDetails";
 import EventDetails from "./Pages/Admin/EventDetails";
 import ProductDetails from "./Pages/Admin/ProductDetails";
 import OrderDetails from "./Pages/Admin/OrderDetails";
+import Reviews from "./Pages/Admin/Reviews";
+import Analytics from "./Pages/Admin/Analytics";
 
 // --- Pages: Service Providers ---
 import EventManagerPage from "./Pages/EventManager/EventManagerPage";
@@ -340,6 +342,22 @@ function AppRoutes() {
             <RoleBasedRoute allowedRoles={["admin"]}>
               {" "}
               <Orders />{" "}
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/reviews"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <Reviews />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <RoleBasedRoute allowedRoles={["admin"]}>
+              <Analytics />
             </RoleBasedRoute>
           }
         />

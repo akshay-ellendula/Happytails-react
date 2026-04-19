@@ -48,12 +48,12 @@ const OrderDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Order Details" />
           <div className="p-6">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="bg-white rounded-2xl shadow-lg p-8 premium-hover-card">
               <Loader />
             </div>
           </div>
@@ -64,12 +64,12 @@ const OrderDetails = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Order Details" />
           <div className="p-6">
-            <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <div className="bg-white rounded-2xl shadow-lg p-8 text-center premium-hover-card">
               <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                 <svg
                   className="w-8 h-8 text-red-600"
@@ -104,12 +104,12 @@ const OrderDetails = () => {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Order Details" />
           <div className="p-6">
-            <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <div className="bg-white rounded-2xl shadow-lg p-8 text-center premium-hover-card">
               <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                 <svg
                   className="w-8 h-8 text-gray-600"
@@ -148,10 +148,10 @@ const OrderDetails = () => {
   const totalAmount = order.totalAmount || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
       <Sidebar />
 
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-64 admin-content">
         <Header title="Order Details" />
 
         <main className="p-6">
@@ -265,7 +265,7 @@ const OrderDetails = () => {
           </div>
 
           {/* Order Information */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Order Summary */}
               <div>
@@ -364,7 +364,7 @@ const OrderDetails = () => {
           </div>
 
           {/* Order Items */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 premium-hover-card">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-800">Order Items</h3>
               <span className="px-4 py-2 bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
@@ -469,3 +469,4 @@ const OrderDetails = () => {
 };
 
 export default OrderDetails;
+

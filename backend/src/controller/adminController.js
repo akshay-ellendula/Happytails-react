@@ -3508,6 +3508,172 @@ const getEventReviews = async (req, res, next) => {
   }
 };
 
+// PATCH: Update a product rating/review (admin)
+const updateProductRatingByAdmin = async (req, res, next) => {
+  try {
+    const { ratingId } = req.params;
+    const { rating, review, title, status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(ratingId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid rating ID" });
+    }
+
+    const payload = {};
+
+    if (rating !== undefined) {
+      const parsedRating = Number(rating);
+      if (!Number.isFinite(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Rating must be between 1 and 5" });
+      }
+      payload.rating = parsedRating;
+    }
+
+    if (review !== undefined) payload.review = review;
+    if (title !== undefined) payload.title = title;
+    if (status !== undefined) payload.status = status;
+
+    const updated = await Rating.findByIdAndUpdate(ratingId, payload, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updated) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Rating not found" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Product rating updated successfully",
+      rating: {
+        id: updated._id,
+        rating: updated.rating,
+        title: updated.title || "",
+        review: updated.review || "",
+        status: updated.status,
+      },
+    });
+  } catch (err) {
+    console.error("Error updating product rating:", err);
+    next(err);
+  }
+};
+
+// DELETE: Remove a product rating/review (admin)
+const deleteProductRatingByAdmin = async (req, res, next) => {
+  try {
+    const { ratingId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(ratingId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid rating ID" });
+    }
+
+    const deleted = await Rating.findByIdAndDelete(ratingId);
+
+    if (!deleted) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Rating not found" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Product rating deleted successfully",
+    });
+  } catch (err) {
+    console.error("Error deleting product rating:", err);
+    next(err);
+  }
+};
+
+// PATCH: Update an event review (admin)
+const updateEventReviewByAdmin = async (req, res, next) => {
+  try {
+    const { reviewId } = req.params;
+    const { rating, comment } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(reviewId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid review ID" });
+    }
+
+    const payload = {};
+
+    if (rating !== undefined) {
+      const parsedRating = Number(rating);
+      if (!Number.isFinite(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Rating must be between 1 and 5" });
+      }
+      payload.rating = parsedRating;
+    }
+
+    if (comment !== undefined) payload.comment = comment;
+
+    const updated = await Review.findByIdAndUpdate(reviewId, payload, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updated) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Review not found" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Event review updated successfully",
+      review: {
+        id: updated._id,
+        rating: updated.rating,
+        comment: updated.comment,
+      },
+    });
+  } catch (err) {
+    console.error("Error updating event review:", err);
+    next(err);
+  }
+};
+
+// DELETE: Remove an event review (admin)
+const deleteEventReviewByAdmin = async (req, res, next) => {
+  try {
+    const { reviewId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(reviewId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid review ID" });
+    }
+
+    const deleted = await Review.findByIdAndDelete(reviewId);
+
+    if (!deleted) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Review not found" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Event review deleted successfully",
+    });
+  } catch (err) {
+    console.error("Error deleting event review:", err);
+    next(err);
+  }
+};
+
 export {
   // admin-login.ejs
   logout,
@@ -3533,6 +3699,8 @@ export {
   getProductCustomers,
   getProductsWithRevenue,
   getProductRatings,
+  updateProductRatingByAdmin,
+  deleteProductRatingByAdmin,
 
   // admin-shop-manager.ejs, admin-sm-details.ejs
   getVendors,
@@ -3570,6 +3738,8 @@ export {
   getEventRevenue,
   getEventsWithRevenue,
   getEventReviews,
+  updateEventReviewByAdmin,
+  deleteEventReviewByAdmin,
 
   // admin-orders.ejs , admin-order-details.ejs
   getOrders,

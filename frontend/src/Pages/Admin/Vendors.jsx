@@ -172,16 +172,16 @@ export default function Vendors() {
   ];
 
   return (
-    <div className="flex bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div className="flex bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen admin-shell">
       <Sidebar />
 
-      <div className="ml-64 w-full">
+      <div className="ml-64 w-full admin-content">
         <Header title="Shop Manager Management" />
 
         <div className="p-6">
           {/* Stats Cards – your original version */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-yellow-500">
+            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-yellow-500 premium-hover-card">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-gray-500 text-sm uppercase tracking-wider">Total Managers</h3>
@@ -197,7 +197,7 @@ export default function Vendors() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-green-500">
+            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-green-500 premium-hover-card">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-gray-500 text-sm uppercase tracking-wider">Revenue</h3>
@@ -215,7 +215,7 @@ export default function Vendors() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-blue-500">
+            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-blue-500 premium-hover-card">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-gray-500 text-sm uppercase tracking-wider">Total Orders</h3>
@@ -231,7 +231,7 @@ export default function Vendors() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-purple-500">
+            <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-purple-500 premium-hover-card">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-gray-500 text-sm uppercase tracking-wider">Today's Orders</h3>
@@ -257,7 +257,7 @@ export default function Vendors() {
                 {topVendors.map((vendor, index) => (
                   <div
                     key={vendor.id}
-                    className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border-l-4 border-yellow-500"
+                    className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border-l-4 border-yellow-500 premium-hover-card"
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div>
@@ -282,7 +282,7 @@ export default function Vendors() {
           </div>
 
           {/* Search Bar + Sort Filter */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">Shop Manager List</h2>
@@ -339,7 +339,7 @@ export default function Vendors() {
             </div>
           ) : (
             <>
-              <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
+              <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6 premium-hover-card">
                 <div className="p-6">
                   <Table columns={columns} data={paginated} />
                 </div>
@@ -347,38 +347,41 @@ export default function Vendors() {
                 {/* No results message */}
                 {sortedVendors.length === 0 && search && (
                   <div className="p-8 text-center">
-                    <div className="h-16 w-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                    <div className="max-w-xl mx-auto rounded-2xl border border-yellow-100 bg-gradient-to-br from-yellow-50 to-white p-8">
+                      <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-yellow-100 text-yellow-700 flex items-center justify-center text-3xl">
+                        🔎
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">No shop managers found</h3>
+                      <p className="text-gray-600">No managers match your search term "{search}"</p>
+                      <button
+                        onClick={() => {
+                          setSearch('');
+                          setPage(1);
+                        }}
+                        className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
+                      >
+                        Clear Search
+                      </button>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">No shop managers found</h3>
-                    <p className="text-gray-600">No managers match your search term "{search}"</p>
-                    <button
-                      onClick={() => setSearch('')}
-                      className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
-                    >
-                      Clear Search
-                    </button>
                   </div>
                 )}
 
                 {sortedVendors.length === 0 && !search && (
                   <div className="p-8 text-center">
-                    <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                    <div className="max-w-xl mx-auto rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-8">
+                      <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gray-100 text-gray-600 flex items-center justify-center text-3xl">
+                        🏪
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">No shop managers available</h3>
+                      <p className="text-gray-600">There are no shop managers in the system yet.</p>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">No shop managers available</h3>
-                    <p className="text-gray-600">There are no shop managers in the system yet.</p>
                   </div>
                 )}
               </div>
 
               {/* Pagination – your original version */}
               {totalPages > 1 && (
-                <div className="bg-white rounded-2xl shadow-lg p-4">
+                <div className="bg-white rounded-2xl shadow-lg p-4 premium-hover-card">
                   <div className="flex justify-center gap-2">
                     <button
                       onClick={() => setPage(prev => Math.max(prev - 1, 1))}

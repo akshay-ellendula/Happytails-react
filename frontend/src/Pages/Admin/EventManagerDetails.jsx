@@ -11,6 +11,7 @@ import {
   fetchPastEvents,
   fetchEventManagerEventsByDateRange,
   fetchAllEventManagerEvents,
+  clearEventManagerDateRangeEvents,
   updateEventManager,
   deleteEventManager,
   clearSelectedEventManager,
@@ -53,8 +54,8 @@ const EditModal = ({ isOpen, onClose, manager, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-xl w-full max-w-lg shadow-2xl">
+    <div className="fixed inset-0 flex items-center justify-center z-50 admin-modal-backdrop">
+      <div className="bg-white p-6 rounded-xl w-full max-w-lg shadow-2xl admin-modal-panel">
         <h2 className="text-xl font-bold text-gray-800 mb-4">
           Edit Event Manager
         </h2>
@@ -200,8 +201,8 @@ const DeleteModal = ({ isOpen, onClose, onDelete }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-xl w-full max-w-sm shadow-2xl">
+    <div className="fixed inset-0 flex items-center justify-center z-50 admin-modal-backdrop">
+      <div className="bg-white p-6 rounded-xl w-full max-w-sm shadow-2xl admin-modal-panel admin-modal-panel-sm">
         <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
           <svg
             className="w-8 h-8 text-red-600"
@@ -305,11 +306,18 @@ export default function EventManagerDetails() {
     }
   };
 
+  const handleClearDateFilter = () => {
+    setStartDate("");
+    setEndDate("");
+    setShowDateFilter(false);
+    dispatch(clearEventManagerDateRangeEvents());
+  };
+
   if (loadingDetail) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Event Manager Details" />
           <div className="p-6">
             <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -323,9 +331,9 @@ export default function EventManagerDetails() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Event Manager Details" />
           <div className="p-6">
             <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
@@ -363,9 +371,9 @@ export default function EventManagerDetails() {
 
   if (!manager) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Event Manager Details" />
           <div className="p-6">
             <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
@@ -406,10 +414,10 @@ export default function EventManagerDetails() {
   const managerCode = `#EM${String(manager.id).slice(-3).padStart(3, "0")}`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
       <Sidebar />
 
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-64 admin-content">
         <Header title="Event Manager Details" />
 
         <main className="p-6">
@@ -837,28 +845,36 @@ export default function EventManagerDetails() {
                     />
                   </div>
                   <div className="flex items-end">
-                    <button
-                      onClick={() => {
-                        if (startDate && endDate) {
-                          if (new Date(startDate) > new Date(endDate)) {
-                            alert("Start date must be before end date");
-                            return;
+                    <div className="flex w-full gap-3">
+                      <button
+                        onClick={() => {
+                          if (startDate && endDate) {
+                            if (new Date(startDate) > new Date(endDate)) {
+                              alert("Start date must be before end date");
+                              return;
+                            }
+                            dispatch(
+                              fetchEventManagerEventsByDateRange({
+                                id,
+                                startDate,
+                                endDate,
+                              }),
+                            );
+                          } else {
+                            alert("Please select both dates");
                           }
-                          dispatch(
-                            fetchEventManagerEventsByDateRange({
-                              id,
-                              startDate,
-                              endDate,
-                            }),
-                          );
-                        } else {
-                          alert("Please select both dates");
-                        }
-                      }}
-                      className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 font-medium"
-                    >
-                      Search
-                    </button>
+                        }}
+                        className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 font-medium"
+                      >
+                        Search
+                      </button>
+                      <button
+                        onClick={handleClearDateFilter}
+                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-300 font-medium"
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1077,3 +1093,5 @@ export default function EventManagerDetails() {
     </div>
   );
 }
+
+

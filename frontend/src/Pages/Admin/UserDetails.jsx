@@ -39,8 +39,8 @@ const EditModal = ({ isOpen, onClose, user, onSave }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-xl w-full max-w-lg shadow-2xl">
+        <div className="fixed inset-0 flex items-center justify-center z-50 admin-modal-backdrop">
+            <div className="bg-white p-6 rounded-xl w-full max-w-lg shadow-2xl admin-modal-panel">
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Edit User</h2>
 
                 <div className="space-y-4">
@@ -96,8 +96,8 @@ const DeleteModal = ({ isOpen, onClose, onDelete }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-xl w-full max-w-sm shadow-2xl">
+        <div className="fixed inset-0 flex items-center justify-center z-50 admin-modal-backdrop">
+            <div className="bg-white p-6 rounded-xl w-full max-w-sm shadow-2xl admin-modal-panel admin-modal-panel-sm">
                 <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                     <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.196 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -158,12 +158,12 @@ export default function UserDetails() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
                 <Sidebar />
-                <div className="flex-1 ml-64">
+                <div className="flex-1 ml-64 admin-content">
                     <Header title="User Details" />
                     <div className="p-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-8">
+                        <div className="bg-white rounded-2xl shadow-lg p-8 premium-hover-card">
                             <Loader />
                         </div>
                     </div>
@@ -174,12 +174,12 @@ export default function UserDetails() {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
                 <Sidebar />
-                <div className="flex-1 ml-64">
+                <div className="flex-1 ml-64 admin-content">
                     <Header title="User Details" />
                     <div className="p-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+                        <div className="bg-white rounded-2xl shadow-lg p-8 text-center premium-hover-card">
                             <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                                 <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -202,12 +202,12 @@ export default function UserDetails() {
 
     if (!userDetails) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
                 <Sidebar />
-                <div className="flex-1 ml-64">
+                <div className="flex-1 ml-64 admin-content">
                     <Header title="User Details" />
                     <div className="p-6">
-                        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+                        <div className="bg-white rounded-2xl shadow-lg p-8 text-center premium-hover-card">
                             <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                                 <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -232,10 +232,10 @@ export default function UserDetails() {
     const userCode = `#USR${String(user.id).slice(-3).padStart(3, "0")}`;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
             <Sidebar />
 
-            <div className="flex-1 ml-64">
+            <div className="flex-1 ml-64 admin-content">
                 <Header title="User Details" />
 
                 <main className="p-6">
@@ -253,7 +253,7 @@ export default function UserDetails() {
                     </div>
 
                     {/* User Profile Card */}
-                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                    <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-6">
                                 <div className="h-24 w-24 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
@@ -441,3 +441,4 @@ export default function UserDetails() {
         </div>
     );
 }
+

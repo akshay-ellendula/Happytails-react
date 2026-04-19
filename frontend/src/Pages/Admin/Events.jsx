@@ -102,6 +102,7 @@ export default function Events() {
     }
     return 0;
   });
+  const hasSearch = Boolean(search);
 
   const columns = [
     {
@@ -210,10 +211,10 @@ export default function Events() {
   ];
 
   return (
-    <div className="flex bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div className="flex bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen admin-shell">
       <Sidebar />
 
-      <div className="ml-64 w-full">
+      <div className="ml-64 w-full admin-content">
         <Header title="Events Management" />
 
         <div className="p-6">
@@ -326,7 +327,7 @@ export default function Events() {
           </div>
 
           {/* ─── Search & Sort Controls ────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">Event List</h2>
@@ -371,7 +372,7 @@ export default function Events() {
 
             <div className="text-sm text-gray-500 mb-4 flex items-center gap-3">
               Showing {sortedEvents.length} of {tableData.length} events
-              {search && (
+              {hasSearch && (
                 <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs">
                   Searching: "{search}"
                 </span>
@@ -392,13 +393,23 @@ export default function Events() {
 
               {sortedEvents.length === 0 && (
                 <div className="p-12 text-center">
-                  <div className="text-6xl mb-4">📅</div>
-                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                    {search ? "No matching events found" : "No events yet"}
-                  </h3>
-                  <p className="text-gray-500">
-                    {search ? `No results for "${search}"` : "Create your first event to get started"}
-                  </p>
+                  {hasSearch ? (
+                    <div className="max-w-xl mx-auto rounded-2xl border border-yellow-100 bg-gradient-to-br from-yellow-50 to-white p-8">
+                      <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-yellow-100 text-yellow-700 flex items-center justify-center text-3xl">
+                        🔎
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-700 mb-2">No matching events found</h3>
+                      <p className="text-gray-500">No results for "{search}"</p>
+                    </div>
+                  ) : (
+                    <div className="max-w-xl mx-auto rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-8">
+                      <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gray-100 text-gray-600 flex items-center justify-center text-3xl">
+                        📅
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-700 mb-2">No events yet</h3>
+                      <p className="text-gray-500">Create your first event to get started</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

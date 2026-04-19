@@ -359,18 +359,18 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
       <Sidebar />
 
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-64 admin-content">
         <Header title="Admin Dashboard" />
 
         <main className="p-6">
           {/* Welcome Banner */}
           {showWelcome && (
-            <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-yellow-100 to-yellow-50 border border-yellow-200 shadow-lg animate-fade-out">
+            <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-amber-100 via-yellow-50 to-white border border-amber-200 shadow-lg animate-fade-out premium-hover-card">
               <div className="flex items-center">
-                <div className="h-16 w-16 rounded-full bg-yellow-500 flex items-center justify-center text-white text-2xl mr-4">
+                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-white text-2xl mr-4 shadow-md">
                   👋
                 </div>
                 <div>
@@ -387,7 +387,7 @@ export default function Dashboard() {
             <>
               {/* FIRST ROW */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-yellow-500">
+                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-yellow-500 premium-hover-card admin-kpi admin-kpi-accent">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-sm text-gray-600 uppercase tracking-wider">Total Users</h3>
@@ -399,7 +399,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-orange-500">
+                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-orange-500 premium-hover-card admin-kpi admin-kpi-accent">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-sm text-gray-600 uppercase tracking-wider">Shop Vendors</h3>
@@ -411,7 +411,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-amber-500">
+                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-amber-500 premium-hover-card admin-kpi admin-kpi-accent">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-sm text-gray-600 uppercase tracking-wider">Event Managers</h3>
@@ -423,7 +423,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-red-500">
+                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-red-500 premium-hover-card admin-kpi admin-kpi-accent">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-sm text-gray-600 uppercase tracking-wider">Total Events</h3>
@@ -438,7 +438,7 @@ export default function Dashboard() {
 
               {/* SECOND ROW */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-green-500">
+                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-green-500 premium-hover-card admin-kpi admin-kpi-accent">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-sm text-gray-600 uppercase tracking-wider">Total Revenue</h3>
@@ -451,7 +451,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-teal-500">
+                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-teal-500 premium-hover-card admin-kpi admin-kpi-accent">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-sm text-gray-600 uppercase tracking-wider">Monthly Revenue</h3>
@@ -463,7 +463,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-blue-500">
+                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-blue-500 premium-hover-card admin-kpi admin-kpi-accent">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-sm text-gray-600 uppercase tracking-wider">Weekly Revenue</h3>
@@ -475,7 +475,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-purple-500">
+                <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border-l-4 border-purple-500 premium-hover-card admin-kpi admin-kpi-accent">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-sm text-gray-600 uppercase tracking-wider">Today's Revenue</h3>
@@ -507,7 +507,7 @@ export default function Dashboard() {
               </div>
 
               {/* RECENT USERS */}
-              <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="bg-white rounded-2xl shadow-lg p-6 premium-hover-card admin-panel">
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className="text-xl font-bold text-gray-800">Recent Users</h3>
@@ -523,3 +523,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

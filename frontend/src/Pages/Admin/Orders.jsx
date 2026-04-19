@@ -65,6 +65,7 @@ export default function Orders() {
     }
     return 0;
   });
+  const hasSearch = Boolean(search);
 
   const columns = [
     {
@@ -190,10 +191,10 @@ export default function Orders() {
   const averageOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
 
   return (
-    <div className="flex bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div className="flex bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen admin-shell">
       <Sidebar />
 
-      <div className="ml-64 w-full">
+      <div className="ml-64 w-full admin-content">
         <Header title="Order Management" />
 
         <div className="p-6">
@@ -277,7 +278,7 @@ export default function Orders() {
           </div>
 
           {/* Search Bar + Filters */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
             <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">Order List</h2>
@@ -330,7 +331,7 @@ export default function Orders() {
 
             <div className="text-sm text-gray-500 mb-4 flex items-center gap-3">
               Showing {sortedOrders.length} of {orders.length} orders
-              {search && (
+              {hasSearch && (
                 <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs">
                   Searching: "{search}"
                 </span>
@@ -356,31 +357,31 @@ export default function Orders() {
               {/* No results message */}
               {sortedOrders.length === 0 && search && (
                 <div className="p-8 text-center">
-                  <div className="h-16 w-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                  <div className="max-w-xl mx-auto rounded-2xl border border-yellow-100 bg-gradient-to-br from-yellow-50 to-white p-8">
+                    <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-yellow-100 text-yellow-700 flex items-center justify-center text-3xl">
+                      🔎
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">No orders found</h3>
+                    <p className="text-gray-600">No orders match your search term "{search}"</p>
+                    <button
+                      onClick={() => setSearch('')}
+                      className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
+                    >
+                      Clear Search
+                    </button>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">No orders found</h3>
-                  <p className="text-gray-600">No orders match your search term "{search}"</p>
-                  <button
-                    onClick={() => setSearch('')}
-                    className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
-                  >
-                    Clear Search
-                  </button>
                 </div>
               )}
 
               {sortedOrders.length === 0 && !search && (
                 <div className="p-8 text-center">
-                  <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                  <div className="max-w-xl mx-auto rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-8">
+                    <div className="mx-auto mb-4 h-16 w-16 rounded-2xl bg-gray-100 text-gray-600 flex items-center justify-center text-3xl">
+                      📦
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">No orders available</h3>
+                    <p className="text-gray-600">There are no orders in the system yet.</p>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">No orders available</h3>
-                  <p className="text-gray-600">There are no orders in the system yet.</p>
                 </div>
               )}
 

@@ -50,8 +50,8 @@ const EditModal = ({ isOpen, onClose, product, onSave }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 flex items-center justify-center z-50 admin-modal-backdrop">
+      <div className="bg-white p-6 rounded-xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto admin-modal-panel admin-modal-panel-lg">
         <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-800">Edit Product Details</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -227,12 +227,12 @@ const ProductDetails = () => {
 
   if (loadingDetail || loadingMetrics || loadingCustomers) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Product Details" />
           <div className="p-6">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="bg-white rounded-2xl shadow-lg p-8 premium-hover-card">
               <Loader />
             </div>
           </div>
@@ -243,12 +243,12 @@ const ProductDetails = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Product Details" />
           <div className="p-6">
-            <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <div className="bg-white rounded-2xl shadow-lg p-8 text-center premium-hover-card">
               <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -271,12 +271,12 @@ const ProductDetails = () => {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
         <Sidebar />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 ml-64 admin-content">
           <Header title="Product Details" />
           <div className="p-6">
-            <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <div className="bg-white rounded-2xl shadow-lg p-8 text-center premium-hover-card">
               <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -305,10 +305,10 @@ const ProductDetails = () => {
   const uniqueCustomers = metrics?.uniqueCustomers || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex admin-shell">
       <Sidebar />
       
-      <div className="flex-1 ml-64">
+      <div className="flex-1 ml-64 admin-content">
         <Header title="Product Details" />
         
         <main className="p-6">
@@ -326,7 +326,7 @@ const ProductDetails = () => {
           </div>
 
           {/* Product Profile */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-6">
                 <img
@@ -424,7 +424,7 @@ const ProductDetails = () => {
           </div>
 
           {/* Product Information */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 premium-hover-card">
             <h3 className="text-xl font-bold text-gray-800 mb-6 pb-2 border-b border-gray-200">Product Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
@@ -618,3 +618,4 @@ const ProductDetails = () => {
 };
 
 export default ProductDetails;
+

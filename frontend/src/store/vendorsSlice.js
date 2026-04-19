@@ -157,6 +157,11 @@ const vendorsSlice = createSlice({
       state.dateRangeSummary = null;
       state.error = null;
     },
+    clearVendorDateRangeOrders(state) {
+      state.dateRangeOrders = [];
+      state.dateRangeSummary = null;
+      state.dateRangeFilter = { startDate: null, endDate: null };
+    },
   },
 
   extraReducers: (builder) => {
@@ -251,5 +256,5 @@ const vendorsSlice = createSlice({
   },
 });
 
-export const { clearSelectedVendor } = vendorsSlice.actions;
+export const { clearSelectedVendor, clearVendorDateRangeOrders } = vendorsSlice.actions;
 export default vendorsSlice.reducer;

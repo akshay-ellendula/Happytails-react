@@ -224,6 +224,11 @@ const eventManagersSlice = createSlice({
       state.allEvents = [];
       state.error = null;
     },
+    clearEventManagerDateRangeEvents(state) {
+      state.dateRangeEvents = [];
+      state.dateRangeSummary = null;
+      state.dateRangeFilter = { startDate: null, endDate: null };
+    },
   },
 
   extraReducers: (builder) => {
@@ -340,5 +345,5 @@ const eventManagersSlice = createSlice({
   },
 });
 
-export const { clearSelectedEventManager } = eventManagersSlice.actions;
+export const { clearSelectedEventManager, clearEventManagerDateRangeEvents } = eventManagersSlice.actions;
 export default eventManagersSlice.reducer;

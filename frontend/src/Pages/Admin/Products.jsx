@@ -232,10 +232,10 @@ export default function Products() {
   ];
 
   return (
-    <div className="flex bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div className="flex bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen admin-shell">
       <Sidebar />
 
-      <div className="ml-64 w-full">
+      <div className="ml-64 w-full admin-content">
         <Header title="Products Management" />
 
         <div className="p-6">
@@ -404,7 +404,10 @@ export default function Products() {
                     <h3 className="text-lg font-semibold text-gray-800 mb-2">No products found</h3>
                     <p className="text-gray-600">No products match your search term "{search}"</p>
                     <button
-                      onClick={() => setSearch('')}
+                      onClick={() => {
+                        setSearch('');
+                        setPage(1);
+                      }}
                       className="mt-4 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
                     >
                       Clear Search

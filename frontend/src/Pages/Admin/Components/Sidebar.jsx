@@ -8,13 +8,15 @@ export default function Sidebar() {
   const { signout } = useAuth();
 
   const menu = [
-    { label: "Dashboard", to: "/admin/dashboard", icon: "📊" },
-    { label: "Users", to: "/admin/users", icon: "👥" },
-    { label: "Shop Managers", to: "/admin/vendors", icon: "🏪" },
-    { label: "Event Managers", to: "/admin/event-managers", icon: "🎪" },
-    { label: "Events", to: "/admin/events", icon: "📅" },
-    { label: "Products", to: "/admin/products", icon: "🛍️" },
-    { label: "Orders", to: "/admin/orders", icon: "📦" },
+    { label: "Dashboard", to: "/admin/dashboard" },
+    { label: "Users", to: "/admin/users" },
+    { label: "Shop Managers", to: "/admin/vendors" },
+    { label: "Event Managers", to: "/admin/event-managers" },
+    { label: "Events", to: "/admin/events" },
+    { label: "Products", to: "/admin/products" },
+    { label: "Orders", to: "/admin/orders" },
+    { label: "Reviews", to: "/admin/reviews" },
+    { label: "Analytics", to: "/admin/analytics" },
   ];
 
   const handleLogout = async () => {
@@ -28,12 +30,15 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 min-h-screen bg-gradient-to-b from-yellow-400 to-yellow-500 shadow-2xl p-6 fixed left-0 top-0 border-r border-yellow-600">
+    <aside className="w-64 min-h-screen bg-gradient-to-b from-amber-300 via-yellow-300 to-amber-400 shadow-2xl p-6 fixed left-0 top-0 border-r border-amber-500/60">
       {/* Logo Section */}
-      <div className="mb-10 px-2">
+      <div className="mb-8 px-2">
         <div className="mb-2">
-          <h1 className="text-2xl font-bold text-gray-800">Happy Tails</h1>
-          <p className="text-sm text-gray-700">Admin Dashboard</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-amber-900/70 font-semibold mb-2">
+            Platform Admin
+          </p>
+          <h1 className="text-2xl font-black text-gray-900">Happy Tails</h1>
+          <p className="text-sm text-gray-800/80">Admin Dashboard</p>
         </div>
       </div>
 
@@ -46,14 +51,14 @@ export default function Sidebar() {
             className={`
               flex items-center px-4 py-3 rounded-xl transition-all duration-300 group
               ${pathname === item.to
-                ? "bg-gradient-to-r from-white to-gray-100 text-yellow-700 shadow-lg font-semibold"
-                : "text-gray-700 hover:bg-yellow-300 hover:text-gray-800 hover:shadow-md"
+                ? "bg-white text-amber-700 shadow-[0_10px_24px_rgba(120,53,15,0.2)] font-semibold"
+                : "text-amber-900/85 hover:bg-amber-200/70 hover:text-amber-950 hover:shadow-md"
               }
             `}
           >
             <span className="font-medium">{item.label}</span>
             {pathname === item.to && (
-              <div className="ml-auto w-2 h-2 rounded-full bg-yellow-700"></div>
+              <div className="ml-auto w-2 h-2 rounded-full bg-amber-700"></div>
             )}
           </Link>
         ))}

@@ -22,6 +22,8 @@ import {
   getProductCustomers,
   getProductsWithRevenue,
   getProductRatings,
+  updateProductRatingByAdmin,
+  deleteProductRatingByAdmin,
 
   // admin-shop-manager.ejs, admin-sm-details.ejs
   getVendors,
@@ -59,6 +61,8 @@ import {
   getEventRevenue,
   getEventsWithRevenue,
   getEventReviews,
+  updateEventReviewByAdmin,
+  deleteEventReviewByAdmin,
 
   // admin-orders.ejs, admin-order-details.ejs
   getOrders,
@@ -229,6 +233,16 @@ router.get(
   getProductCustomers,
 );
 router.get("/products/:id/ratings", protectRoute(["admin"]), getProductRatings);
+router.patch(
+  "/products/:id/ratings/:ratingId",
+  protectRoute(["admin"]),
+  updateProductRatingByAdmin,
+);
+router.delete(
+  "/products/:id/ratings/:ratingId",
+  protectRoute(["admin"]),
+  deleteProductRatingByAdmin,
+);
 router.put(
   "/products/:id",
   protectRoute(["admin"]),
@@ -304,6 +318,16 @@ router.get(
 router.get("/events/:id", protectRoute(["admin"]), getEvent);
 router.get("/events/:id/attendees", protectRoute(["admin"]), getEventAttendees);
 router.get("/events/:id/reviews", protectRoute(["admin"]), getEventReviews);
+router.patch(
+  "/events/:id/reviews/:reviewId",
+  protectRoute(["admin"]),
+  updateEventReviewByAdmin,
+);
+router.delete(
+  "/events/:id/reviews/:reviewId",
+  protectRoute(["admin"]),
+  deleteEventReviewByAdmin,
+);
 router.put(
   "/events/:id",
   protectRoute(["admin"]),
