@@ -654,9 +654,9 @@ export const forgotPassword = async (req, res) => {
     // Save only the token fields (skipping standard validation if needed)
     await user.save({ validateBeforeSave: false });
 
-    // Create Reset URL with role as a query parameter
-    // Ensure this matches your Frontend Route: http://localhost:5173/reset-password/:resetToken
-    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password/${resetToken}?role=${normalizedRole || "customer"}`;
+    const reqOrigin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
+    const frontendUrl = reqOrigin || process.env.FRONTEND_URL || "http://localhost:5173";
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}?role=${normalizedRole || "customer"}`;
 
     const message = `
             <h1>Password Reset Request</h1>

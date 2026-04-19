@@ -50,29 +50,35 @@ const ResetPassword = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#effe8b] font-outfit flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="min-h-screen bg-[#050505] font-outfit flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-[#f2c737] selection:text-black">
+            {/* Ambient Effects */}
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-0 left-1/4 w-[1000px] h-[1000px] rounded-full bg-gradient-to-b from-[#f2c737]/5 to-transparent blur-[120px] -translate-y-1/2" />
+                <div className="absolute bottom-0 right-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-t from-[#f2c737]/5 to-transparent blur-[100px] translate-y-1/2" />
+            </div>
+
+            <div className="relative z-10 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="flex justify-center mb-6">
                     <img 
                         src={projectLogo} 
                         alt="Happy Tails Logo" 
-                        className="h-24 w-auto drop-shadow-md"
+                        className="h-24 w-auto drop-shadow-[0_0_15px_rgba(242,199,55,0.2)]"
                     />
                 </div>
                 
-                <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
+                <h2 className="mt-2 text-center text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-200 to-gray-500 tracking-tight">
                     Reset Password
                 </h2>
-                <p className="mt-2 text-center text-sm text-gray-700">
-                    Enter your new password for your <strong>{role === 'vendor' ? 'Store Partner' : role}</strong> account.
+                <p className="mt-2 text-center text-sm font-medium text-white/50">
+                    Enter your new password for your <strong className="text-white/80">{role === 'vendor' ? 'Store Partner' : role}</strong> account.
                 </p>
             </div>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow-xl sm:rounded-2xl sm:px-10 border border-[#effe8b]">
-                    <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="relative z-10 mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+                <div className="bg-[#0d0d0d]/80 backdrop-blur-xl py-8 px-4 shadow-[0_8px_30px_rgb(0,0,0,0.5)] sm:rounded-3xl sm:px-10 border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
+                    <form className="space-y-6 relative z-10" onSubmit={handleSubmit}>
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="password" className="block text-sm font-bold text-white/90 uppercase tracking-wider mb-2">
                                 New Password
                             </label>
                             <div className="mt-1">
@@ -83,14 +89,14 @@ const ResetPassword = () => {
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#effe8b] focus:border-transparent sm:text-sm"
+                                    className="appearance-none block w-full px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#f2c737]/50 focus:border-[#f2c737] sm:text-sm transition-all"
                                     placeholder="••••••••"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="confirmPassword" className="block text-sm font-bold text-white/90 uppercase tracking-wider mb-2">
                                 Confirm New Password
                             </label>
                             <div className="mt-1">
@@ -101,17 +107,17 @@ const ResetPassword = () => {
                                     required
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#effe8b] focus:border-transparent sm:text-sm"
+                                    className="appearance-none block w-full px-4 py-3 bg-[#1a1a1a] border border-white/10 rounded-xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#f2c737]/50 focus:border-[#f2c737] sm:text-sm transition-all"
                                     placeholder="••••••••"
                                 />
                             </div>
                         </div>
 
-                        <div>
+                        <div className="pt-2">
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors duration-200"
+                                className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-black text-black bg-[#f2c737] hover:bg-[#f2c737]/90 hover:shadow-[0_0_20px_rgba(242,199,55,0.4)] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f2c737] focus:ring-offset-[#0d0d0d] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                             >
                                 {loading ? "Resetting..." : "Reset Password"}
                             </button>
