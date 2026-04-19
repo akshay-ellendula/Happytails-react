@@ -20,7 +20,6 @@ export const getStorePartnerProfile = async (req, res) => {
             data: storePartner
         });
     } catch (error) {
-        console.log("Error getting store partner profile:", error);
         res.status(500).json({
             success: false,
             message: "Internal server error"
@@ -61,8 +60,6 @@ export const updateStorePartnerProfile = async (req, res) => {
             data: storePartner
         });
     } catch (error) {
-        console.log("Error updating store partner profile:", error);
-
         if (error.name === 'ValidationError') {
             const errors = Object.values(error.errors).map(err => err.message);
             return res.status(400).json({

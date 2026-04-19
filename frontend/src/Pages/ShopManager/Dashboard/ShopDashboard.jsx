@@ -48,7 +48,6 @@ const ShopDashboard = () => {
           axiosInstance.get("/vendors/products/top3"),
         ]);
 
-        console.log("Dashboard response:", dashboardRes.data);
         if (dashboardRes.data.success) {
           setStats(dashboardRes.data.stats);
         }

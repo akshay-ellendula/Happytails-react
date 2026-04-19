@@ -73,116 +73,113 @@ export const createEvent = async (req, res, next) => {
         // We fetch all customers and send emails individually to protect their privacy
         Customer.find({}).select('email userName')
             .then(async (customers) => {
+            const formattedDate = new Date(date_time).toLocaleDateString('en-IN', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
 
-                const formattedDate = new Date(date_time).toLocaleDateString('en-IN', {
-                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                });
+            const emailMessage = `
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
+</style>
 
-                const emailMessage = `
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
-    </style>
+<div style="font-family: 'DM Sans', 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 2px solid #000000;">
 
-    <div style="font-family: 'DM Sans', 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 2px solid #000000;">
+    <!-- Header -->
+    <div style="background-color: #FFD700; padding: 36px 30px; text-align: center; border-bottom: 3px solid #000000;">
+        <h1 style="color: #000000; margin: 0; font-size: 38px; font-family: 'Playfair Display', Georgia, serif; font-weight: 900; letter-spacing: 2px;">🐾 HappyTails</h1>
+        <div style="width: 60px; height: 3px; background-color: #000000; margin: 12px auto;"></div>
+        <p style="color: #000000; margin: 0; font-size: 11px; letter-spacing: 5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif; font-weight: 600;">New Event Announcement</p>
+    </div>
 
-        <!-- Header -->
-        <div style="background-color: #FFD700; padding: 36px 30px; text-align: center; border-bottom: 3px solid #000000;">
-            <h1 style="color: #000000; margin: 0; font-size: 38px; font-family: 'Playfair Display', Georgia, serif; font-weight: 900; letter-spacing: 2px;">🐾 HappyTails</h1>
-            <div style="width: 60px; height: 3px; background-color: #000000; margin: 12px auto;"></div>
-            <p style="color: #000000; margin: 0; font-size: 11px; letter-spacing: 5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif; font-weight: 600;">New Event Announcement</p>
+    <!-- Hero Event Title Banner -->
+    <div style="background-color: #000000; padding: 32px 36px; text-align: center;">
+        <p style="margin: 0 0 8px; font-size: 11px; letter-spacing: 5px; text-transform: uppercase; color: #FFD700; font-family: 'DM Sans', sans-serif; font-weight: 600;">Just Announced</p>
+        <h2 style="margin: 0; font-size: 30px; color: #ffffff; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; line-height: 1.3;">${title}</h2>
+        <div style="width: 40px; height: 3px; background-color: #FFD700; margin: 16px auto 0;"></div>
+    </div>
+
+    <!-- Body -->
+    <div style="padding: 40px 36px; background-color: #ffffff;">
+
+        <p style="font-size: 16px; color: #222222; font-family: 'DM Sans', sans-serif; margin-top: 0;">
+            Hey there! 👋 A brand-new event has just been added to HappyTails and we think you'll love it.
+        </p>
+
+        <!-- Event Details Card -->
+        <div style="background-color: #000000; padding: 28px; margin: 28px 0;">
+            <h3 style="margin-top: 0; color: #FFD700; font-size: 11px; letter-spacing: 5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif; font-weight: 600;">📅 Event Details</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid #2a2a2a;">
+                    <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif; width: 40%;">Event</td>
+                    <td style="padding: 11px 0; text-align: right; color: #ffffff; font-size: 15px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700;">${title}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #2a2a2a;">
+                    <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">When</td>
+                    <td style="padding: 11px 0; text-align: right; color: #ffffff; font-size: 14px; font-family: 'DM Sans', sans-serif;">${formattedDate}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #2a2a2a;">
+                    <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Where</td>
+                    <td style="padding: 11px 0; text-align: right; color: #ffffff; font-size: 14px; font-family: 'DM Sans', sans-serif;">${venue}, ${location}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #2a2a2a;">
+                    <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Ticket Price</td>
+                    <td style="padding: 11px 0; text-align: right; color: #FFD700; font-size: 22px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700;">₹${ticketPrice}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Total Spots</td>
+                    <td style="padding: 11px 0; text-align: right; color: #FFD700; font-size: 22px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700;">${total_tickets}</td>
+                </tr>
+            </table>
         </div>
 
-        <!-- Hero Event Title Banner -->
-        <div style="background-color: #000000; padding: 32px 36px; text-align: center;">
-            <p style="margin: 0 0 8px; font-size: 11px; letter-spacing: 5px; text-transform: uppercase; color: #FFD700; font-family: 'DM Sans', sans-serif; font-weight: 600;">Just Announced</p>
-            <h2 style="margin: 0; font-size: 30px; color: #ffffff; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; line-height: 1.3;">${title}</h2>
-            <div style="width: 40px; height: 3px; background-color: #FFD700; margin: 16px auto 0;"></div>
-        </div>
-
-        <!-- Body -->
-        <div style="padding: 40px 36px; background-color: #ffffff;">
-
-            <p style="font-size: 16px; color: #222222; font-family: 'DM Sans', sans-serif; margin-top: 0;">
-                Hey there! 👋 A brand-new event has just been added to HappyTails and we think you'll love it.
+        <!-- Urgency Notice -->
+        <div style="border: 2px solid #000000; background-color: #FFFBEA; padding: 16px 20px; margin-bottom: 32px;">
+            <p style="margin: 0; font-size: 13px; color: #333333; font-family: 'DM Sans', sans-serif;">
+                ⚡ <strong>Spots are limited!</strong> Only <strong>${total_tickets} tickets</strong> available. Grab yours before they're gone.
             </p>
-
-            <!-- Event Details Card -->
-            <div style="background-color: #000000; padding: 28px; margin: 28px 0;">
-                <h3 style="margin-top: 0; color: #FFD700; font-size: 11px; letter-spacing: 5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif; font-weight: 600;">📅 Event Details</h3>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr style="border-bottom: 1px solid #2a2a2a;">
-                        <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif; width: 40%;">Event</td>
-                        <td style="padding: 11px 0; text-align: right; color: #ffffff; font-size: 15px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700;">${title}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #2a2a2a;">
-                        <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">When</td>
-                        <td style="padding: 11px 0; text-align: right; color: #ffffff; font-size: 14px; font-family: 'DM Sans', sans-serif;">${formattedDate}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #2a2a2a;">
-                        <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Where</td>
-                        <td style="padding: 11px 0; text-align: right; color: #ffffff; font-size: 14px; font-family: 'DM Sans', sans-serif;">${venue}, ${location}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #2a2a2a;">
-                        <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Ticket Price</td>
-                        <td style="padding: 11px 0; text-align: right; color: #FFD700; font-size: 22px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700;">₹${ticketPrice}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 11px 0; color: #888888; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">Total Spots</td>
-                        <td style="padding: 11px 0; text-align: right; color: #FFD700; font-size: 22px; font-family: 'Playfair Display', Georgia, serif; font-weight: 700;">${total_tickets}</td>
-                    </tr>
-                </table>
-            </div>
-
-            <!-- Urgency Notice -->
-            <div style="border: 2px solid #000000; background-color: #FFFBEA; padding: 16px 20px; margin-bottom: 32px;">
-                <p style="margin: 0; font-size: 13px; color: #333333; font-family: 'DM Sans', sans-serif;">
-                    ⚡ <strong>Spots are limited!</strong> Only <strong>${total_tickets} tickets</strong> available. Grab yours before they're gone.
-                </p>
-            </div>
-
-            <!-- CTA Button -->
-            <div style="text-align: center; margin: 32px 0 20px;">
-                <a href="http://localhost:5173/events"
-                   style="background-color: #FFD700; color: #000000; padding: 16px 40px; text-decoration: none; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 3px; text-transform: uppercase; display: inline-block; border: 2px solid #000000;">
-                    View Event &amp; Book Tickets →
-                </a>
-            </div>
-
         </div>
 
-        <!-- Footer -->
-        <div style="background-color: #000000; padding: 26px 30px; text-align: center; border-top: 3px solid #FFD700;">
-            <p style="margin: 0; font-size: 11px; color: #FFD700; letter-spacing: 4px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">With love & wags</p>
-            <p style="margin: 8px 0 0; font-size: 20px; color: #ffffff; font-family: 'Playfair Display', Georgia, serif; font-weight: 700;">The HappyTails Team 🐾</p>
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 32px 0 20px;">
+            <a href="http://localhost:5173/events"
+               style="background-color: #FFD700; color: #000000; padding: 16px 40px; text-decoration: none; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 3px; text-transform: uppercase; display: inline-block; border: 2px solid #000000;">
+                View Event &amp; Book Tickets →
+            </a>
         </div>
 
     </div>
+
+    <!-- Footer -->
+    <div style="background-color: #000000; padding: 26px 30px; text-align: center; border-top: 3px solid #FFD700;">
+        <p style="margin: 0; font-size: 11px; color: #FFD700; letter-spacing: 4px; text-transform: uppercase; font-family: 'DM Sans', sans-serif;">With love & wags</p>
+        <p style="margin: 8px 0 0; font-size: 20px; color: #ffffff; font-family: 'Playfair Display', Georgia, serif; font-weight: 700;">The HappyTails Team 🐾</p>
+    </div>
+
+</div>
 `;
 
-                // Loop through and send individually so customers don't see each other's emails
-                for (const customer of customers) {
-                    if (customer.email) {
-                        try {
-                            await sendEmail({
-                                email: customer.email,
-                                subject: `🐾 New Event Alert: ${title} is here!`,
-                                message: emailMessage
-                            });
-                        } catch (err) {
-                            console.error(`Failed to send event notification to ${customer.email}:`, err.message);
-                        }
+            // Loop through and send individually so customers don't see each other's emails
+            for (const customer of customers) {
+                if (customer.email) {
+                    try {
+                        await sendEmail({
+                            email: customer.email,
+                            subject: `🐾 New Event Alert: ${title} is here!`,
+                            message: emailMessage
+                        });
+                    } catch (err) {
+                        console.error(`Failed to send event notification to ${customer.email}:`, err.message);
                     }
                 }
-                console.log(`Successfully sent new event notifications to ${customers.length} customers.`);
-            })
+            }
+        })
             .catch(err => {
                 console.error("Error fetching customers for event notification:", err);
             });
         // --- END NOTIFICATION LOGIC ---
 
     } catch (error) {
-        console.log("Error in createEvent controller:", error);
         next(error); // Pass error to error handling middleware
     }
 };
@@ -253,7 +250,6 @@ export const getEventManagerEvents = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.log("Error in getEventManagerEvents controller:", error);
         next(error); // Pass error to error handling middleware
     }
 };
@@ -300,7 +296,6 @@ export const getEvent = async (req, res, next) => {
         res.status(200).json(event);
 
     } catch (error) {
-        console.log("Error in getEvent controller:", error);
         next(error);
     }
 };
@@ -354,7 +349,6 @@ export const updateEvent = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.log("Error in updateEvent controller:", error);
         next(error); // Pass error to error handling middleware
     }
 };
@@ -394,7 +388,6 @@ export const deleteEvent = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.log("Error in deleteEvent controller:", error);
         next(error); // Pass error to error handling middleware
     }
 };
@@ -450,7 +443,6 @@ export const getEventAnalytics = async (req, res, next) => {
         res.status(200).json(analytics);
 
     } catch (error) {
-        console.log("Error in getEventAnalytics controller:", error);
         next(error); // Pass error to error handling middleware
     }
 };
@@ -493,7 +485,6 @@ export const getAllEvents = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.log("Error in getAllEvents controller:", error);
         next(error); // Pass error to error handling middleware
     }
 };
@@ -590,7 +581,6 @@ export const cancelEvent = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.log("Error in cancelEvent controller:", error);
         next(error);
     }
 };

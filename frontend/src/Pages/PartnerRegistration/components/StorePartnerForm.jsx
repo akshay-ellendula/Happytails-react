@@ -109,7 +109,6 @@ const StorePartnerForm = ({ loading, setLoading, navigate }) => {
         storename: formData.storename,
         storelocation: formData.storelocation,
       };
-      console.log(submitData)
       const result = await signup(submitData, "storePartner");
       if (result.success) {
         toast.success("Store partner registration successful!");

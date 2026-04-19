@@ -38,8 +38,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    console.log("ProfilePage: User context updated", user);
-    
     if (user) {
       const formattedAddresses = (user.addresses || []).map((addr, index) => ({
         name: addr.name || `Address ${index + 1}`,
@@ -49,12 +47,6 @@ export default function ProfilePage() {
         pincode: addr.pincode || "",
         isDefault: addr.isDefault || false,
       }));
-
-      console.log("Setting profile from user context:", {
-        name: user.userName,
-        email: user.email,
-        addresses: formattedAddresses
-      });
 
       setProfile({
         name: user.userName || "",
@@ -90,7 +82,7 @@ export default function ProfilePage() {
       alert("Please enter an address name (e.g., Home, Office)");
       return;
     }
-    
+
     if (!newAddress.houseNumber.trim() || !newAddress.streetNo.trim() || 
         !newAddress.city.trim() || !newAddress.pincode.trim()) {
       alert("Please fill in all address fields");
@@ -98,7 +90,7 @@ export default function ProfilePage() {
     }
 
     let updatedAddresses = [...profile.addresses];
-    
+
     const addressToSave = {
       name: newAddress.name.trim(),
       houseNumber: newAddress.houseNumber.trim(),
@@ -121,7 +113,6 @@ export default function ProfilePage() {
       }));
     }
 
-    console.log("Saving addresses to local state:", updatedAddresses);
     setProfile({ ...profile, addresses: updatedAddresses });
     resetAddressForm();
   };
@@ -133,7 +124,6 @@ export default function ProfilePage() {
 
   const editAddress = (index) => {
     const address = profile.addresses[index];
-    console.log("Editing address:", address);
     setEditingAddressIndex(index);
     setNewAddress({
       name: address.name || "",
@@ -180,7 +170,7 @@ export default function ProfilePage() {
 
   const hasChanges = () => {
     const userAddresses = user?.addresses || [];
-    
+
     const normalizeAddress = (addr) => ({
       name: addr.name || '',
       houseNumber: addr.houseNumber || '',
@@ -189,38 +179,26 @@ export default function ProfilePage() {
       pincode: addr.pincode || '',
       isDefault: Boolean(addr.isDefault),
     });
-    
+
     const normalizedProfileAddresses = profile.addresses.map(normalizeAddress);
     const normalizedUserAddresses = userAddresses.map(normalizeAddress);
-    
+
     const addressesChanged = JSON.stringify(normalizedProfileAddresses) !== JSON.stringify(normalizedUserAddresses);
-    
+
     const hasChange = 
       profile.name !== (user?.userName || "") ||
       profile.email !== (user?.email || "") ||
       profile.phone !== (user?.phoneNumber || "") ||
       addressesChanged ||
       newImageFile !== null;
-    
-    console.log("Checking for changes:", {
-      nameChanged: profile.name !== (user?.userName || ""),
-      emailChanged: profile.email !== (user?.email || ""),
-      phoneChanged: profile.phone !== (user?.phoneNumber || ""),
-      addressesChanged,
-      hasImageChange: newImageFile !== null,
-      totalChange: hasChange
-    });
-    
+
     return hasChange;
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
-  
-    console.log("=== SAVE PROFILE START ===");
-    console.log("Current profile addresses:", profile.addresses);
-  
+
     if (!hasChanges()) {
       alert("No changes to save.");
       setEditMode(false);
@@ -230,13 +208,13 @@ export default function ProfilePage() {
       setLoading(false);
       return;
     }
-  
+
     if (profile.phone && !/^[6-9]\d{9}$/.test(profile.phone)) {
       alert("Please enter a valid 10-digit Indian phone number.");
       setLoading(false);
       return;
     }
-  
+
     const customerId = user?.customerId || user?._id || user?.id;
     if (!user || !customerId) {
       console.warn("ProfilePage: Missing user or customerId", user);
@@ -244,15 +222,13 @@ export default function ProfilePage() {
       setLoading(false);
       return;
     }
-  
+
     try {
-      console.log("Sending to API - Addresses:", profile.addresses);
-      
       const formData = new FormData();
       formData.append("userName", profile.name);
       formData.append("email", profile.email);
       formData.append("phoneNumber", profile.phone);
-      
+
       const addressesToSend = profile.addresses.map((addr, index) => ({
         name: addr.name || `Address ${index + 1}`,
         houseNumber: addr.houseNumber || "",
@@ -261,19 +237,15 @@ export default function ProfilePage() {
         pincode: addr.pincode || "",
         isDefault: addr.isDefault || false,
       }));
-      
-      console.log("Addresses being sent:", addressesToSend);
+
       formData.append("addresses", JSON.stringify(addressesToSend));
-      
+
       if (newImageFile) {
         formData.append("profilePic", newImageFile);
       }
-    
-      console.log("FormData contents:");
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ': ', pair[1]);
-      }
-    
+
+      for (let pair of formData.entries()) {}
+
       const response = await axiosInstance.put(
         `/public/${customerId}`,
         formData,
@@ -283,15 +255,13 @@ export default function ProfilePage() {
           }
         }
       );
-    
-      console.log("API Response:", response.data);
-    
+
       if (response.data.success) {
         alert("Profile updated successfully!");
         
         if (response.data.user) {
           const responseAddresses = response.data.user.addresses || [];
-          
+
           const formattedAddresses = responseAddresses.map((addr, index) => ({
             name: addr.name || `Address ${index + 1}`,
             houseNumber: addr.houseNumber || "",
@@ -300,16 +270,14 @@ export default function ProfilePage() {
             pincode: addr.pincode || "",
             isDefault: addr.isDefault || false,
           }));
-          
+
           const updatedUser = {
             ...response.data.user,
             addresses: formattedAddresses,
           };
-          
-          console.log("Updating user context with:", updatedUser);
-          
+
           updateUser(updatedUser);
-          
+
           setProfile({
             ...profile,
             name: response.data.user.userName || profile.name,
@@ -336,18 +304,15 @@ export default function ProfilePage() {
       );
     } finally {
       setLoading(false);
-      console.log("=== SAVE PROFILE END ===");
     }
   };
 
   const handleCancel = () => {
-    console.log("Canceling changes");
-    
     setEditMode(false);
     setNewImageFile(null);
     setShowAddressForm(false);
     setEditingAddressIndex(null);
-    
+
     if (user) {
       const formattedAddresses = (user.addresses || []).map((addr, index) => ({
         name: addr.name || `Address ${index + 1}`,
@@ -358,8 +323,6 @@ export default function ProfilePage() {
         isDefault: addr.isDefault || false,
       }));
 
-      console.log("Resetting to user addresses:", formattedAddresses);
-
       setProfile({
         name: user.userName || "",
         email: user.email || "",
@@ -368,7 +331,7 @@ export default function ProfilePage() {
         addresses: formattedAddresses,
       });
     }
-    
+
     setNewAddress({
       name: "",
       houseNumber: "",

@@ -15,7 +15,6 @@ export const getTickets = async (req, res) => {
         const tickets = await Ticket.find().populate('eventId').populate('customerId');
         res.status(200).json(tickets);
     } catch (error) {
-        console.log("Something went Wrong in gettickets controller :", error);
         res.status(500).json({ message: 'Server Error' });
     }
 }
@@ -32,7 +31,6 @@ export const getTicket = async (req, res) => {
         }
         res.status(200).json(ticket)
     } catch (error) {
-        console.log("Something Went Wrong in getTicket controller : ", error);
         res.status(500).json({ message: 'Server Error' });
     }
 }
@@ -56,7 +54,6 @@ export const deleteTicket = async (req, res) => {
         await Ticket.findByIdAndDelete(ticketId); // Fixed: Use findByIdAndDelete
         return res.status(200).json({ success: true, message: "Ticket deleted successfully" });
     } catch (error) {
-        console.log("Something Went Wrong in deleteTicket controller : ", error);
         res.status(500).json({ message: 'Server Error' });
     }
 }
@@ -103,7 +100,6 @@ export const createTicketPaymentIntent = async (req, res) => {
             totalPrice,
         });
     } catch (error) {
-        console.log("Error in createTicketPaymentIntent:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -265,7 +261,6 @@ export const postTicket = async (req, res) => {
                 subject: `🎟️ HappyTails - Your Tickets for ${event.title}`,
                 message: emailMessage
             });
-            console.log("Confirmation email sent successfully");
         } catch (emailError) {
             console.error("Error sending confirmation email:", emailError);
             // We catch the error but don't fail the request, 
@@ -279,7 +274,6 @@ export const postTicket = async (req, res) => {
             message: `Tickets booked successfully! Total: ₹${totalPrice}`
         });
     } catch (error) {
-        console.log("Something Went Wrong in postTicket controller : ", error);
         res.status(500).json({ message: 'Server Error' });
     }
 }
@@ -296,7 +290,6 @@ export const getUserTicket = async (req, res) => {
         }
         res.status(200).json(tickets)
     } catch (error) {
-        console.log("Error in getUserTickets controller : ", error);
         res.status(500).json({ message: 'Server Error' });
     }
 }
@@ -333,7 +326,6 @@ export const getEventManagerTickets = async (req, res) => {
         res.status(200).json(formattedTickets);
 
     } catch (error) {
-        console.log("Error in getEventManagerTickets controller:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -362,7 +354,6 @@ export const getTicketDetails = async (req, res) => {
         res.status(200).json(ticket);
 
     } catch (error) {
-        console.log("Error in getTicketDetails controller:", error);
         res.status(500).json({ message: 'Server Error' });
     }
 };

@@ -72,7 +72,6 @@ const EditTicket = ({ setCurrentPage, ticketData }) => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Saving ticket data:", formData);
       alert("Ticket updated successfully!");
       setFormChanged(false);
       setCurrentPage("ticket-details", formData, 'ticket');

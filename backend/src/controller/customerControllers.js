@@ -63,7 +63,6 @@ export const putCustomer = async (req, res, next) => {
     let profilePicUrl = customer.profilePic;
 
     if (req.file) {
-      console.log("File received:", req.file.originalname, req.file.size, "bytes");
       try {
         profilePicUrl = await uploadToCloudinary(req.file, 'customer-profiles');
       } catch (err) {

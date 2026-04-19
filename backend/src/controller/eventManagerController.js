@@ -10,7 +10,6 @@ export const getEventManagers = async (req, res, next) => {
         const eventManager = await EventManager.find({}).lean();
         res.status(200).json(eventManager);
     } catch (error) {
-        console.log("something went wrong in geteventManagers controller", error);
         next(error)
     }
 }
@@ -26,7 +25,6 @@ export const geteventManager = async (req, res, next) => {
         }
         res.status(200).json(eventManager);
     } catch (error) {
-        console.log("something went wrong in geteventManagerById controller", error);
         next(error); // Pass error to error handling middleware
     }
 }
@@ -86,7 +84,6 @@ export const deleteEventManager = async (req, res, next) => {
         await EventManager.findByIdAndDelete(eventManagerId);
         res.status(200).json({ success: true, message: 'eventManager deleted successfully' });
     } catch (error) {
-        console.log("something went wrong in deleteeventManager controller", error);
         next(error); // Pass error to error handling middleware
     }
 }
@@ -104,7 +101,6 @@ export const changeActiveStatus = async (req, res, next) => {
         await eventManager.save();
         res.status(200).json({ success: true, message: 'eventManager status updated successfully' });
     } catch (error) {
-        console.log("something went wrong in changeActiveStatus controller", error);
         next(error); // Pass error to error handling middleware
     }
 }
@@ -161,7 +157,6 @@ export const getEventAttendees = async (req, res, next) => {
         });
         
     } catch (error) {
-        console.log("Something went Wrong in getEventAttendees :", error);
         next(error); // Pass error to error handling middleware
     }
 }
@@ -236,7 +231,6 @@ export const changePassword = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.log("Error in changePassword controller:", error);
         next(error); // Pass error to error handling middleware
     }
 };
@@ -254,7 +248,6 @@ export const getMyProfile = async (req, res, next) => {
 
         res.status(200).json(eventManager);
     } catch (error) {
-        console.log("Error in getMyProfile controller:", error);
         next(error); // Pass error to error handling middleware
     }
 };
@@ -265,9 +258,7 @@ export const getMyProfile = async (req, res, next) => {
 export const updateMyProfile = async (req, res, next) => {
     try {
         const eventManagerId = req.user.eventManagerId;
-        
-        // req.body contains text fields
-        console.log(req.body)
+
         const { userName, email, companyName, phoneNumber } = req.body;
 
         const eventManager = await EventManager.findById(eventManagerId);
@@ -277,7 +268,7 @@ export const updateMyProfile = async (req, res, next) => {
 
         // Update fields if provided
         if (userName) eventManager.userName = userName;
-        
+
         if (email) {
             const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
             if (!emailRegex.test(email)) {
@@ -287,7 +278,7 @@ export const updateMyProfile = async (req, res, next) => {
         }
 
         if (companyName) eventManager.companyName = companyName;
-        
+
         if (phoneNumber) {
             if (phoneNumber.length !== 10) {
                 return res.status(400).json({ message: "Invalid phone number format" });
@@ -318,9 +309,7 @@ export const updateMyProfile = async (req, res, next) => {
                 phoneNumber: eventManager.phoneNumber
             }
         });
-
     } catch (error) {
-        console.log("Error in updateMyProfile controller:", error);
         next(error); // Pass error to error handling middleware
     }
 };

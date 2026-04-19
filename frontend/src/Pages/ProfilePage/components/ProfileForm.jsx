@@ -20,7 +20,6 @@ export default function ProfileForm() {
   const [newImageFile, setNewImageFile] = useState(null);
 
   useEffect(() => {
-    console.log("ProfileForm render: user =", user);
     if (user) {
       setProfile({
         name: user.userName,

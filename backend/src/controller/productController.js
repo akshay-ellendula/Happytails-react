@@ -149,8 +149,6 @@ const buildValidatedCart = async (cart) => {
 
 const getPetAccessories = async (req, res, next) => {
   try {
-    console.log("Fetching pet accessories...");
-
     const [products, productTypesRaw, colorsRaw, sizesRaw, maxPriceResult] =
       await Promise.all([
         Product.aggregate([
@@ -266,7 +264,6 @@ const getPetAccessories = async (req, res, next) => {
         ]),
       ]);
 
-    console.log(`Found ${products.length} products after aggregation.`);
     const productTypes = productTypesRaw
       .map((item) => item.product_type)
       .sort();
@@ -274,7 +271,6 @@ const getPetAccessories = async (req, res, next) => {
     const sizes = sizesRaw.map((item) => item.size).sort();
     const maxPrice =
       maxPriceResult.length > 0 ? maxPriceResult[0].regular_price : 15000;
-    console.log("Filters fetched:", { productTypes, colors, sizes, maxPrice });
 
     const filters = { productTypes, colors, sizes, maxPrice };
 

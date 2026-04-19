@@ -82,7 +82,6 @@ const ReviewPage = () => {
 
     return (
         <div className="min-h-screen flex flex-col items-center py-12 p-4">
-            
             {/* Event Details Card */}
             {eventDetails && (
                 <div className="max-w-lg w-full bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-2xl overflow-hidden mb-10 transition-transform hover:-translate-y-1">
@@ -108,7 +107,6 @@ const ReviewPage = () => {
                     </div>
                 </div>
             )}
-
             <div className="max-w-lg w-full bg-white border-2 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-2xl p-8">
                 {/* ALREADY REVIEWED OR SUCCESS STATE */}
                 {alreadyReviewed || isSuccess ? (
@@ -135,12 +133,11 @@ const ReviewPage = () => {
                     </div>
                 ) : (
                     /* REVIEW FORM STATE */
-                    <>
+                    (<>
                         <div className="text-center mb-8">
                             <h1 className="text-3xl font-bold text-[#1a1a1a]">How was it? 🐾</h1>
                             <p className="text-[#1a1a1a] font-medium mt-2">Rate your experience to help others!</p>
                         </div>
-
                         <form onSubmit={handleSubmit} className="space-y-8">
                             <div className="flex flex-col items-center bg-[#effe8b] border-2 border-black rounded-xl p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                                 <div className="flex space-x-2">
@@ -184,7 +181,7 @@ const ReviewPage = () => {
                                 {isSubmitting ? 'Submitting...' : 'Submit Review'}
                             </button>
                         </form>
-                    </>
+                    </>)
                 )}
             </div>
         </div>
