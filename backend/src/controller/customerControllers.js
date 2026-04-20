@@ -61,7 +61,7 @@ export const putCustomer = async (req, res, next) => {
         .json({ success: false, message: "Only @gmail.com allowed" });
     }
 
-    if (phoneNumber && !/^[1-3]\d{9}$/.test(String(phoneNumber))) {
+    if (phoneNumber && !/^\d{9}$/.test(String(phoneNumber))) {
       return res
         .status(400)
         .json({
