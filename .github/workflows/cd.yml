@@ -35,14 +35,8 @@ jobs:
         id: guard
         run: |
           # Check for incomplete imports with various patterns
-          if grep -RInE \
-            "this-package-does-not-exist-123|backend-package-not-installed-123|BrokenPkg|BrokenBackendPkg|\
-            from[[:space:]]*['\"][[:space:]]*['\"]|\
-            from[[:space:]]*;|\
-            from[[:space:]]+[[:space:]]*$|\
-            import[[:space:]]+[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*from[[:space:]]*['\"]['\"]|\
-            import[[:space:]]*\{[[:space:]]*\}[[:space:]]*from" \
-            frontend/src backend/src 2>/dev/null; then
+          PATTERN='this-package-does-not-exist-123|backend-package-not-installed-123|BrokenPkg|BrokenBackendPkg|from[ \t]*["'"'"'][ \t]*["'"'"']|from[ \t]*;|import[ \t]*{[ \t]*}[ \t]*from|import.*from[ \t]*$|import.*from[ \t]*;'
+          if grep -REn "$PATTERN" frontend/src backend/src 2>/dev/null; then
             echo "block_deploy=true" >> "$GITHUB_OUTPUT"
             echo "Deployment blocked because a blank or fake import was detected."
           else
