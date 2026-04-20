@@ -48,7 +48,7 @@ const AboutPage = () => {
         </div>
 
         <div className="text-center border-t border-white/10 pt-12">
-          <h2 className="text-2xl font-bold mb-4">Want to partner with Us?</h2>
+          <h2 className="text-2xl font-bold mb-4">Want to partner with us?</h2>
           <p className="text-white/40 mb-8 max-w-md mx-auto">
             Whether you're a store owner or event organizer, join HappyTails and grow your reach.
           </p>
