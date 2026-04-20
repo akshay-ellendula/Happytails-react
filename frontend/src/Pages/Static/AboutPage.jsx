@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { PawPrint, Heart, Users, ShieldCheck, Sparkles } from "lucide-react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import x from ;
 
 const AboutPage = () => {
   return (
