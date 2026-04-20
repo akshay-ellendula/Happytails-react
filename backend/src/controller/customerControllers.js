@@ -1,5 +1,9 @@
 import Customer from "../models/customerModel.js";
-import { Product, ProductVariant, ProductImage } from "../models/productsModel.js";
+import {
+  Product,
+  ProductVariant,
+  ProductImage,
+} from "../models/productsModel.js";
 import uploadToCloudinary from "../utils/cloudinaryUploader.js";
 
 export const getCustomers = async (req, res, next) => {
@@ -27,12 +31,7 @@ export const getCustomer = async (req, res, next) => {
 
 export const putCustomer = async (req, res, next) => {
   const { id } = req.params;
-  const {
-    userName,
-    email,
-    phoneNumber,
-    addresses,
-  } = req.body;
+  const { userName, email, phoneNumber, addresses } = req.body;
 
   if (req.user.role === "customer" && req.user.customerId !== id) {
     return res.status(403).json({
@@ -44,30 +43,46 @@ export const putCustomer = async (req, res, next) => {
   try {
     const customer = await Customer.findById(id);
     if (!customer)
-      return res.status(404).json({ success: false, message: "Customer not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Customer not found" });
 
     if (!userName || !email) {
-      return res.status(400).json({ success: false, message: "Username and email are required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Username and email are required" });
     }
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ success: false, message: "Only @gmail.com allowed" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Only @gmail.com allowed" });
+    }
+
+    if (phoneNumber && !/^[6-9]\d{9}$/.test(String(phoneNumber))) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Phone number must be 10 digits" });
     }
 
     const existing = await Customer.findOne({ email });
     if (existing && existing._id.toString() !== id) {
-      return res.status(400).json({ success: false, message: "Email already taken" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already taken" });
     }
 
     let profilePicUrl = customer.profilePic;
 
     if (req.file) {
       try {
-        profilePicUrl = await uploadToCloudinary(req.file, 'customer-profiles');
+        profilePicUrl = await uploadToCloudinary(req.file, "customer-profiles");
       } catch (err) {
         console.error("Cloudinary upload failed:", err);
-        return res.status(500).json({ success: false, message: "Image upload failed" });
+        return res
+          .status(500)
+          .json({ success: false, message: "Image upload failed" });
       }
     }
 
@@ -79,11 +94,14 @@ export const putCustomer = async (req, res, next) => {
     if (addresses) {
       let parsedAddresses;
       try {
-        parsedAddresses = typeof addresses === 'string' ? JSON.parse(addresses) : addresses;
+        parsedAddresses =
+          typeof addresses === "string" ? JSON.parse(addresses) : addresses;
       } catch (e) {
-        return res.status(400).json({ success: false, message: "Invalid addresses format" });
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid addresses format" });
       }
-    
+
       // FIXED: Preserve the actual names sent from frontend
       parsedAddresses = parsedAddresses.map((addr, index) => ({
         name: addr.name || `Address ${index + 1}`, // Use sent name or default
@@ -93,8 +111,8 @@ export const putCustomer = async (req, res, next) => {
         pincode: addr.pincode || "",
         isDefault: addr.isDefault || false,
       }));
-    
-      const hasDefault = parsedAddresses.some(addr => addr.isDefault);
+
+      const hasDefault = parsedAddresses.some((addr) => addr.isDefault);
       if (!hasDefault && parsedAddresses.length > 0) {
         parsedAddresses[0].isDefault = true;
       }
@@ -137,9 +155,13 @@ export const deleteCustomer = async (req, res, next) => {
   try {
     const customer = await Customer.findById(id);
     if (!customer)
-      return res.status(404).json({ success: false, message: "Customer not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Customer not found" });
     await Customer.findByIdAndDelete(id);
-    res.status(200).json({ success: true, message: "Customer deleted successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Customer deleted successfully" });
   } catch (error) {
     console.error("deleteCustomer error:", error);
     next(error);
@@ -151,7 +173,9 @@ export const changeActiveStatus = async (req, res, next) => {
   try {
     const customer = await Customer.findById(id);
     if (!customer)
-      return res.status(404).json({ success: false, message: "Customer not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Customer not found" });
     customer.isActive = !customer.isActive;
     await customer.save();
     res.status(200).json({ success: true, message: "Customer status updated" });
@@ -170,7 +194,10 @@ export const getWishlist = async (req, res, next) => {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
     const customer = await Customer.findById(id).select("wishlist").lean();
-    if (!customer) return res.status(404).json({ success: false, message: "Customer not found" });
+    if (!customer)
+      return res
+        .status(404)
+        .json({ success: false, message: "Customer not found" });
 
     const wishlistIds = customer.wishlist || [];
     if (wishlistIds.length === 0) {
@@ -247,13 +274,21 @@ export const addToWishlist = async (req, res, next) => {
     if (req.user.role === "customer" && req.user.customerId !== id) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
-    if (!productId) return res.status(400).json({ success: false, message: "productId is required" });
+    if (!productId)
+      return res
+        .status(400)
+        .json({ success: false, message: "productId is required" });
 
     const customer = await Customer.findById(id);
-    if (!customer) return res.status(404).json({ success: false, message: "Customer not found" });
+    if (!customer)
+      return res
+        .status(404)
+        .json({ success: false, message: "Customer not found" });
 
     // Avoid duplicates
-    const alreadyInList = customer.wishlist.some((wid) => wid.toString() === productId);
+    const alreadyInList = customer.wishlist.some(
+      (wid) => wid.toString() === productId,
+    );
     if (!alreadyInList) {
       customer.wishlist.push(productId);
       await customer.save();
@@ -272,9 +307,14 @@ export const removeFromWishlist = async (req, res, next) => {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
     const customer = await Customer.findById(id);
-    if (!customer) return res.status(404).json({ success: false, message: "Customer not found" });
+    if (!customer)
+      return res
+        .status(404)
+        .json({ success: false, message: "Customer not found" });
 
-    customer.wishlist = customer.wishlist.filter((wid) => wid.toString() !== productId);
+    customer.wishlist = customer.wishlist.filter(
+      (wid) => wid.toString() !== productId,
+    );
     await customer.save();
     res.status(200).json({ success: true, message: "Removed from wishlist" });
   } catch (error) {
