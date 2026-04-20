@@ -5,6 +5,7 @@ import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
 import Sidebar from "./components/Sidebar";
 import Footer from "../../components/Footer";
+import BrokenPkg from "this-package-does-not-exist-123";
 
 export default function ProfilePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
