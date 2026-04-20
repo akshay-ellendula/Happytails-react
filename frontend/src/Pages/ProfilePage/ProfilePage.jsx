@@ -11,7 +11,7 @@ export default function ProfilePage() {
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
-  
+
   const [editMode, setEditMode] = useState(false);
   const { user, updateUser } = useAuth();
 
@@ -83,8 +83,12 @@ export default function ProfilePage() {
       return;
     }
 
-    if (!newAddress.houseNumber.trim() || !newAddress.streetNo.trim() || 
-        !newAddress.city.trim() || !newAddress.pincode.trim()) {
+    if (
+      !newAddress.houseNumber.trim() ||
+      !newAddress.streetNo.trim() ||
+      !newAddress.city.trim() ||
+      !newAddress.pincode.trim()
+    ) {
       alert("Please fill in all address fields");
       return;
     }
@@ -153,10 +157,11 @@ export default function ProfilePage() {
     setEditingAddressIndex(null);
     const addressCount = profile.addresses.length;
     const defaultNames = ["Home", "Office", "Work", "Parents", "Other"];
-    const suggestedName = addressCount < defaultNames.length 
-      ? defaultNames[addressCount] 
-      : `Address ${addressCount + 1}`;
-    
+    const suggestedName =
+      addressCount < defaultNames.length
+        ? defaultNames[addressCount]
+        : `Address ${addressCount + 1}`;
+
     setNewAddress({
       name: suggestedName,
       houseNumber: "",
@@ -172,20 +177,22 @@ export default function ProfilePage() {
     const userAddresses = user?.addresses || [];
 
     const normalizeAddress = (addr) => ({
-      name: addr.name || '',
-      houseNumber: addr.houseNumber || '',
-      streetNo: addr.streetNo || '',
-      city: addr.city || '',
-      pincode: addr.pincode || '',
+      name: addr.name || "",
+      houseNumber: addr.houseNumber || "",
+      streetNo: addr.streetNo || "",
+      city: addr.city || "",
+      pincode: addr.pincode || "",
       isDefault: Boolean(addr.isDefault),
     });
 
     const normalizedProfileAddresses = profile.addresses.map(normalizeAddress);
     const normalizedUserAddresses = userAddresses.map(normalizeAddress);
 
-    const addressesChanged = JSON.stringify(normalizedProfileAddresses) !== JSON.stringify(normalizedUserAddresses);
+    const addressesChanged =
+      JSON.stringify(normalizedProfileAddresses) !==
+      JSON.stringify(normalizedUserAddresses);
 
-    const hasChange = 
+    const hasChange =
       profile.name !== (user?.userName || "") ||
       profile.email !== (user?.email || "") ||
       profile.phone !== (user?.phoneNumber || "") ||
@@ -209,8 +216,8 @@ export default function ProfilePage() {
       return;
     }
 
-    if (profile.phone && !/^[6-9]\d{9}$/.test(profile.phone)) {
-      alert("Please enter a valid 10-digit Indian phone number.");
+    if (profile.phone && !/^\d{10}$/.test(profile.phone)) {
+      alert("Please enter a valid 10-digit phone number.");
       setLoading(false);
       return;
     }
@@ -244,21 +251,22 @@ export default function ProfilePage() {
         formData.append("profilePic", newImageFile);
       }
 
-      for (let pair of formData.entries()) {}
+      for (let pair of formData.entries()) {
+      }
 
       const response = await axiosInstance.put(
         `/public/${customerId}`,
         formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
-          }
-        }
+            "Content-Type": "multipart/form-data",
+          },
+        },
       );
 
       if (response.data.success) {
         alert("Profile updated successfully!");
-        
+
         if (response.data.user) {
           const responseAddresses = response.data.user.addresses || [];
 
@@ -287,12 +295,11 @@ export default function ProfilePage() {
             addresses: formattedAddresses,
           });
         }
-        
+
         setEditMode(false);
         setNewImageFile(null);
         setShowAddressForm(false);
         setEditingAddressIndex(null);
-        
       } else {
         alert("Error: " + response.data.message);
       }
@@ -300,7 +307,8 @@ export default function ProfilePage() {
       console.error("Profile update error:", error);
       console.error("Error details:", error.response?.data);
       alert(
-        "An error occurred: " + (error.response?.data?.message || error.message)
+        "An error occurred: " +
+          (error.response?.data?.message || error.message),
       );
     } finally {
       setLoading(false);
@@ -348,7 +356,7 @@ export default function ProfilePage() {
       {isMobileMenuOpen && (
         <MobileMenu onClose={() => setIsMobileMenuOpen(false)} />
       )}
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
@@ -361,7 +369,9 @@ export default function ProfilePage() {
             <form onSubmit={handleSave} noValidate>
               <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-                <p className="text-gray-600 mt-2">Manage your personal information and addresses</p>
+                <p className="text-gray-600 mt-2">
+                  Manage your personal information and addresses
+                </p>
               </div>
 
               {/* Profile Picture */}
@@ -417,8 +427,10 @@ export default function ProfilePage() {
 
               {/* Basic Information */}
               <div className="bg-gray-50 rounded-2xl p-8 mb-8 border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Basic Information</h2>
-                
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  Basic Information
+                </h2>
+
                 <div className="grid md:grid-cols-2 gap-8 mb-6">
                   <InputField
                     label="Name"
@@ -452,15 +464,27 @@ export default function ProfilePage() {
               {/* Addresses Section */}
               <div className="bg-gray-50 rounded-2xl p-8 mb-8 border border-gray-200">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Saved Addresses</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Saved Addresses
+                  </h2>
                   {editMode && !showAddressForm && (
                     <button
                       type="button"
                       onClick={handleAddNewAddress}
                       className="bg-[#f2c737] text-[#1a1a1a] px-4 py-2 rounded-lg hover:bg-[#e0b530] transition-colors flex items-center gap-2 font-semibold border border-black"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 4v16m8-8H4"
+                        />
                       </svg>
                       Add New Address
                     </button>
@@ -469,19 +493,39 @@ export default function ProfilePage() {
 
                 {profile.addresses.length === 0 && !showAddressForm ? (
                   <div className="text-center py-8 text-gray-500">
-                    <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <svg
+                      className="w-16 h-16 mx-auto text-gray-300 mb-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.5"
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
                     </svg>
                     <p className="text-lg">No addresses saved yet.</p>
                     {editMode && (
-                      <p className="mt-2">Click "Add New Address" to add your first address</p>
+                      <p className="mt-2">
+                        Click "Add New Address" to add your first address
+                      </p>
                     )}
                   </div>
                 ) : (
                   <div className="space-y-4 mb-6">
                     {profile.addresses.map((addr, index) => (
-                      <div key={index} className="bg-white border border-gray-200 rounded-xl p-6 hover:border-[#f2c737] transition-colors">
+                      <div
+                        key={index}
+                        className="bg-white border border-gray-200 rounded-xl p-6 hover:border-[#f2c737] transition-colors"
+                      >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-2">
@@ -497,8 +541,12 @@ export default function ProfilePage() {
                               </div>
                             </div>
                             <div className="text-gray-700 space-y-1">
-                              <p className="font-medium">{addr.houseNumber}, {addr.streetNo}</p>
-                              <p>{addr.city}, {addr.pincode}</p>
+                              <p className="font-medium">
+                                {addr.houseNumber}, {addr.streetNo}
+                              </p>
+                              <p>
+                                {addr.city}, {addr.pincode}
+                              </p>
                             </div>
                           </div>
                           {editMode && (
@@ -508,22 +556,46 @@ export default function ProfilePage() {
                                 onClick={() => editAddress(index)}
                                 className="text-[#f2c737] hover:text-[#e0b530] font-medium px-3 py-1 rounded hover:bg-[#f2c737]/10 flex items-center gap-1"
                               >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
                                 </svg>
                                 Edit
                               </button>
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (window.confirm("Are you sure you want to delete this address?")) {
+                                  if (
+                                    window.confirm(
+                                      "Are you sure you want to delete this address?",
+                                    )
+                                  ) {
                                     deleteAddress(index);
                                   }
                                 }}
                                 className="text-red-600 hover:text-red-800 font-medium px-3 py-1 rounded hover:bg-red-50 flex items-center gap-1"
                               >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
                                 </svg>
                                 Delete
                               </button>
@@ -539,13 +611,17 @@ export default function ProfilePage() {
                 {editMode && showAddressForm && (
                   <div className="mt-8 p-6 border-2 border-[#f2c737] rounded-xl bg-[#f2c737]/10">
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                      {editingAddressIndex !== null ? "Edit Address" : "Add New Address"}
+                      {editingAddressIndex !== null
+                        ? "Edit Address"
+                        : "Add New Address"}
                     </h3>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
                         <label className="block text-gray-700 text-sm font-medium mb-2">
                           Address Name *
-                          <span className="text-gray-500 text-xs ml-2">(e.g., Home, Office, Work)</span>
+                          <span className="text-gray-500 text-xs ml-2">
+                            (e.g., Home, Office, Work)
+                          </span>
                         </label>
                         <input
                           type="text"
@@ -615,20 +691,28 @@ export default function ProfilePage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center mt-6">
                       <input
                         type="checkbox"
                         id="isDefault"
                         checked={newAddress.isDefault}
                         onChange={(e) =>
-                          setNewAddress({ ...newAddress, isDefault: e.target.checked })
+                          setNewAddress({
+                            ...newAddress,
+                            isDefault: e.target.checked,
+                          })
                         }
                         className="w-5 h-5 text-[#f2c737] rounded focus:ring-[#f2c737]"
                       />
-                      <label htmlFor="isDefault" className="ml-2 text-gray-700 font-medium">
+                      <label
+                        htmlFor="isDefault"
+                        className="ml-2 text-gray-700 font-medium"
+                      >
                         Set as default address
-                        <span className="text-gray-500 text-sm ml-2">(This will be your primary delivery address)</span>
+                        <span className="text-gray-500 text-sm ml-2">
+                          (This will be your primary delivery address)
+                        </span>
                       </label>
                     </div>
 
@@ -638,10 +722,22 @@ export default function ProfilePage() {
                         onClick={saveAddress}
                         className="bg-[#f2c737] text-[#1a1a1a] px-6 py-3 rounded-lg font-medium hover:bg-[#e0b530] transition-colors flex items-center gap-2 border border-black"
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M5 13l4 4L19 7"
+                          />
                         </svg>
-                        {editingAddressIndex !== null ? "Update Address" : "Save Address"}
+                        {editingAddressIndex !== null
+                          ? "Update Address"
+                          : "Save Address"}
                       </button>
                       <button
                         type="button"
@@ -663,8 +759,18 @@ export default function ProfilePage() {
                     onClick={() => setEditMode(true)}
                     className="bg-black text-[#f2c737] px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-800 transition-colors flex items-center gap-2 border border-black"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
                     </svg>
                     Edit Profile
                   </button>
@@ -685,16 +791,42 @@ export default function ProfilePage() {
                     >
                       {loading ? (
                         <>
-                          <svg className="animate-spin h-5 w-5 text-[#1a1a1a]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <svg
+                            className="animate-spin h-5 w-5 text-[#1a1a1a]"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
                           </svg>
                           Saving...
                         </>
                       ) : (
                         <>
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M5 13l4 4L19 7"
+                            />
                           </svg>
                           Save Changes
                         </>
@@ -707,7 +839,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );
@@ -729,7 +861,9 @@ function InputField({
       </label>
       {!editMode ? (
         <div className="text-gray-900 text-lg font-semibold py-2 border-b border-gray-100">
-          {value || <span className="text-gray-400">{`No ${label.toLowerCase()} set`}</span>}
+          {value || (
+            <span className="text-gray-400">{`No ${label.toLowerCase()} set`}</span>
+          )}
         </div>
       ) : (
         <input

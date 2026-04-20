@@ -60,10 +60,13 @@ export const putCustomer = async (req, res, next) => {
         .json({ success: false, message: "Only @gmail.com allowed" });
     }
 
-    if (phoneNumber && !/^\d{10}$/.test(String(phoneNumber))) {
+    if (phoneNumber && !/^[6-9]\d{9}$/.test(String(phoneNumber))) {
       return res
         .status(400)
-        .json({ success: false, message: "Phone number must be 10 digits" });
+        .json({
+          success: false,
+          message: "Phone number must start with 6-9 and be 10 digits",
+        });
     }
 
     const existing = await Customer.findOne({ email });
