@@ -31,13 +31,13 @@ const AboutPage = () => {
               Thousands of pet owners, event managers, and store partners trust HappyTails to bring joy to their furry friends through curated experiences and quality products.
             </p>
           </div>
-          {/* <div className="bg-[#111] rounded-2xl p-8">
+          { <div className="bg-[#111] rounded-2xl p-8">
             <ShieldCheck className="w-8 h-8 text-[#f2c737] mb-4" />
             <h3 className="text-lg font-semibold mb-2">Trust & Safety</h3>
             <p className="text-white/50 text-sm leading-relaxed">
               Every vendor and event manager on our platform is verified. We ensure secure payments, quality products, and safe event experiences for you and your pets.
             </p>
-          </div> */}
+          </div> }
           <div className="bg-[#111] rounded-2xl p-8">
             <Sparkles className="w-8 h-8 text-[#f2c737] mb-4" />
             <h3 className="text-lg font-semibold mb-2">What We Offer</h3>
