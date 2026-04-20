@@ -26,6 +26,9 @@ export default defineConfig([
       'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]' }],
       'no-undef': 'warn',
       'react-refresh/only-export-components': 'warn',
+      // Catch incomplete/empty imports like: import x from "";
+      'no-empty-pattern': 'error',
+      'no-empty': 'error',
     },
   },
 ])

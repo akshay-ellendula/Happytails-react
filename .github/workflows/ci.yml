@@ -23,8 +23,16 @@ jobs:
 
       - name: Detect blank or fake imports
         run: |
-          if grep -RInE "this-package-does-not-exist-123|backend-package-not-installed-123|BrokenPkg|BrokenBackendPkg|from[[:space:]]*['\"][[:space:]]*['\"]" frontend/src backend/src; then
-            echo "Invalid import placeholder detected. Failing CI before build/test."
+          # Check for incomplete imports with various patterns
+          if grep -RInE \
+            "this-package-does-not-exist-123|backend-package-not-installed-123|BrokenPkg|BrokenBackendPkg|\
+            from[[:space:]]*['\"][[:space:]]*['\"]|\
+            from[[:space:]]*;|\
+            from[[:space:]]+[[:space:]]*$|\
+            import[[:space:]]+[a-zA-Z_][a-zA-Z0-9_]*[[:space:]]*from[[:space:]]*['\"]['\"]|\
+            import[[:space:]]*\{[[:space:]]*\}[[:space:]]*from" \
+            frontend/src backend/src 2>/dev/null; then
+            echo "Invalid or incomplete import detected. Failing CI before build/test."
             exit 1
           fi
 
@@ -114,6 +122,14 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Code Quality
+        run: |
+          if [ "$CI_CD_STRICT_MODE" = "true" ]; then
+            npm run lint --if-present
+          else
+            npm run lint --if-present > /tmp/backend-lint.log 2>&1 || true
+          fi
 
       - name: Test
         env:
