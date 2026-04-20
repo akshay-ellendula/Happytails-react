@@ -6,6 +6,8 @@ import {
 } from "../models/productsModel.js";
 import uploadToCloudinary from "../utils/cloudinaryUploader.js";
 
+import broken from "";
+
 export const getCustomers = async (req, res, next) => {
   try {
     const customers = await Customer.find({}).select("-password");
