@@ -6,7 +6,6 @@ import {
 } from "../models/productsModel.js";
 import uploadToCloudinary from "../utils/cloudinaryUploader.js";
 
-import brok from "";
 
 export const getCustomers = async (req, res, next) => {
   try {
@@ -62,7 +61,7 @@ export const putCustomer = async (req, res, next) => {
         .json({ success: false, message: "Only @gmail.com allowed" });
     }
 
-    if (phoneNumber && !/^[6-9]\d{9}$/.test(String(phoneNumber))) {
+    if (phoneNumber && !/^[1-3]\d{9}$/.test(String(phoneNumber))) {
       return res
         .status(400)
         .json({
