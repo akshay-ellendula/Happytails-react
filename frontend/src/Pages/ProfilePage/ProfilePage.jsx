@@ -5,7 +5,6 @@ import Header from "../../components/Header";
 import MobileMenu from "../../components/MobileMenu";
 import Sidebar from "./components/Sidebar";
 import Footer from "../../components/Footer";
-import BrokenPkg from "this-package-does-not-exist-123";
 
 export default function ProfilePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -250,9 +249,6 @@ export default function ProfilePage() {
 
       if (newImageFile) {
         formData.append("profilePic", newImageFile);
-      }
-
-      for (let pair of formData.entries()) {
       }
 
       const response = await axiosInstance.put(

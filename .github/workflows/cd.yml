@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       strict_mode: ${{ steps.load.outputs.strict_mode }}
+      block_deploy: ${{ steps.guard.outputs.block_deploy }}
 
     steps:
       - name: Checkout
@@ -30,15 +31,28 @@ jobs:
           STRICT_MODE=$(node -e "const fs=require('fs'); try { const cfg=JSON.parse(fs.readFileSync('.github/ci-cd-config.json','utf8')); process.stdout.write(String(Boolean(cfg.strictMode))); } catch { process.stdout.write('false'); }")
           echo "strict_mode=$STRICT_MODE" >> "$GITHUB_OUTPUT"
 
+      - name: Block blank or fake imports
+        id: guard
+        run: |
+          if grep -RInE "this-package-does-not-exist-123|backend-package-not-installed-123|BrokenPkg|BrokenBackendPkg|from[[:space:]]*['\"][[:space:]]*['\"]" frontend/src backend/src; then
+            echo "block_deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Deployment blocked because a blank or fake import was detected."
+          else
+            echo "block_deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy:
     name: Trigger Render and Vercel Deploys
     runs-on: ubuntu-latest
     needs: read-config
     if: |
+      needs.read-config.outputs.block_deploy != 'true' &&
+      (
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' &&
       github.event.workflow_run.head_branch == 'main' &&
       (needs.read-config.outputs.strict_mode != 'true' || github.event.workflow_run.conclusion == 'success'))
+      )
 
     steps:
       - name: Trigger Render deploy hook
