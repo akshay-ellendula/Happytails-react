@@ -23,7 +23,7 @@ export const signup = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       return res
         .status(403)
         .json({ message: "Password Must have 6 characters" });
